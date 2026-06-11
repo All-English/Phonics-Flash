@@ -2360,6 +2360,26 @@
               "word": "meat",
               "image": "media/SmartPhonics/5/Unit1/pics/meat.jpg",
               "audio": "media/SmartPhonics/5/Unit1/sounds/meat.mp3"
+            },
+            {
+              "word": "peanut",
+              "image": "media/SmartPhonics/5/Unit1/pics/peanut.jpg",
+              "audio": "media/SmartPhonics/5/Unit1/sounds/peanut.mp3"
+            },
+            {
+              "word": "sea",
+              "image": "media/SmartPhonics/5/Unit1/pics/sea.jpg",
+              "audio": "media/SmartPhonics/5/Unit1/sounds/sea.mp3"
+            },
+            {
+              "word": "seal",
+              "image": "media/SmartPhonics/5/Unit1/pics/seal.jpg",
+              "audio": "media/SmartPhonics/5/Unit1/sounds/seal.mp3"
+            },
+            {
+              "word": "tea",
+              "image": "media/SmartPhonics/5/Unit1/pics/tea.jpg",
+              "audio": "media/SmartPhonics/5/Unit1/sounds/tea.mp3"
             }
           ],
           "extraWords": [
@@ -2433,6 +2453,26 @@
               "word": "bowl",
               "image": "media/SmartPhonics/5/Unit2/pics/bowl.jpg",
               "audio": "media/SmartPhonics/5/Unit2/sounds/bowl.mp3"
+            },
+            {
+              "word": "pillow",
+              "image": "media/SmartPhonics/5/Unit2/pics/pillow.jpg",
+              "audio": "media/SmartPhonics/5/Unit2/sounds/pillow.mp3"
+            },
+            {
+              "word": "snow",
+              "image": "media/SmartPhonics/5/Unit2/pics/snow.jpg",
+              "audio": "media/SmartPhonics/5/Unit2/sounds/snow.mp3"
+            },
+            {
+              "word": "window",
+              "image": "media/SmartPhonics/5/Unit2/pics/window.jpg",
+              "audio": "media/SmartPhonics/5/Unit2/sounds/window.mp3"
+            },
+            {
+              "word": "yellow",
+              "image": "media/SmartPhonics/5/Unit2/pics/yellow.jpg",
+              "audio": "media/SmartPhonics/5/Unit2/sounds/yellow.mp3"
             }
           ],
           "extraWords": [
@@ -2506,6 +2546,26 @@
               "word": "gray",
               "image": "media/SmartPhonics/5/Unit3/pics/gray.jpg",
               "audio": "media/SmartPhonics/5/Unit3/sounds/gray.mp3"
+            },
+            {
+              "word": "hay",
+              "image": "media/SmartPhonics/5/Unit3/pics/hay.jpg",
+              "audio": "media/SmartPhonics/5/Unit3/sounds/hay.mp3"
+            },
+            {
+              "word": "play",
+              "image": "media/SmartPhonics/5/Unit3/pics/play.jpg",
+              "audio": "media/SmartPhonics/5/Unit3/sounds/play.mp3"
+            },
+            {
+              "word": "pray",
+              "image": "media/SmartPhonics/5/Unit3/pics/pray.jpg",
+              "audio": "media/SmartPhonics/5/Unit3/sounds/pray.mp3"
+            },
+            {
+              "word": "tray",
+              "image": "media/SmartPhonics/5/Unit3/pics/tray.jpg",
+              "audio": "media/SmartPhonics/5/Unit3/sounds/tray.mp3"
             }
           ],
           "extraWords": [
@@ -2579,6 +2639,26 @@
               "word": "toilet",
               "image": "media/SmartPhonics/5/Unit4/pics/toilet.jpg",
               "audio": "media/SmartPhonics/5/Unit4/sounds/toilet.mp3"
+            },
+            {
+              "word": "boy",
+              "image": "media/SmartPhonics/5/Unit4/pics/boy.jpg",
+              "audio": "media/SmartPhonics/5/Unit4/sounds/boy.mp3"
+            },
+            {
+              "word": "joy",
+              "image": "media/SmartPhonics/5/Unit4/pics/joy.jpg",
+              "audio": "media/SmartPhonics/5/Unit4/sounds/joy.mp3"
+            },
+            {
+              "word": "soybean",
+              "image": "media/SmartPhonics/5/Unit4/pics/soybean.jpg",
+              "audio": "media/SmartPhonics/5/Unit4/sounds/soybean.mp3"
+            },
+            {
+              "word": "toy",
+              "image": "media/SmartPhonics/5/Unit4/pics/toy.jpg",
+              "audio": "media/SmartPhonics/5/Unit4/sounds/toy.mp3"
             }
           ],
           "extraWords": [
@@ -2593,12 +2673,6 @@
             },
             {
               "word": "choice"
-            },
-            {
-              "word": "toy"
-            },
-            {
-              "word": "joy"
             },
             {
               "word": "coy"
@@ -2652,6 +2726,26 @@
               "word": "cloud",
               "image": "media/SmartPhonics/5/Unit5/pics/cloud.jpg",
               "audio": "media/SmartPhonics/5/Unit5/sounds/cloud.mp3"
+            },
+            {
+              "word": "count",
+              "image": "media/SmartPhonics/5/Unit5/pics/count.jpg",
+              "audio": "media/SmartPhonics/5/Unit5/sounds/count.mp3"
+            },
+            {
+              "word": "house",
+              "image": "media/SmartPhonics/5/Unit5/pics/house.jpg",
+              "audio": "media/SmartPhonics/5/Unit5/sounds/house.mp3"
+            },
+            {
+              "word": "mouse",
+              "image": "media/SmartPhonics/5/Unit5/pics/mouse.jpg",
+              "audio": "media/SmartPhonics/5/Unit5/sounds/mouse.mp3"
+            },
+            {
+              "word": "mouth",
+              "image": "media/SmartPhonics/5/Unit5/pics/mouth.jpg",
+              "audio": "media/SmartPhonics/5/Unit5/sounds/mouth.mp3"
             }
           ],
           "extraWords": [
@@ -2725,6 +2819,26 @@
               "word": "teacher",
               "image": "media/SmartPhonics/5/Unit6/pics/teacher.jpg",
               "audio": "media/SmartPhonics/5/Unit6/sounds/teacher.mp3"
+            },
+            {
+              "word": "nurse",
+              "image": "media/SmartPhonics/5/Unit6/pics/nurse.jpg",
+              "audio": "media/SmartPhonics/5/Unit6/sounds/nurse.mp3"
+            },
+            {
+              "word": "purple",
+              "image": "media/SmartPhonics/5/Unit6/pics/purple.jpg",
+              "audio": "media/SmartPhonics/5/Unit6/sounds/purple.mp3"
+            },
+            {
+              "word": "purse",
+              "image": "media/SmartPhonics/5/Unit6/pics/purse.jpg",
+              "audio": "media/SmartPhonics/5/Unit6/sounds/purse.mp3"
+            },
+            {
+              "word": "turtle",
+              "image": "media/SmartPhonics/5/Unit6/pics/turtle.jpg",
+              "audio": "media/SmartPhonics/5/Unit6/sounds/turtle.mp3"
             }
           ],
           "extraWords": [
@@ -2798,6 +2912,26 @@
               "word": "corn",
               "image": "media/SmartPhonics/5/Unit7/pics/corn.jpg",
               "audio": "media/SmartPhonics/5/Unit7/sounds/corn.mp3"
+            },
+            {
+              "word": "fork",
+              "image": "media/SmartPhonics/5/Unit7/pics/fork.jpg",
+              "audio": "media/SmartPhonics/5/Unit7/sounds/fork.mp3"
+            },
+            {
+              "word": "horse",
+              "image": "media/SmartPhonics/5/Unit7/pics/horse.jpg",
+              "audio": "media/SmartPhonics/5/Unit7/sounds/horse.mp3"
+            },
+            {
+              "word": "north",
+              "image": "media/SmartPhonics/5/Unit7/pics/north.jpg",
+              "audio": "media/SmartPhonics/5/Unit7/sounds/north.mp3"
+            },
+            {
+              "word": "store",
+              "image": "media/SmartPhonics/5/Unit7/pics/store.jpg",
+              "audio": "media/SmartPhonics/5/Unit7/sounds/store.mp3"
             }
           ],
           "extraWords": [
@@ -2871,6 +3005,26 @@
               "word": "goose",
               "image": "media/SmartPhonics/5/Unit8/pics/goose.jpg",
               "audio": "media/SmartPhonics/5/Unit8/sounds/goose.mp3"
+            },
+            {
+              "word": "moon",
+              "image": "media/SmartPhonics/5/Unit8/pics/moon.jpg",
+              "audio": "media/SmartPhonics/5/Unit8/sounds/moon.mp3"
+            },
+            {
+              "word": "pool",
+              "image": "media/SmartPhonics/5/Unit8/pics/pool.jpg",
+              "audio": "media/SmartPhonics/5/Unit8/sounds/pool.mp3"
+            },
+            {
+              "word": "spoon",
+              "image": "media/SmartPhonics/5/Unit8/pics/spoon.jpg",
+              "audio": "media/SmartPhonics/5/Unit8/sounds/spoon.mp3"
+            },
+            {
+              "word": "zoo",
+              "image": "media/SmartPhonics/5/Unit8/pics/zoo.jpg",
+              "audio": "media/SmartPhonics/5/Unit8/sounds/zoo.mp3"
             }
           ],
           "extraWords": [
@@ -2891,9 +3045,6 @@
             },
             {
               "word": "fool"
-            },
-            {
-              "word": "pool"
             },
             {
               "word": "root"
