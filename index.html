@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Phonics Flash — Interactive ESL phonics word review tool powered by reveal.js">
+  <title>Phonics Flash</title>
+
+  <!-- reveal.js CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css">
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ============================================================
+       MENU SCREEN
+       ============================================================ -->
+  <div id="menu-screen">
+    <header class="menu-header">
+      <h1>Phonics Flash</h1>
+      <p>Select levels and units to review</p>
+    </header>
+
+    <!-- Options Bar -->
+    <div class="options-bar">
+      <button id="toggle-extras" class="option-btn" title="Include extra words in the review">
+        <span>Extra Words</span>
+      </button>
+
+      <button id="toggle-images" class="option-btn" title="Show images with words">
+        <span>Images</span>
+      </button>
+
+      <button id="toggle-mix" class="option-btn" title="Interleave words from selected units">
+        <span>All-in-One Deck</span>
+      </button>
+
+      <button id="toggle-dictation" class="option-btn" title="Show images first, click/tap to reveal the word text">
+        <span>Dictation Mode</span>
+      </button>
+
+      <button id="toggle-quiz" class="option-btn" title="Show a picture with two word choices. Press Space/Enter or click to reveal correct answer.">
+        <span>Quiz Mode</span>
+      </button>
+
+      <button id="reset-btn" class="reset-button" title="Reset all selected units">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+          <path d="M3 3v5h5"/>
+        </svg>
+        <span>Reset</span>
+      </button>
+    </div>
+
+    <!-- Levels / Units -->
+    <div id="levels-container">
+      <!-- Dynamically populated by app.js -->
+    </div>
+
+    <!-- Start Button -->
+    <div class="start-btn-wrapper">
+      <button id="start-btn" disabled>
+        Start Review
+        <span class="start-btn-count">Select at least one unit</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SLIDESHOW SCREEN
+       ============================================================ -->
+  <div id="slideshow-screen" class="hidden">
+    <button id="back-btn" title="Back to menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+      </svg>
+      Menu
+    </button>
+
+    <div class="reveal">
+      <div class="slides">
+        <!-- Dynamically populated by app.js -->
+      </div>
+    </div>
+
+    <!-- Persistent chrome overlay (unit info, audio, progress) -->
+    <!-- Lives outside .reveal so it doesn't animate with slide transitions -->
+    <div id="slideshow-chrome"></div>
+  </div>
+
+  <!-- Theme Toggle (always visible, persists across screens) -->
+  <button id="theme-toggle" title="Toggle theme" aria-label="Toggle light/dark mode"></button>
+
+  <!-- ============================================================
+       SCRIPTS
+       ============================================================ -->
+  <!-- reveal.js -->
+  <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+
+  <!-- ElevenLabs config (gitignored — create from config template) -->
+  <script src="js/config.js"></script>
+
+  <!-- Audio playback module -->
+  <script src="js/audio.js"></script>
+
+  <!-- Main application -->
+  <script src="js/app.js"></script>
+
+</body>
+</html>
