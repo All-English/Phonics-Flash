@@ -2768,9 +2768,6 @@
               "word": "proud"
             },
             {
-              "word": "targetSound"
-            },
-            {
               "word": "pound"
             }
           ]
@@ -3048,6 +3045,198 @@
             },
             {
               "word": "root"
+            }
+          ]
+        },
+        {
+          "id": "L5U9",
+          "name": "Unit 9: au, aw, all",
+          "targetSound": "au, aw, all",
+          "words": [
+            {
+              "word": "August",
+              "image": "media/SmartPhonics/5/Unit9/pics/August.png",
+              "audio": "media/SmartPhonics/5/Unit9/sounds/August.mp3"
+            },
+            {
+              "word": "ball",
+              "image": "media/SmartPhonics/5/Unit9/pics/ball.png",
+              "audio": "media/SmartPhonics/5/Unit9/sounds/ball.mp3"
+            },
+            {
+              "word": "crawl",
+              "image": "media/SmartPhonics/5/Unit9/pics/crawl.png",
+              "audio": "media/SmartPhonics/5/Unit9/sounds/crawl.mp3"
+            },
+            {
+              "word": "draw",
+              "image": "media/SmartPhonics/5/Unit9/pics/draw.png",
+              "audio": "media/SmartPhonics/5/Unit9/sounds/draw.mp3"
+            },
+            {
+              "word": "launch",
+              "image": "media/SmartPhonics/5/Unit9/pics/launch.png",
+              "audio": "media/SmartPhonics/5/Unit9/sounds/launch.mp3"
+            },
+            {
+              "word": "mall",
+              "image": "media/SmartPhonics/5/Unit9/pics/mall.png",
+              "audio": "media/SmartPhonics/5/Unit9/sounds/mall.mp3"
+            },
+            {
+              "word": "pause",
+              "image": "media/SmartPhonics/5/Unit9/pics/pause.png",
+              "audio": "media/SmartPhonics/5/Unit9/sounds/pause.mp3"
+            },
+            {
+              "word": "prawn",
+              "image": "media/SmartPhonics/5/Unit9/pics/prawn.png",
+              "audio": "media/SmartPhonics/5/Unit9/sounds/prawn.mp3"
+            },
+            {
+              "word": "sauce",
+              "image": "media/SmartPhonics/5/Unit9/pics/sauce.png",
+              "audio": "media/SmartPhonics/5/Unit9/sounds/sauce.mp3"
+            },
+            {
+              "word": "small",
+              "image": "media/SmartPhonics/5/Unit9/pics/small.png",
+              "audio": "media/SmartPhonics/5/Unit9/sounds/small.mp3"
+            },
+            {
+              "word": "tall",
+              "image": "media/SmartPhonics/5/Unit9/pics/tall.png",
+              "audio": "media/SmartPhonics/5/Unit9/sounds/tall.mp3"
+            },
+            {
+              "word": "yawn",
+              "image": "media/SmartPhonics/5/Unit9/pics/yawn.png",
+              "audio": "media/SmartPhonics/5/Unit9/sounds/yawn.mp3"
+            }
+          ],
+          "extraWords": [
+            {
+              "word": "haunt"
+            },
+            {
+              "word": "author"
+            },
+			   {
+              "word": "audio"
+            },
+            {
+              "word": "claw"
+            },
+			   {
+              "word": "hawk"
+            },
+            {
+              "word": "saw"
+            },
+			  {
+              "word": "wall"
+            },
+			   {
+              "word": "call"
+            },
+            {
+              "word": "stall"
+            }
+          ]
+        },
+        {
+          "id": "L5U10",
+          "name": "Unit 10: mb, kn, wr",
+          "targetSound": "mb, kn, wr",
+          "words": [
+            {
+              "word": "climb",
+              "image": "media/SmartPhonics/5/Unit10/pics/climb.png",
+              "audio": "media/SmartPhonics/5/Unit10/sounds/climb.mp3"
+            },
+            {
+              "word": "comb",
+              "image": "media/SmartPhonics/5/Unit10/pics/comb.png",
+              "audio": "media/SmartPhonics/5/Unit10/sounds/comb.mp3"
+            },
+            {
+              "word": "knee",
+              "image": "media/SmartPhonics/5/Unit10/pics/knee.png",
+              "audio": "media/SmartPhonics/5/Unit10/sounds/knee.mp3"
+            },
+            {
+              "word": "knife",
+              "image": "media/SmartPhonics/5/Unit10/pics/knife.png",
+              "audio": "media/SmartPhonics/5/Unit10/sounds/knife.mp3"
+            },
+            {
+              "word": "knit",
+              "image": "media/SmartPhonics/5/Unit10/pics/knit.png",
+              "audio": "media/SmartPhonics/5/Unit10/sounds/knit.mp3"
+            },
+            {
+              "word": "knock",
+              "image": "media/SmartPhonics/5/Unit10/pics/knock.png",
+              "audio": "media/SmartPhonics/5/Unit10/sounds/knock.mp3"
+            },
+            {
+              "word": "lamb",
+              "image": "media/SmartPhonics/5/Unit10/pics/lamb.png",
+              "audio": "media/SmartPhonics/5/Unit10/sounds/lamb.mp3"
+            },
+            {
+              "word": "thumb",
+              "image": "media/SmartPhonics/5/Unit10/pics/thumb.png",
+              "audio": "media/SmartPhonics/5/Unit10/sounds/thumb.mp3"
+            },
+            {
+              "word": "wrap",
+              "image": "media/SmartPhonics/5/Unit10/pics/wrap.png",
+              "audio": "media/SmartPhonics/5/Unit10/sounds/wrap.mp3"
+            },
+            {
+              "word": "wrist",
+              "image": "media/SmartPhonics/5/Unit10/pics/wrist.png",
+              "audio": "media/SmartPhonics/5/Unit10/sounds/wrist.mp3"
+            },
+            {
+              "word": "write",
+              "image": "media/SmartPhonics/5/Unit10/pics/write.png",
+              "audio": "media/SmartPhonics/5/Unit10/sounds/write.mp3"
+            },
+            {
+              "word": "wrong",
+              "image": "media/SmartPhonics/5/Unit10/pics/wrong.png",
+              "audio": "media/SmartPhonics/5/Unit10/sounds/wrong.mp3"
+            }
+          ],
+          "extraWords": [
+            {
+              "word": "numb"
+            },
+            {
+              "word": "limb"
+            },
+			   {
+              "word": "bomb"
+            },
+            {
+              "word": "knot"
+            },
+			   {
+              "word": "know"
+            },
+            {
+              "word": "knob"
+            },
+			  {
+              "word": "wreck"
+            },
+			   {
+              "word": "wrench"
+            },
+            {
+              "word": "wreath"
             }
           ]
         }

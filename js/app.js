@@ -83,6 +83,7 @@
   // ── Initialization ─────────────────────────────────────────
   async function init() {
     initTheme();
+    initMenuEvents();
 
     // Log audio engine configuration status to assist in debugging
     if (typeof ELEVENLABS_CONFIG !== 'undefined') {
@@ -177,34 +178,16 @@
     window.history.replaceState({}, '', newURL);
   }
 
-  // ── Menu Rendering ─────────────────────────────────────────
-  function renderMenu() {
-    const container = document.getElementById('levels-container');
-    container.innerHTML = '';
-
-    const savedUnits = JSON.parse(localStorage.getItem('phonics-flash-selected-units') || '[]');
-
-    phonicsData.levels.forEach((level, index) => {
-      const card = createLevelCard(level, index, savedUnits);
-      container.appendChild(card);
-    });
-
-    // Helper to sync option button class with state
-    function syncOptionButton(btnId, isActive) {
-      const btn = document.getElementById(btnId);
-      if (btn) {
-        btn.classList.toggle('active', isActive);
-      }
+  // Helper to sync option button class with state
+  function syncOptionButton(btnId, isActive) {
+    const btn = document.getElementById(btnId);
+    if (btn) {
+      btn.classList.toggle('active', isActive);
     }
+  }
 
-    // Set initial toggle states in UI
-    syncOptionButton('toggle-extras', options.includeExtras);
-    syncOptionButton('toggle-images', options.includeImages);
-    syncOptionButton('toggle-mix', options.mixMode);
-    syncOptionButton('toggle-dictation', options.dictationMode);
-    syncOptionButton('toggle-quiz', options.quizMode);
-
-    // Wire up toggles
+  // Wire up toggles and buttons once on initialization
+  function initMenuEvents() {
     document.getElementById('toggle-extras').addEventListener('click', (e) => {
       options.includeExtras = !options.includeExtras;
       syncOptionButton('toggle-extras', options.includeExtras);
@@ -301,6 +284,26 @@
         showToast('All selections cleared', 'info', 2000);
       });
     }
+  }
+
+  // ── Menu Rendering ─────────────────────────────────────────
+  function renderMenu() {
+    const container = document.getElementById('levels-container');
+    container.innerHTML = '';
+
+    const savedUnits = JSON.parse(localStorage.getItem('phonics-flash-selected-units') || '[]');
+
+    phonicsData.levels.forEach((level, index) => {
+      const card = createLevelCard(level, index, savedUnits);
+      container.appendChild(card);
+    });
+
+    // Set initial toggle states in UI
+    syncOptionButton('toggle-extras', options.includeExtras);
+    syncOptionButton('toggle-images', options.includeImages);
+    syncOptionButton('toggle-mix', options.mixMode);
+    syncOptionButton('toggle-dictation', options.dictationMode);
+    syncOptionButton('toggle-quiz', options.quizMode);
 
     updateStartButton();
   }
