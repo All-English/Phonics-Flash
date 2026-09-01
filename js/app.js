@@ -9,9 +9,22 @@
   let phonicsData = null;
   let revealInstance = null;
 
+  function normalizeLetterCase(val) {
+    if (!val) return 'both';
+    const lower = val.toLowerCase();
+    if (['both', 'separate', 'upper', 'lower'].includes(lower)) return lower;
+    if (lower === 'split' || lower === 'both-separate' || lower === 'independent') return 'separate';
+    if (lower === 'a' || lower === 'upper') return 'upper';
+    if (lower === 'lower') return 'lower';
+    if (lower === 'aa') return 'both';
+    return 'both';
+  }
+
   const options = {
     includeExtras: localStorage.getItem('phonics-flash-extras') === 'true',
+    includeSightWords: localStorage.getItem('phonics-flash-sight') === 'true',
     includeImages: localStorage.getItem('phonics-flash-images') === 'true',
+    letterCase: normalizeLetterCase(localStorage.getItem('phonics-flash-letter-case') || 'both'),
     mixMode: localStorage.getItem('phonics-flash-mix') === 'true',
     dictationMode: localStorage.getItem('phonics-flash-dictation') === 'true',
     quizMode: localStorage.getItem('phonics-flash-quiz') === 'true',
@@ -124,6 +137,12 @@
     // Check for URL parameters
     const urlConfig = parseURLParams();
     if (urlConfig) {
+      if (urlConfig.isChart) {
+        options.letterCase = urlConfig.letterCase;
+        openLetterChart(urlConfig.unitIds.length > 0 ? urlConfig.unitIds : null);
+        return;
+      }
+
       let qm = urlConfig.quiz;
       let dm = urlConfig.dictation;
       if (qm && dm) {
@@ -131,7 +150,9 @@
       }
       startSlideshow(urlConfig.unitIds, {
         includeExtras: urlConfig.extras,
+        includeSightWords: urlConfig.sightWords,
         includeImages: urlConfig.images,
+        letterCase: urlConfig.letterCase,
         mixMode: urlConfig.mix,
         dictationMode: dm,
         quizMode: qm
@@ -151,13 +172,24 @@
   // ── URL Parameter Parsing ──────────────────────────────────
   function parseURLParams() {
     const params = new URLSearchParams(window.location.search);
-    const units = params.get('units');
-    if (!units) return null;
+    const units = params.get('units') || params.get('u');
+    const qParam = params.get('q');
+    const chartParam = params.get('chart') || params.get('mode');
+
+    const isChart = chartParam === '1' || chartParam === 'chart' || qParam === 'chart' || qParam === '1';
+
+    // If neither units nor chart query is specified, return null
+    if (!units && !isChart) return null;
+
+    const caseParam = params.get('case') || params.get('c');
 
     return {
-      unitIds: units.split(/[,-]/).map(s => s.trim()).filter(Boolean),
+      isChart: isChart,
+      unitIds: units ? units.split(/[,-]/).map(s => s.trim()).filter(Boolean) : [],
       extras: params.get('extras') === '1',
+      sightWords: params.get('sight') === '1' || params.get('sightwords') === '1',
       images: params.get('images') !== '0', // default true
+      letterCase: caseParam ? normalizeLetterCase(caseParam) : (localStorage.getItem('phonics-flash-letter-case') || 'both'),
       mix: params.get('mix') === '1',
       dictation: params.get('dictation') === '1',
       quiz: params.get('quiz') === '1'
@@ -169,7 +201,9 @@
     const params = new URLSearchParams();
     params.set('units', unitIds.join('-'));
     if (opts.includeExtras) params.set('extras', '1');
+    if (opts.includeSightWords) params.set('sight', '1');
     if (!opts.includeImages) params.set('images', '0');
+    if (opts.letterCase && opts.letterCase !== 'both') params.set('case', opts.letterCase);
     if (opts.mixMode) params.set('mix', '1');
     if (opts.dictationMode) params.set('dictation', '1');
     if (opts.quizMode) params.set('quiz', '1');
@@ -186,6 +220,14 @@
     }
   }
 
+  // Helper to sync letter case buttons with state
+  function syncCaseButtons(activeCase) {
+    const btns = document.querySelectorAll('.case-btn');
+    btns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.case === activeCase);
+    });
+  }
+
   // Wire up toggles and buttons once on initialization
   function initMenuEvents() {
     document.getElementById('toggle-extras').addEventListener('click', (e) => {
@@ -195,10 +237,18 @@
       updateStartButton();
     });
 
+    document.getElementById('toggle-sight').addEventListener('click', (e) => {
+      options.includeSightWords = !options.includeSightWords;
+      syncOptionButton('toggle-sight', options.includeSightWords);
+      localStorage.setItem('phonics-flash-sight', options.includeSightWords);
+      updateStartButton();
+    });
+
     document.getElementById('toggle-images').addEventListener('click', (e) => {
       options.includeImages = !options.includeImages;
       syncOptionButton('toggle-images', options.includeImages);
       localStorage.setItem('phonics-flash-images', options.includeImages);
+      updateStartButton();
     });
 
     document.getElementById('toggle-mix').addEventListener('click', (e) => {
@@ -260,19 +310,25 @@
 
         // Reset and save all option buttons
         options.includeExtras = false;
+        options.includeSightWords = false;
         options.includeImages = false;
+        options.letterCase = 'both';
         options.mixMode = false;
         options.dictationMode = false;
         options.quizMode = false;
 
         syncOptionButton('toggle-extras', false);
+        syncOptionButton('toggle-sight', false);
         syncOptionButton('toggle-images', false);
+        syncCaseButtons('both');
         syncOptionButton('toggle-mix', false);
         syncOptionButton('toggle-dictation', false);
         syncOptionButton('toggle-quiz', false);
 
         localStorage.setItem('phonics-flash-extras', 'false');
+        localStorage.setItem('phonics-flash-sight', 'false');
         localStorage.setItem('phonics-flash-images', 'false');
+        localStorage.setItem('phonics-flash-letter-case', 'both');
         localStorage.setItem('phonics-flash-mix', 'false');
         localStorage.setItem('phonics-flash-dictation', 'false');
         localStorage.setItem('phonics-flash-quiz', 'false');
@@ -300,7 +356,9 @@
 
     // Set initial toggle states in UI
     syncOptionButton('toggle-extras', options.includeExtras);
+    syncOptionButton('toggle-sight', options.includeSightWords);
     syncOptionButton('toggle-images', options.includeImages);
+    syncCaseButtons(options.letterCase);
     syncOptionButton('toggle-mix', options.mixMode);
     syncOptionButton('toggle-dictation', options.dictationMode);
     syncOptionButton('toggle-quiz', options.quizMode);
@@ -337,6 +395,28 @@
         </div>
       </div>
       <div class="units-container">
+        ${level.id === 'L1' ? `
+          <div class="level-tools-bar">
+            <div class="case-selector-group" title="Select letter casing for Level 1">
+              <span class="case-label">Letter Case:</span>
+              <div class="case-btn-group">
+                <button class="case-btn ${options.letterCase === 'both' ? 'active' : ''}" data-case="both" title="Both side-by-side (Aa)">Aa</button>
+                <button class="case-btn ${options.letterCase === 'separate' ? 'active' : ''}" data-case="separate" title="Both independent slides (A & a)">A &amp; a</button>
+                <button class="case-btn ${options.letterCase === 'upper' ? 'active' : ''}" data-case="upper" title="Uppercase only (A)">A</button>
+                <button class="case-btn ${options.letterCase === 'lower' ? 'active' : ''}" data-case="lower" title="Lowercase only (a)">a</button>
+              </div>
+            </div>
+            <button class="chart-launch-btn" title="Open full screen letter chart for selected Level 1 units">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <span>Letter Chart</span>
+            </button>
+          </div>
+        ` : ''}
         <div class="units-grid">
           ${level.units.map(unit => {
             const isChecked = savedUnits.includes(unit.id);
@@ -373,6 +453,28 @@
       updateStartButton();
       saveSelectedUnits();
     });
+
+    // Level 1 specific handlers (Case buttons & Chart Launch button)
+    if (level.id === 'L1') {
+      card.querySelectorAll('.case-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const selectedCase = normalizeLetterCase(btn.dataset.case);
+          options.letterCase = selectedCase;
+          syncCaseButtons(selectedCase);
+          localStorage.setItem('phonics-flash-letter-case', selectedCase);
+          updateStartButton();
+        });
+      });
+
+      const chartBtn = card.querySelector('.chart-launch-btn');
+      if (chartBtn) {
+        chartBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openLetterChart();
+        });
+      }
+    }
 
     // Unit checkbox clicks
     card.querySelectorAll('.unit-checkbox').forEach(label => {
@@ -432,18 +534,121 @@
     }
   }
 
+  /**
+   * Transforms and deduplicates words for a unit according to opts (Images, LetterCase).
+   */
+  function prepareUnitWords(unit, isExtra = false, opts = options) {
+    const rawWords = isExtra ? (unit.extraWords || []) : (unit.words || []);
+    if (!rawWords || rawWords.length === 0) return [];
+
+    const isL1 = unit.levelId === 'L1' || (unit.id && unit.id.startsWith('L1'));
+
+    let words = rawWords.map(w => ({ ...w, isExtra }));
+
+    // If Level 1 and Images are disabled, deduplicate identical letters
+    if (isL1 && !opts.includeImages) {
+      const seen = new Set();
+      words = words.filter(w => {
+        const key = (w.word || '').toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    // Apply Letter Casing
+    const letterCase = opts.letterCase || 'both';
+
+    if (isL1) {
+      if (letterCase === 'separate') {
+        // Expand each word into two separate entries: Uppercase and Lowercase
+        const expanded = [];
+        words.forEach(w => {
+          const baseChar = w.word ? w.word.charAt(0) : '';
+          expanded.push({
+            ...w,
+            word: baseChar.toUpperCase()
+          });
+          expanded.push({
+            ...w,
+            word: baseChar.toLowerCase()
+          });
+        });
+        return expanded;
+      } else if (letterCase === 'upper') {
+        return words.map(w => ({
+          ...w,
+          word: w.word ? w.word.charAt(0).toUpperCase() : w.word
+        }));
+      } else if (letterCase === 'lower') {
+        return words.map(w => ({
+          ...w,
+          word: w.word ? w.word.charAt(0).toLowerCase() : w.word
+        }));
+      } else {
+        // 'both' -> e.g. "Aa"
+        return words.map(w => {
+          if (w.word && w.word.length >= 1) {
+            const first = w.word.charAt(0).toUpperCase();
+            const second = (w.word.length > 1 ? w.word.charAt(1) : w.word.charAt(0)).toLowerCase();
+            return { ...w, word: first + second };
+          }
+          return w;
+        });
+      }
+    }
+
+    return words;
+  }
+
+  function prepareUnitSightWords(unit) {
+    if (!unit || !unit.sightWords || unit.sightWords.length === 0) return [];
+    return unit.sightWords.map(sw => {
+      if (typeof sw === 'string') {
+        return { word: sw, isSightWord: true };
+      }
+      return { ...sw, isSightWord: true };
+    });
+  }
+
   function countWords(unitIds) {
     let count = 0;
+    const selectedSightWords = [];
+
     for (const level of phonicsData.levels) {
       for (const unit of level.units) {
         if (unitIds.includes(unit.id)) {
-          count += unit.words.length;
+          const unitWithLevel = { ...unit, levelId: level.id, levelName: level.name };
+          const mainWords = prepareUnitWords(unitWithLevel, false, options);
+          count += mainWords.length;
           if (options.includeExtras && unit.extraWords) {
-            count += unit.extraWords.length;
+            const extraWords = prepareUnitWords(unitWithLevel, true, options);
+            count += extraWords.length;
+          }
+          if (options.includeSightWords && unit.sightWords) {
+            const sightWords = prepareUnitSightWords(unitWithLevel);
+            if (options.mixMode) {
+              selectedSightWords.push(...sightWords);
+            } else {
+              count += sightWords.length;
+            }
           }
         }
       }
     }
+
+    if (options.includeSightWords && options.mixMode && selectedSightWords.length > 0) {
+      // Deduplicate sight words across selected units in Mix Mode
+      const seen = new Set();
+      const uniqueSight = selectedSightWords.filter(sw => {
+        const key = (sw.word || '').toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      count += uniqueSight.length;
+    }
+
     return count;
   }
 
@@ -525,17 +730,24 @@
       const unitSection = document.createElement('section');
 
       // Main words (shuffled)
-      const mainWords = unit.words.map(w => ({ ...w, isExtra: false }));
+      const mainWords = prepareUnitWords(unit, false, opts);
       shuffleArray(mainWords);
 
       // Extra words (shuffled)
       let extraWords = [];
       if (opts.includeExtras && unit.extraWords && unit.extraWords.length > 0) {
-        extraWords = unit.extraWords.map(w => ({ ...w, isExtra: true }));
+        extraWords = prepareUnitWords(unit, true, opts);
         shuffleArray(extraWords);
       }
 
-      const words = [...mainWords, ...extraWords];
+      // Sight words (shuffled) placed at the end of the unit
+      let sightWords = [];
+      if (opts.includeSightWords && unit.sightWords && unit.sightWords.length > 0) {
+        sightWords = prepareUnitSightWords(unit);
+        shuffleArray(sightWords);
+      }
+
+      const words = [...mainWords, ...extraWords, ...sightWords];
 
       words.forEach((wordData, index) => {
         const wordSection = createWordSlide(wordData, unit, index, words.length, opts);
@@ -553,7 +765,7 @@
 
     // Prepare main words queues per unit (shuffled)
     const mainQueues = units.map(unit => {
-      const words = unit.words.map(w => ({ ...w, isExtra: false }));
+      const words = prepareUnitWords(unit, false, opts);
       shuffleArray(words);
       return { unit, words };
     });
@@ -565,7 +777,7 @@
     let interleavedExtra = [];
     if (opts.includeExtras) {
       const extraQueues = units.map(unit => {
-        const words = (unit.extraWords || []).map(w => ({ ...w, isExtra: true }));
+        const words = prepareUnitWords(unit, true, opts);
         shuffleArray(words);
         return { unit, words };
       });
@@ -576,7 +788,6 @@
       if (interleavedMain.length > 0 && interleavedExtra.length > 0) {
         const lastMainUnitId = interleavedMain[interleavedMain.length - 1].unit.id;
         if (interleavedExtra[0].unit.id === lastMainUnitId) {
-          // Find the first element in interleavedExtra that has a different unit ID and swap
           const swapIdx = interleavedExtra.findIndex(item => item.unit.id !== lastMainUnitId);
           if (swapIdx > 0) {
             [interleavedExtra[0], interleavedExtra[swapIdx]] = [interleavedExtra[swapIdx], interleavedExtra[0]];
@@ -585,7 +796,33 @@
       }
     }
 
-    const interleaved = [...interleavedMain, ...interleavedExtra];
+    // Prepare sight words (deduplicated across all selected units)
+    let interleavedSight = [];
+    if (opts.includeSightWords) {
+      const allSightWords = [];
+      units.forEach(unit => {
+        if (unit.sightWords && unit.sightWords.length > 0) {
+          const sws = prepareUnitSightWords(unit);
+          sws.forEach(sw => {
+            allSightWords.push({ wordData: sw, unit });
+          });
+        }
+      });
+
+      // Deduplicate sight words by word string (case-insensitive)
+      const seen = new Set();
+      const uniqueSightItems = allSightWords.filter(item => {
+        const key = (item.wordData.word || '').toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      shuffleArray(uniqueSightItems);
+      interleavedSight = uniqueSightItems;
+    }
+
+    const interleaved = [...interleavedMain, ...interleavedExtra, ...interleavedSight];
 
     // Build flat slide sequence
     interleaved.forEach((item, index) => {
@@ -662,9 +899,9 @@
 
   // ── Select a Distractor Word ────────────────────────────────
   function getDistractorWord(wordData, unit, opts) {
-    let unitWords = [...unit.words];
+    let unitWords = prepareUnitWords(unit, false, opts);
     if (opts.includeExtras && unit.extraWords) {
-      unitWords = [...unitWords, ...unit.extraWords];
+      unitWords = [...unitWords, ...prepareUnitWords(unit, true, opts)];
     }
 
     const candidates = unitWords.filter(w => w.word.toLowerCase() !== wordData.word.toLowerCase());
@@ -677,9 +914,10 @@
     if (level) {
       let levelWords = [];
       level.units.forEach(u => {
-        levelWords = [...levelWords, ...u.words];
+        const uWithLevel = { ...u, levelId: level.id, levelName: level.name };
+        levelWords = [...levelWords, ...prepareUnitWords(uWithLevel, false, opts)];
         if (opts.includeExtras && u.extraWords) {
-          levelWords = [...levelWords, ...u.extraWords];
+          levelWords = [...levelWords, ...prepareUnitWords(uWithLevel, true, opts)];
         }
       });
       const levelCandidates = levelWords.filter(w => w.word.toLowerCase() !== wordData.word.toLowerCase());
@@ -711,8 +949,10 @@
     section.dataset.levelId = unit.levelId;
     section.dataset.progress = `${index + 1} / ${total}`;
     if (wordData.isExtra) section.dataset.extra = 'true';
+    if (wordData.isSightWord) section.dataset.sightWord = 'true';
 
     const hasImage = !!wordData.image;
+    const isSightWord = !!wordData.isSightWord;
 
     if (opts && opts.quizMode) {
       section.dataset.quizMode = "true";
@@ -724,6 +964,7 @@
 
       section.innerHTML = `
         <div class="slide-center quiz-mode-layout">
+          ${isSightWord ? '<div class="sight-word-badge">Sight Word</div>' : ''}
           ${hasImage
             ? `<img src="${wordData.image}" alt="Quiz Image" class="word-image quiz-image"
                  onerror="this.style.display='none'">`
@@ -738,9 +979,10 @@
       const showImages = opts ? opts.includeImages : false;
       const showImageInDictation = opts ? opts.dictationMode : false;
 
-      // Only render the word (+ optional image) — no chrome
+      // Only render the word (+ optional image + optional sight word badge) — no chrome
       section.innerHTML = `
         <div class="slide-center">
+          ${isSightWord ? '<div class="sight-word-badge">Sight Word</div>' : ''}
           ${(showImages || showImageInDictation) && hasImage
             ? `<img src="${wordData.image}" alt="${wordData.word}" class="word-image"
                  onerror="this.style.display='none'">`
@@ -1054,6 +1296,340 @@
     document.getElementById('menu-screen').classList.remove('hidden');
 
     // Repopulate menu (especially important if launched via bookmark URL)
+    renderMenu();
+
+    // Clear URL params (theme is saved in localStorage, not needed in URL)
+    if (window.location.search) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }
+
+  // ── Letter Chart Mode (Level 1 Fullscreen Grid) ───────────
+  let chartKeyboardHandler = null;
+  let currentChartIndex = -1;
+
+  function updateChartURL(targetUnits) {
+    const params = new URLSearchParams();
+    params.set('q', 'chart');
+    if (targetUnits && targetUnits.length > 0) {
+      const allL1Count = phonicsData.levels.find(l => l.id === 'L1')?.units.length || 8;
+      if (targetUnits.length < allL1Count) {
+        params.set('units', targetUnits.map(u => u.id).join('-'));
+      }
+    }
+    if (options.letterCase && options.letterCase !== 'both') {
+      params.set('case', options.letterCase);
+    }
+    const newURL = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', newURL);
+  }
+
+  function openLetterChart(customUnitIds = null) {
+    const selectedIds = customUnitIds || getSelectedUnitIds();
+    const l1Level = phonicsData.levels.find(l => l.id === 'L1');
+    if (!l1Level) return;
+
+    // Filter selected Level 1 units, or if none in Level 1 are selected, use all Level 1 units
+    let targetUnits = l1Level.units.filter(u => selectedIds.includes(u.id));
+    if (targetUnits.length === 0) {
+      targetUnits = l1Level.units;
+    }
+
+    currentChartIndex = -1;
+
+    // Update URL with q=chart
+    updateChartURL(targetUnits);
+
+    // Switch screen to chart-screen
+    document.getElementById('menu-screen').classList.add('hidden');
+    document.getElementById('slideshow-screen').classList.add('hidden');
+    document.getElementById('chart-screen').classList.remove('hidden');
+
+    // Render the grid
+    renderLetterChartGrid(targetUnits);
+
+    // Wire up header buttons inside chart screen
+    const backBtn = document.getElementById('chart-back-btn');
+    if (backBtn) {
+      backBtn.onclick = closeLetterChart;
+    }
+
+    // Wire up case buttons inside chart screen
+    const chartCaseBtns = document.querySelectorAll('#chart-screen .case-btn');
+    chartCaseBtns.forEach(btn => {
+      btn.onclick = () => {
+        const selectedCase = normalizeLetterCase(btn.dataset.case);
+        options.letterCase = selectedCase;
+        syncCaseButtons(selectedCase);
+        localStorage.setItem('phonics-flash-letter-case', selectedCase);
+        updateStartButton();
+        updateChartURL(targetUnits);
+        currentChartIndex = -1;
+        renderLetterChartGrid(targetUnits);
+      };
+    });
+
+    // Wire up keyboard shortcuts (Arrow keys, letters a-z, Space/Enter, Escape)
+    if (chartKeyboardHandler) {
+      window.removeEventListener('keydown', chartKeyboardHandler);
+    }
+    chartKeyboardHandler = (e) => {
+      if (e.key === 'Escape') {
+        closeLetterChart();
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        navigateChart2D('right');
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        navigateChart2D('left');
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        navigateChart2D('down');
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        navigateChart2D('up');
+        return;
+      }
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        if (currentChartIndex >= 0) {
+          setActiveChartTile(currentChartIndex, true);
+        } else {
+          setActiveChartTile(0, true);
+        }
+        return;
+      }
+
+      const char = e.key.toUpperCase();
+      if (/^[A-Z]$/.test(char)) {
+        const tiles = Array.from(document.querySelectorAll('#chart-grid .letter-tile'));
+        const targetIndex = tiles.findIndex(t => t.dataset.baseLetter === char);
+        if (targetIndex >= 0) {
+          setActiveChartTile(targetIndex, true);
+        }
+      }
+    };
+    window.addEventListener('keydown', chartKeyboardHandler);
+  }
+
+  function setActiveChartTile(index, playAudio = true) {
+    const tiles = Array.from(document.querySelectorAll('#chart-grid .letter-tile'));
+    if (tiles.length === 0) return;
+
+    if (index < 0) index = 0;
+    if (index >= tiles.length) index = tiles.length - 1;
+
+    currentChartIndex = index;
+
+    tiles.forEach((t, i) => {
+      t.classList.toggle('active-focus', i === currentChartIndex);
+    });
+
+    const targetTile = tiles[currentChartIndex];
+    if (targetTile && playAudio) {
+      playLetterTile(targetTile);
+    }
+  }
+
+  function navigateChart2D(direction) {
+    const rows = Array.from(document.querySelectorAll('#chart-grid .chart-row'));
+    if (rows.length === 0) return;
+
+    const allTiles = Array.from(document.querySelectorAll('#chart-grid .letter-tile'));
+    if (allTiles.length === 0) return;
+
+    if (currentChartIndex < 0) {
+      setActiveChartTile(0, true);
+      return;
+    }
+
+    const currentTile = allTiles[currentChartIndex];
+    const currentRowEl = currentTile ? currentTile.closest('.chart-row') : null;
+    const currentRowIndex = rows.indexOf(currentRowEl);
+    const rowTiles = currentRowEl ? Array.from(currentRowEl.querySelectorAll('.letter-tile')) : [];
+    const currentColIndex = rowTiles.indexOf(currentTile);
+
+    if (direction === 'right') {
+      const nextIndex = (currentChartIndex + 1) % allTiles.length;
+      setActiveChartTile(nextIndex, true);
+    } else if (direction === 'left') {
+      const nextIndex = (currentChartIndex - 1 + allTiles.length) % allTiles.length;
+      setActiveChartTile(nextIndex, true);
+    } else if (direction === 'down') {
+      const nextRowIndex = (currentRowIndex + 1) % rows.length;
+      const nextRowTiles = Array.from(rows[nextRowIndex].querySelectorAll('.letter-tile'));
+      const targetCol = Math.min(currentColIndex, nextRowTiles.length - 1);
+      const targetTile = nextRowTiles[targetCol];
+      const targetIndex = allTiles.indexOf(targetTile);
+      setActiveChartTile(targetIndex, true);
+    } else if (direction === 'up') {
+      const prevRowIndex = (currentRowIndex - 1 + rows.length) % rows.length;
+      const prevRowTiles = Array.from(rows[prevRowIndex].querySelectorAll('.letter-tile'));
+      const targetCol = Math.min(currentColIndex, prevRowTiles.length - 1);
+      const targetTile = prevRowTiles[targetCol];
+      const targetIndex = allTiles.indexOf(targetTile);
+      setActiveChartTile(targetIndex, true);
+    }
+  }
+
+  function renderLetterChartGrid(targetUnits) {
+    const grid = document.getElementById('chart-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    // Collect all unique base letters from the target units in order
+    const letterMap = new Map();
+    targetUnits.forEach(unit => {
+      unit.words.forEach(w => {
+        const baseLetter = w.word ? w.word.charAt(0).toUpperCase() : '';
+        if (baseLetter && !letterMap.has(baseLetter)) {
+          letterMap.set(baseLetter, {
+            baseLetter: baseLetter,
+            word: w.word,
+            audio: w.audio || `media/SmartPhonics/1/sounds/SingleLetters/${baseLetter}${baseLetter.toLowerCase()}.mp3`
+          });
+        }
+      });
+    });
+
+    const uniqueLetters = Array.from(letterMap.values());
+    // Sort in standard alphabetical order
+    uniqueLetters.sort((a, b) => a.baseLetter.localeCompare(b.baseLetter));
+
+    // Determine letter items based on active case
+    const letterCase = options.letterCase || 'both';
+    let displayItems = [];
+
+    if (letterCase === 'separate') {
+      uniqueLetters.forEach(item => {
+        displayItems.push({
+          displayText: item.baseLetter.toUpperCase(),
+          baseLetter: item.baseLetter,
+          audio: item.audio
+        });
+        displayItems.push({
+          displayText: item.baseLetter.toLowerCase(),
+          baseLetter: item.baseLetter,
+          audio: item.audio
+        });
+      });
+    } else if (letterCase === 'upper') {
+      displayItems = uniqueLetters.map(item => ({
+        displayText: item.baseLetter.toUpperCase(),
+        baseLetter: item.baseLetter,
+        audio: item.audio
+      }));
+    } else if (letterCase === 'lower') {
+      displayItems = uniqueLetters.map(item => ({
+        displayText: item.baseLetter.toLowerCase(),
+        baseLetter: item.baseLetter,
+        audio: item.audio
+      }));
+    } else {
+      // 'both'
+      displayItems = uniqueLetters.map(item => ({
+        displayText: item.baseLetter.toUpperCase() + item.baseLetter.toLowerCase(),
+        baseLetter: item.baseLetter,
+        audio: item.audio
+      }));
+    }
+
+    // Update count badge
+    const badge = document.getElementById('chart-count-badge');
+    if (badge) {
+      badge.textContent = `${displayItems.length} Letter${displayItems.length > 1 ? 's' : ''}`;
+    }
+
+    // Update case button active state in chart header
+    syncCaseButtons(letterCase);
+
+    // Calculate balanced row distribution
+    const rowCounts = calculateRowDistribution(displayItems.length);
+    grid.dataset.rows = rowCounts.length;
+
+    let itemIndex = 0;
+    rowCounts.forEach(count => {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'chart-row';
+
+      for (let i = 0; i < count; i++) {
+        if (itemIndex >= displayItems.length) break;
+        const currentIdx = itemIndex;
+        const item = displayItems[itemIndex++];
+
+        const tile = document.createElement('div');
+        tile.className = 'letter-tile';
+        tile.dataset.baseLetter = item.baseLetter;
+        tile.dataset.audio = item.audio;
+        tile.dataset.text = item.displayText;
+        tile.dataset.tileIndex = currentIdx;
+        tile.innerHTML = `<span class="letter-tile-text">${item.displayText}</span>`;
+
+        tile.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setActiveChartTile(currentIdx, true);
+        });
+
+        rowEl.appendChild(tile);
+      }
+
+      grid.appendChild(rowEl);
+    });
+  }
+
+  function calculateRowDistribution(totalItems) {
+    if (totalItems <= 4) {
+      return [totalItems];
+    }
+    let numRows = 2;
+    if (totalItems <= 8) numRows = 2;
+    else if (totalItems <= 18) numRows = 3;
+    else if (totalItems <= 28) numRows = 4;
+    else if (totalItems <= 42) numRows = 5;
+    else numRows = 6;
+
+    const base = Math.floor(totalItems / numRows);
+    const remainder = totalItems % numRows;
+    const distribution = [];
+    for (let r = 0; r < numRows; r++) {
+      distribution.push(r < remainder ? base + 1 : base);
+    }
+    return distribution;
+  }
+
+  function playLetterTile(tile) {
+    if (!tile) return;
+
+    // Visual pulse
+    tile.classList.remove('playing');
+    void tile.offsetWidth; // trigger reflow
+    tile.classList.add('playing');
+    setTimeout(() => {
+      tile.classList.remove('playing');
+    }, 600);
+
+    const audioPath = tile.dataset.audio;
+    const text = tile.dataset.text;
+    AudioPlayer.playWord(text, audioPath || undefined);
+  }
+
+  function closeLetterChart() {
+    AudioPlayer.stop();
+    if (chartKeyboardHandler) {
+      window.removeEventListener('keydown', chartKeyboardHandler);
+      chartKeyboardHandler = null;
+    }
+    currentChartIndex = -1;
+    document.getElementById('chart-screen').classList.add('hidden');
+    document.getElementById('menu-screen').classList.remove('hidden');
     renderMenu();
 
     // Clear URL params (theme is saved in localStorage, not needed in URL)

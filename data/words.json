@@ -535,6 +535,17 @@
             {
               "word": "cab"
             }
+          ],
+          "sightWords": [
+            {
+              "word": "the"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "a"
+            }
           ]
         },
         {
@@ -607,6 +618,17 @@
             },
             {
               "word": "mad"
+            }
+          ],
+          "sightWords": [
+            {
+              "word": "is"
+            },
+            {
+              "word": "to"
+            },
+            {
+              "word": "and"
             }
           ]
         },

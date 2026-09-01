@@ -30,6 +30,10 @@
         <span>Extra Words</span>
       </button>
 
+      <button id="toggle-sight" class="option-btn" title="Include sight words with selected units">
+        <span>Sight Words</span>
+      </button>
+
       <button id="toggle-images" class="option-btn" title="Show images with words">
         <span>Images</span>
       </button>
@@ -90,6 +94,41 @@
     <!-- Persistent chrome overlay (unit info, audio, progress) -->
     <!-- Lives outside .reveal so it doesn't animate with slide transitions -->
     <div id="slideshow-chrome"></div>
+  </div>
+
+  <!-- ============================================================
+       LETTER CHART SCREEN (Full Screen Level 1 View)
+       ============================================================ -->
+  <div id="chart-screen" class="hidden">
+    <header class="chart-header">
+      <button id="chart-back-btn" title="Back to menu (Esc)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+        Menu
+      </button>
+
+      <div class="chart-header-center">
+        <h2 class="chart-title">Level 1 Letter Chart</h2>
+        <span id="chart-count-badge" class="chart-count-badge">26 Letters</span>
+      </div>
+
+      <div class="chart-case-bar">
+        <div class="case-btn-group">
+          <button class="case-btn" data-case="both" title="Both side-by-side (Aa)">Aa</button>
+          <button class="case-btn" data-case="separate" title="Both independent slides (A & a)">A &amp; a</button>
+          <button class="case-btn" data-case="upper" title="Uppercase only (A)">A</button>
+          <button class="case-btn" data-case="lower" title="Lowercase only (a)">a</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="chart-content">
+      <div id="chart-grid" class="chart-grid">
+        <!-- Dynamically populated by app.js -->
+      </div>
+    </main>
   </div>
 
   <!-- Theme Toggle (always visible, persists across screens) -->
