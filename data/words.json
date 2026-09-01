@@ -55,7 +55,24 @@
               "audio": "media/SmartPhonics/1/sounds/SingleLetters/Cc.mp3"
             }
           ],
-          "extraWords": []
+          "extraWords": [],
+          "sightWords": [
+            {
+              "word": "is"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "see"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "under"
+            }
+          ]
         },
         {
           "id": "L1U2",
@@ -108,7 +125,39 @@
               "audio": "media/SmartPhonics/1/sounds/SingleLetters/Ff.mp3"
             }
           ],
-          "extraWords": []
+          "extraWords": [],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "an"
+            },
+            {
+              "word": "are"
+            },
+            {
+              "word": "I"
+            },
+            {
+              "word": "in"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "see"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "they"
+            },
+            {
+              "word": "under"
+            }
+          ]
         },
         {
           "id": "L1U3",
@@ -161,7 +210,30 @@
               "audio": "media/SmartPhonics/1/sounds/SingleLetters/Ii.mp3"
             }
           ],
-          "extraWords": []
+          "extraWords": [],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "am"
+            },
+            {
+              "word": "an"
+            },
+            {
+              "word": "I"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "my"
+            },
+            {
+              "word": "this"
+            }
+          ]
         },
         {
           "id": "L1U4",
@@ -214,7 +286,27 @@
               "audio": "media/SmartPhonics/1/sounds/SingleLetters/Ll.mp3"
             }
           ],
-          "extraWords": []
+          "extraWords": [],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "does not"
+            },
+            {
+              "word": "has"
+            },
+            {
+              "word": "like"
+            },
+            {
+              "word": "likes"
+            },
+            {
+              "word": "the"
+            }
+          ]
         },
         {
           "id": "L1U5",
@@ -267,7 +359,18 @@
               "audio": "media/SmartPhonics/1/sounds/SingleLetters/Oo.mp3"
             }
           ],
-          "extraWords": []
+          "extraWords": [],
+          "sightWords": [
+            {
+              "word": "has"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "who"
+            }
+          ]
         },
         {
           "id": "L1U6",
@@ -320,7 +423,30 @@
               "audio": "media/SmartPhonics/1/sounds/SingleLetters/Rr.mp3"
             }
           ],
-          "extraWords": []
+          "extraWords": [],
+          "sightWords": [
+            {
+              "word": "be"
+            },
+            {
+              "word": "I"
+            },
+            {
+              "word": "like"
+            },
+            {
+              "word": "my"
+            },
+            {
+              "word": "please"
+            },
+            {
+              "word": "says"
+            },
+            {
+              "word": "the"
+            }
+          ]
         },
         {
           "id": "L1U7",
@@ -388,7 +514,27 @@
               "audio": "media/SmartPhonics/1/sounds/SingleLetters/Vv.mp3"
             }
           ],
-          "extraWords": []
+          "extraWords": [],
+          "sightWords": [
+            {
+              "word": "in"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "oh"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "under"
+            },
+            {
+              "word": "where"
+            }
+          ]
         },
         {
           "id": "L1U8",
@@ -456,7 +602,30 @@
               "audio": "media/SmartPhonics/1/sounds/SingleLetters/Zz.mp3"
             }
           ],
-          "extraWords": []
+          "extraWords": [],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "I"
+            },
+            {
+              "word": "in"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "see"
+            },
+            {
+              "word": "the"
+            }
+          ]
         }
       ]
     },
@@ -538,13 +707,22 @@
           ],
           "sightWords": [
             {
-              "word": "the"
-            },
-            {
-              "word": "is"
-            },
-            {
               "word": "a"
+            },
+            {
+              "word": "has"
+            },
+            {
+              "word": "his"
+            },
+            {
+              "word": "oh"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "the"
             }
           ]
         },
@@ -622,13 +800,25 @@
           ],
           "sightWords": [
             {
+              "word": "a"
+            },
+            {
+              "word": "goodbye"
+            },
+            {
+              "word": "has"
+            },
+            {
               "word": "is"
             },
             {
-              "word": "to"
+              "word": "oh"
             },
             {
-              "word": "and"
+              "word": "on"
+            },
+            {
+              "word": "the"
             }
           ]
         },
@@ -703,6 +893,29 @@
             {
               "word": "leg"
             }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "has"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "oh"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "paints"
+            },
+            {
+              "word": "the"
+            }
           ]
         },
         {
@@ -775,6 +988,23 @@
             },
             {
               "word": "sin"
+            }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "has"
+            },
+            {
+              "word": "oh"
+            },
+            {
+              "word": "sees"
+            },
+            {
+              "word": "the"
             }
           ]
         },
@@ -849,6 +1079,26 @@
             {
               "word": "tin"
             }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "fun"
+            },
+            {
+              "word": "have"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "run"
+            },
+            {
+              "word": "the"
+            }
           ]
         },
         {
@@ -921,6 +1171,26 @@
             },
             {
               "word": "fog"
+            }
+          ],
+          "sightWords": [
+            {
+              "word": "and"
+            },
+            {
+              "word": "are"
+            },
+            {
+              "word": "not"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "the"
             }
           ]
         },
@@ -995,6 +1265,26 @@
             {
               "word": "gut"
             }
+          ],
+          "sightWords": [
+            {
+              "word": "are"
+            },
+            {
+              "word": "in"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "one"
+            },
+            {
+              "word": "the"
+            }
           ]
         },
         {
@@ -1067,6 +1357,23 @@
             },
             {
               "word": "sum"
+            }
+          ],
+          "sightWords": [
+            {
+              "word": "in"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "says"
+            },
+            {
+              "word": "sorry"
+            },
+            {
+              "word": "the"
             }
           ]
         }
@@ -1147,6 +1454,38 @@
             {
               "word": "sale"
             }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "at"
+            },
+            {
+              "word": "away"
+            },
+            {
+              "word": "flies"
+            },
+            {
+              "word": "in"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "there"
+            },
+            {
+              "word": "to"
+            },
+            {
+              "word": "with"
+            }
           ]
         },
         {
@@ -1219,6 +1558,41 @@
             },
             {
               "word": "gaze"
+            }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "at"
+            },
+            {
+              "word": "birthday"
+            },
+            {
+              "word": "I"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "it"
+            },
+            {
+              "word": "look"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "says"
+            },
+            {
+              "word": "see"
+            },
+            {
+              "word": "the"
             }
           ]
         },
@@ -1293,6 +1667,26 @@
             {
               "word": "ripe"
             }
+          ],
+          "sightWords": [
+            {
+              "word": "in"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "it"
+            },
+            {
+              "word": "race"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "to"
+            }
           ]
         },
         {
@@ -1365,6 +1759,26 @@
             },
             {
               "word": "nice"
+            }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "by"
+            },
+            {
+              "word": "have"
+            },
+            {
+              "word": "in"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "to"
             }
           ]
         },
@@ -1439,6 +1853,44 @@
             {
               "word": "fore"
             }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "and"
+            },
+            {
+              "word": "her"
+            },
+            {
+              "word": "his"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "oh"
+            },
+            {
+              "word": "puts"
+            },
+            {
+              "word": "sees"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "there"
+            },
+            {
+              "word": "to"
+            },
+            {
+              "word": "water"
+            }
           ]
         },
         {
@@ -1512,6 +1964,38 @@
             {
               "word": "node"
             }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "drops"
+            },
+            {
+              "word": "goes"
+            },
+            {
+              "word": "has"
+            },
+            {
+              "word": "in"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "oh"
+            },
+            {
+              "word": "sees"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "to"
+            }
           ]
         },
         {
@@ -1584,6 +2068,20 @@
             },
             {
               "word": "duke"
+            }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "the"
             }
           ]
         }
@@ -1679,6 +2177,47 @@
             {
               "word": "flat"
             }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "and"
+            },
+            {
+              "word": "around"
+            },
+            {
+              "word": "by"
+            },
+            {
+              "word": "hands"
+            },
+            {
+              "word": "happy"
+            },
+            {
+              "word": "her"
+            },
+            {
+              "word": "his"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "over"
+            },
+            {
+              "word": "sees"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "under"
+            }
           ]
         },
         {
@@ -1771,6 +2310,35 @@
             },
             {
               "word": "fret"
+            }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "and"
+            },
+            {
+              "word": "are"
+            },
+            {
+              "word": "by"
+            },
+            {
+              "word": "in"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "kisses"
+            },
+            {
+              "word": "lives"
+            },
+            {
+              "word": "the"
             }
           ]
         },
@@ -1865,6 +2433,29 @@
             {
               "word": "slot"
             }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "for"
+            },
+            {
+              "word": "go"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "picnic"
+            },
+            {
+              "word": "trip"
+            },
+            {
+              "word": "your"
+            }
           ]
         },
         {
@@ -1957,6 +2548,41 @@
             },
             {
               "word": "drag"
+            }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "and"
+            },
+            {
+              "word": "are"
+            },
+            {
+              "word": "band"
+            },
+            {
+              "word": "contest"
+            },
+            {
+              "word": "great"
+            },
+            {
+              "word": "guess"
+            },
+            {
+              "word": "in"
+            },
+            {
+              "word": "plays"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "what"
             }
           ]
         },
@@ -2051,6 +2677,26 @@
             {
               "word": "swat"
             }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "by"
+            },
+            {
+              "word": "in"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "the"
+            }
           ]
         },
         {
@@ -2143,6 +2789,38 @@
             },
             {
               "word": "sink"
+            }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "away"
+            },
+            {
+              "word": "can"
+            },
+            {
+              "word": "fly"
+            },
+            {
+              "word": "have"
+            },
+            {
+              "word": "I"
+            },
+            {
+              "word": "play"
+            },
+            {
+              "word": "says"
+            },
+            {
+              "word": "scares"
+            },
+            {
+              "word": "the"
             }
           ]
         },
@@ -2237,6 +2915,41 @@
             {
               "word": "chop"
             }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "and"
+            },
+            {
+              "word": "away"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "it"
+            },
+            {
+              "word": "no"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "sees"
+            },
+            {
+              "word": "silly"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "there"
+            }
           ]
         },
         {
@@ -2329,6 +3042,56 @@
             },
             {
               "word": "whine"
+            }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "all"
+            },
+            {
+              "word": "and"
+            },
+            {
+              "word": "animals"
+            },
+            {
+              "word": "are"
+            },
+            {
+              "word": "are not"
+            },
+            {
+              "word": "but"
+            },
+            {
+              "word": "do not"
+            },
+            {
+              "word": "eat"
+            },
+            {
+              "word": "have"
+            },
+            {
+              "word": "in"
+            },
+            {
+              "word": "live"
+            },
+            {
+              "word": "some"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "they"
+            },
+            {
+              "word": "water"
             }
           ]
         }
@@ -2429,6 +3192,26 @@
             {
               "word": "lead"
             }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "has"
+            },
+            {
+              "word": "in"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "says"
+            },
+            {
+              "word": "the"
+            }
           ]
         },
         {
@@ -2521,6 +3304,38 @@
             },
             {
               "word": "grow"
+            }
+          ],
+          "sightWords": [
+            {
+              "word": "and"
+            },
+            {
+              "word": "bubble"
+            },
+            {
+              "word": "hungry"
+            },
+            {
+              "word": "I"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "more"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "says"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "want"
             }
           ]
         },
@@ -2615,6 +3430,38 @@
             {
               "word": "may"
             }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "and"
+            },
+            {
+              "word": "hooray"
+            },
+            {
+              "word": "in"
+            },
+            {
+              "word": "jump"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "splash"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "they"
+            },
+            {
+              "word": "with"
+            }
           ]
         },
         {
@@ -2701,6 +3548,38 @@
             },
             {
               "word": "soy"
+            }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "for"
+            },
+            {
+              "word": "he"
+            },
+            {
+              "word": "in"
+            },
+            {
+              "word": "jumps"
+            },
+            {
+              "word": "no"
+            },
+            {
+              "word": "says"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "with"
+            },
+            {
+              "word": "wow"
             }
           ]
         },
@@ -2791,6 +3670,47 @@
             },
             {
               "word": "pound"
+            }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "an"
+            },
+            {
+              "word": "and"
+            },
+            {
+              "word": "comes"
+            },
+            {
+              "word": "has"
+            },
+            {
+              "word": "he"
+            },
+            {
+              "word": "here"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "it"
+            },
+            {
+              "word": "magic"
+            },
+            {
+              "word": "puts on"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "watch out"
             }
           ]
         },
@@ -2885,6 +3805,44 @@
             {
               "word": "curl"
             }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "and"
+            },
+            {
+              "word": "by"
+            },
+            {
+              "word": "in"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "it"
+            },
+            {
+              "word": "no"
+            },
+            {
+              "word": "oh"
+            },
+            {
+              "word": "she"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "under"
+            },
+            {
+              "word": "with"
+            }
           ]
         },
         {
@@ -2978,6 +3936,41 @@
             {
               "word": "sort"
             }
+          ],
+          "sightWords": [
+            {
+              "word": "a"
+            },
+            {
+              "word": "and"
+            },
+            {
+              "word": "at"
+            },
+            {
+              "word": "has"
+            },
+            {
+              "word": "he"
+            },
+            {
+              "word": "in"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "race"
+            },
+            {
+              "word": "strong"
+            },
+            {
+              "word": "the"
+            }
           ]
         },
         {
@@ -3068,6 +4061,50 @@
             {
               "word": "root"
             }
+          ],
+          "sightWords": [
+            {
+              "word": "asks"
+            },
+            {
+              "word": "for"
+            },
+            {
+              "word": "he"
+            },
+            {
+              "word": "here"
+            },
+            {
+              "word": "his"
+            },
+            {
+              "word": "is"
+            },
+            {
+              "word": "it"
+            },
+            {
+              "word": "my"
+            },
+            {
+              "word": "on"
+            },
+            {
+              "word": "says"
+            },
+            {
+              "word": "silly"
+            },
+            {
+              "word": "the"
+            },
+            {
+              "word": "where"
+            },
+            {
+              "word": "you"
+            }
           ]
         },
         {
@@ -3143,22 +4180,22 @@
             {
               "word": "author"
             },
-			   {
+            {
               "word": "audio"
             },
             {
               "word": "claw"
             },
-			   {
+            {
               "word": "hawk"
             },
             {
               "word": "saw"
             },
-			  {
+            {
               "word": "wall"
             },
-			   {
+            {
               "word": "call"
             },
             {
@@ -3239,22 +4276,22 @@
             {
               "word": "limb"
             },
-			   {
+            {
               "word": "bomb"
             },
             {
               "word": "knot"
             },
-			   {
+            {
               "word": "know"
             },
             {
               "word": "knob"
             },
-			  {
+            {
               "word": "wreck"
             },
-			   {
+            {
               "word": "wrench"
             },
             {
