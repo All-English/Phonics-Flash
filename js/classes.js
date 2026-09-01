@@ -69,27 +69,42 @@ window.ClassesManager = (() => {
     const currentDay = dayNames[date.getDay()];
     const currentMinutes = date.getHours() * 60 + date.getMinutes();
 
-    for (const cls of classes) {
-      if (!cls.schedule || !Array.isArray(cls.schedule.days) || !cls.schedule.days.includes(currentDay)) {
-        continue;
-      }
-
+    // Filter classes that run on the current day
+    const todaysClasses = classes.filter(cls => 
+      cls.schedule && Array.isArray(cls.schedule.days) && cls.schedule.days.includes(currentDay)
+    ).map(cls => {
       const startParts = (cls.schedule.startTime || '00:00').split(':').map(Number);
       const endParts = (cls.schedule.endTime || '23:59').split(':').map(Number);
-
-      const startMinutes = (startParts[0] || 0) * 60 + (startParts[1] || 0);
-      let endMinutes = (endParts[0] || 0) * 60 + (endParts[1] || 0);
-      if (endMinutes <= startMinutes) {
-        endMinutes = startMinutes + 60; // Default 1 hour duration
+      const startMin = (startParts[0] || 0) * 60 + (startParts[1] || 0);
+      let endMin = (endParts[0] || 0) * 60 + (endParts[1] || 0);
+      if (endMin <= startMin) {
+        endMin = startMin + 45; // Default 45 min duration
       }
+      return { cls, startMin, endMin };
+    });
 
-      // Active window: 30 minutes before class starts until scheduled end time
-      const windowStart = startMinutes - 30;
-      const windowEnd = endMinutes;
+    if (todaysClasses.length === 0) return null;
 
-      if (currentMinutes >= windowStart && currentMinutes <= windowEnd) {
-        return cls;
-      }
+    // 1. First Priority: Is a class currently in-session right now?
+    const inSession = todaysClasses.filter(c => currentMinutes >= c.startMin && currentMinutes < c.endMin);
+    if (inSession.length > 0) {
+      // If boundary overlap, pick the most recently started active class
+      inSession.sort((a, b) => b.startMin - a.startMin);
+      return inSession[0].cls;
+    }
+
+    // 2. Second Priority: An upcoming class starting soon (within 20 minutes before class)
+    const upcoming = todaysClasses.filter(c => currentMinutes < c.startMin && (c.startMin - currentMinutes) <= 20);
+    if (upcoming.length > 0) {
+      upcoming.sort((a, b) => a.startMin - b.startMin);
+      return upcoming[0].cls;
+    }
+
+    // 3. Third Priority: Class just finished (within 10 minutes grace wrap-up window)
+    const justEnded = todaysClasses.filter(c => currentMinutes >= c.endMin && (currentMinutes - c.endMin) <= 10);
+    if (justEnded.length > 0) {
+      justEnded.sort((a, b) => b.endMin - a.endMin);
+      return justEnded[0].cls;
     }
 
     return null;
