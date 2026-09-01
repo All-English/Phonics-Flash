@@ -98,6 +98,29 @@
     initTheme();
     initMenuEvents();
 
+    // Check auto-schedule matching for classes
+    if (typeof ClassesManager !== 'undefined') {
+      const scheduledClass = ClassesManager.findCurrentScheduledClass();
+      if (scheduledClass) {
+        ClassesManager.setActiveClassId(scheduledClass.id);
+        applyClassProfile(scheduledClass);
+        showToast(`⏰ Auto-selected: ${scheduledClass.name}`, 'info', 4000);
+      } else {
+        const activeClass = ClassesManager.getActiveClass();
+        if (activeClass) {
+          applyClassProfile(activeClass);
+        }
+      }
+      initClassesUI();
+
+      // Cloud pull in background if configured
+      ClassesManager.syncCloud().then(res => {
+        if (res && res.success && res.source === 'remote_loaded') {
+          initClassesUI();
+        }
+      }).catch(console.warn);
+    }
+
     // Log audio engine configuration status to assist in debugging
     if (typeof ELEVENLABS_CONFIG !== 'undefined') {
       if (!ELEVENLABS_CONFIG.apiKey || ELEVENLABS_CONFIG.apiKey === 'your-api-key-here') {
@@ -159,6 +182,49 @@
       });
     } else {
       renderMenu();
+    }
+  }
+
+  // ── Class Profile Application ──────────────────────────────
+  function applyClassProfile(cls) {
+    if (!cls) return;
+
+    if (cls.options) {
+      options.includeExtras = !!cls.options.includeExtras;
+      options.includeSightWords = !!cls.options.includeSightWords;
+      options.includeImages = cls.options.includeImages !== false;
+      options.letterCase = normalizeLetterCase(cls.options.letterCase || 'both');
+      options.mixMode = !!cls.options.mixMode;
+      options.dictationMode = !!cls.options.dictationMode;
+      options.quizMode = !!cls.options.quizMode;
+
+      localStorage.setItem('phonics-flash-extras', options.includeExtras);
+      localStorage.setItem('phonics-flash-sight', options.includeSightWords);
+      localStorage.setItem('phonics-flash-images', options.includeImages);
+      localStorage.setItem('phonics-flash-letter-case', options.letterCase);
+      localStorage.setItem('phonics-flash-mix', options.mixMode);
+      localStorage.setItem('phonics-flash-dictation', options.dictationMode);
+      localStorage.setItem('phonics-flash-quiz', options.quizMode);
+    }
+
+    if (Array.isArray(cls.selectedUnits)) {
+      localStorage.setItem('phonics-flash-selected-units', JSON.stringify(cls.selectedUnits));
+    }
+
+    const select = document.getElementById('class-select');
+    if (select) {
+      select.value = cls.id;
+    }
+
+    if (phonicsData) {
+      renderMenu();
+    }
+  }
+
+  function saveCurrentOptionsToActiveClass() {
+    if (typeof ClassesManager !== 'undefined') {
+      const selectedIds = getSelectedUnitIds();
+      ClassesManager.saveCurrentToActiveClass(selectedIds, options);
     }
   }
 
@@ -234,6 +300,7 @@
       options.includeExtras = !options.includeExtras;
       syncOptionButton('toggle-extras', options.includeExtras);
       localStorage.setItem('phonics-flash-extras', options.includeExtras);
+      saveCurrentOptionsToActiveClass();
       updateStartButton();
     });
 
@@ -241,6 +308,7 @@
       options.includeSightWords = !options.includeSightWords;
       syncOptionButton('toggle-sight', options.includeSightWords);
       localStorage.setItem('phonics-flash-sight', options.includeSightWords);
+      saveCurrentOptionsToActiveClass();
       updateStartButton();
     });
 
@@ -248,6 +316,7 @@
       options.includeImages = !options.includeImages;
       syncOptionButton('toggle-images', options.includeImages);
       localStorage.setItem('phonics-flash-images', options.includeImages);
+      saveCurrentOptionsToActiveClass();
       updateStartButton();
     });
 
@@ -255,6 +324,7 @@
       options.mixMode = !options.mixMode;
       syncOptionButton('toggle-mix', options.mixMode);
       localStorage.setItem('phonics-flash-mix', options.mixMode);
+      saveCurrentOptionsToActiveClass();
     });
 
     document.getElementById('toggle-dictation').addEventListener('click', (e) => {
@@ -266,6 +336,7 @@
       }
       syncOptionButton('toggle-dictation', options.dictationMode);
       localStorage.setItem('phonics-flash-dictation', options.dictationMode);
+      saveCurrentOptionsToActiveClass();
     });
 
     document.getElementById('toggle-quiz').addEventListener('click', (e) => {
@@ -277,6 +348,7 @@
       }
       syncOptionButton('toggle-quiz', options.quizMode);
       localStorage.setItem('phonics-flash-quiz', options.quizMode);
+      saveCurrentOptionsToActiveClass();
     });
 
     // Wire up start button
@@ -332,6 +404,8 @@
         localStorage.setItem('phonics-flash-mix', 'false');
         localStorage.setItem('phonics-flash-dictation', 'false');
         localStorage.setItem('phonics-flash-quiz', 'false');
+
+        saveCurrentOptionsToActiveClass();
 
         // Update start button
         updateStartButton();
@@ -463,6 +537,7 @@
           options.letterCase = selectedCase;
           syncCaseButtons(selectedCase);
           localStorage.setItem('phonics-flash-letter-case', selectedCase);
+          saveCurrentOptionsToActiveClass();
           updateStartButton();
         });
       });
@@ -517,6 +592,7 @@
   function saveSelectedUnits() {
     const selectedIds = getSelectedUnitIds();
     localStorage.setItem('phonics-flash-selected-units', JSON.stringify(selectedIds));
+    saveCurrentOptionsToActiveClass();
   }
 
   function updateStartButton() {
@@ -1635,6 +1711,348 @@
     // Clear URL params (theme is saved in localStorage, not needed in URL)
     if (window.location.search) {
       window.history.replaceState({}, '', window.location.pathname);
+    }
+  }
+
+  // ── Classes & Schedule UI Management ──────────────────────
+  function initClassesUI() {
+    const classSelect = document.getElementById('class-select');
+    const manageBtn = document.getElementById('manage-classes-btn');
+    const quickSyncBtn = document.getElementById('quick-cloud-sync-btn');
+    const modal = document.getElementById('class-modal');
+    const closeBtn = document.getElementById('modal-close-btn');
+    const tabBtns = document.querySelectorAll('.modal-tab-btn');
+    const addClassBtn = document.getElementById('add-class-btn');
+    const classForm = document.getElementById('class-form');
+    const cancelFormBtn = document.getElementById('form-cancel-btn');
+    const saveUpstashBtn = document.getElementById('save-upstash-btn');
+    const exportBtn = document.getElementById('export-classes-btn');
+    const importInput = document.getElementById('import-classes-input');
+
+    function populateClassDropdown() {
+      if (!classSelect || typeof ClassesManager === 'undefined') return;
+      const classes = ClassesManager.getClasses();
+      const activeClass = ClassesManager.getActiveClass();
+
+      classSelect.innerHTML = `<option value="">General (No Class)</option>`;
+      classes.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        const daysStr = c.schedule?.days?.join('/') || 'No days';
+        const timeStr = c.schedule?.startTime ? ` (${c.schedule.startTime})` : '';
+        opt.textContent = `${c.name} [${daysStr}${timeStr}]`;
+        classSelect.appendChild(opt);
+      });
+
+      if (activeClass) {
+        classSelect.value = activeClass.id;
+      } else {
+        classSelect.value = "";
+      }
+    }
+
+    // Populate dropdown initially
+    populateClassDropdown();
+
+    // Dropdown change
+    if (classSelect) {
+      classSelect.addEventListener('change', (e) => {
+        const classId = e.target.value;
+        if (!classId) {
+          ClassesManager.setActiveClassId(null);
+          showToast('Switched to General profile', 'info', 2000);
+        } else {
+          const cls = ClassesManager.getClasses().find(c => c.id === classId);
+          if (cls) {
+            ClassesManager.setActiveClassId(cls.id);
+            applyClassProfile(cls);
+            showToast(`🏫 Switched to: ${cls.name}`, 'success', 2500);
+          }
+        }
+      });
+    }
+
+    // Manage button -> Open modal
+    if (manageBtn && modal) {
+      manageBtn.addEventListener('click', () => {
+        openClassModal('classes-tab');
+      });
+    }
+
+    // Quick Cloud Sync button
+    if (quickSyncBtn) {
+      quickSyncBtn.addEventListener('click', async () => {
+        quickSyncBtn.classList.add('syncing');
+        try {
+          const res = await ClassesManager.syncCloud();
+          if (res && res.success) {
+            populateClassDropdown();
+            showToast('☁️ Synced with Upstash Redis!', 'success', 3000);
+          } else {
+            showToast('Cloud sync skipped (check Upstash URL & Token in Manage Classes)', 'warning', 3500);
+          }
+        } catch (e) {
+          showToast(`Sync error: ${e.message}`, 'error', 3000);
+        } finally {
+          quickSyncBtn.classList.remove('syncing');
+        }
+      });
+    }
+
+    // Modal close
+    if (closeBtn && modal) {
+      closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.add('hidden');
+      });
+    }
+
+    // Tab switching
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetTab = btn.dataset.tab;
+        switchModalTab(targetTab);
+      });
+    });
+
+    function switchModalTab(tabId) {
+      tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+      document.querySelectorAll('.modal-tab-content').forEach(c => {
+        c.classList.toggle('active', c.id === tabId);
+      });
+
+      if (tabId === 'classes-tab') {
+        renderClassesListModal();
+      } else if (tabId === 'sync-tab') {
+        populateSyncForm();
+      }
+    }
+
+    function openClassModal(tabId = 'classes-tab') {
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      switchModalTab(tabId);
+    }
+
+    function renderClassesListModal() {
+      const container = document.getElementById('classes-list-container');
+      if (!container || typeof ClassesManager === 'undefined') return;
+
+      const classes = ClassesManager.getClasses();
+      const activeClass = ClassesManager.getActiveClass();
+
+      if (classes.length === 0) {
+        container.innerHTML = `
+          <div style="text-align:center;padding:2rem;color:var(--text-muted);">
+            <p>No classes created yet.</p>
+            <p style="margin-top:0.5rem;font-size:0.85rem;">Click "+ New Class" above to set up your schedule.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = '';
+      classes.forEach(c => {
+        const isActive = activeClass && activeClass.id === c.id;
+        const daysStr = c.schedule?.days?.join(', ') || 'No days';
+        const timeStr = `${c.schedule?.startTime || '15:00'} - ${c.schedule?.endTime || '15:50'}`;
+        const unitCount = Array.isArray(c.selectedUnits) ? c.selectedUnits.length : 0;
+
+        const card = document.createElement('div');
+        card.className = `class-card-item ${isActive ? 'active-class' : ''}`;
+        card.innerHTML = `
+          <div class="class-card-info">
+            <div class="class-card-name">
+              <span>${c.name}</span>
+              ${isActive ? '<span class="active-pill">Active</span>' : ''}
+            </div>
+            <div class="class-card-meta">
+              <span>📅 ${daysStr}</span>
+              <span>⏰ ${timeStr}</span>
+              <span>📚 ${unitCount} unit${unitCount === 1 ? '' : 's'}</span>
+            </div>
+          </div>
+          <div class="class-card-actions">
+            <button class="btn-icon-small edit-btn" title="Edit schedule">✏️ Edit</button>
+            <button class="btn-icon-small select-btn" title="Select this class">✔️ Use</button>
+            <button class="btn-icon-small delete delete-btn" title="Delete class">🗑️</button>
+          </div>
+        `;
+
+        card.querySelector('.class-card-info').addEventListener('click', () => {
+          ClassesManager.setActiveClassId(c.id);
+          applyClassProfile(c);
+          populateClassDropdown();
+          modal.classList.add('hidden');
+          showToast(`🏫 Active class: ${c.name}`, 'success', 2500);
+        });
+
+        card.querySelector('.select-btn').addEventListener('click', () => {
+          ClassesManager.setActiveClassId(c.id);
+          applyClassProfile(c);
+          populateClassDropdown();
+          modal.classList.add('hidden');
+          showToast(`🏫 Active class: ${c.name}`, 'success', 2500);
+        });
+
+        card.querySelector('.edit-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          editClassForm(c);
+        });
+
+        card.querySelector('.delete-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (confirm(`Delete class "${c.name}"?`)) {
+            ClassesManager.deleteClass(c.id);
+            populateClassDropdown();
+            renderClassesListModal();
+            renderMenu();
+          }
+        });
+
+        container.appendChild(card);
+      });
+    }
+
+    function editClassForm(cls) {
+      document.getElementById('form-class-id').value = cls ? cls.id : '';
+      document.getElementById('form-class-name').value = cls ? cls.name : '';
+      document.getElementById('form-start-time').value = cls?.schedule?.startTime || '15:00';
+      document.getElementById('form-end-time').value = cls?.schedule?.endTime || '15:50';
+
+      const selectedDays = cls?.schedule?.days || ['Mon', 'Wed', 'Fri'];
+      document.querySelectorAll('#schedule-tab input[name="days"]').forEach(cb => {
+        cb.checked = selectedDays.includes(cb.value);
+      });
+
+      switchModalTab('schedule-tab');
+    }
+
+    if (addClassBtn) {
+      addClassBtn.addEventListener('click', () => {
+        editClassForm(null);
+      });
+    }
+
+    if (cancelFormBtn) {
+      cancelFormBtn.addEventListener('click', () => {
+        switchModalTab('classes-tab');
+      });
+    }
+
+    if (classForm) {
+      classForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const classId = document.getElementById('form-class-id').value;
+        const name = document.getElementById('form-class-name').value.trim();
+        const startTime = document.getElementById('form-start-time').value;
+        const endTime = document.getElementById('form-end-time').value;
+        const checkedDays = Array.from(document.querySelectorAll('#schedule-tab input[name="days"]:checked')).map(cb => cb.value);
+
+        if (!name) return;
+
+        if (classId) {
+          // Update existing
+          ClassesManager.updateClass(classId, {
+            name,
+            schedule: { days: checkedDays, startTime, endTime }
+          });
+          showToast(`Updated class "${name}"`, 'success', 2000);
+        } else {
+          // Add new class (captures currently selected units & options)
+          const currentUnits = getSelectedUnitIds();
+          const newCls = ClassesManager.addClass({
+            name,
+            schedule: { days: checkedDays, startTime, endTime },
+            selectedUnits: currentUnits,
+            options: { ...options }
+          });
+          showToast(`Created class "${name}"`, 'success', 2000);
+        }
+
+        populateClassDropdown();
+        switchModalTab('classes-tab');
+      });
+    }
+
+    // Cloud Sync Tab Setup
+    function populateSyncForm() {
+      const upstashCfg = ClassesManager.getUpstashConfig();
+      const urlInput = document.getElementById('upstash-url-input');
+      const tokenInput = document.getElementById('upstash-token-input');
+      if (urlInput && upstashCfg?.url) urlInput.value = upstashCfg.url;
+      if (tokenInput && upstashCfg?.token) tokenInput.value = upstashCfg.token;
+    }
+
+    if (saveUpstashBtn) {
+      saveUpstashBtn.addEventListener('click', async () => {
+        const url = document.getElementById('upstash-url-input').value.trim();
+        const token = document.getElementById('upstash-token-input').value.trim();
+        const msgSpan = document.getElementById('sync-status-msg');
+
+        ClassesManager.setUpstashConfig(url, token);
+
+        if (!url || !token) {
+          msgSpan.textContent = 'Configuration cleared.';
+          return;
+        }
+
+        msgSpan.textContent = 'Testing connection & syncing...';
+        try {
+          const res = await ClassesManager.syncCloud();
+          if (res && res.success) {
+            msgSpan.textContent = '✅ Connected and synced to Upstash!';
+            msgSpan.style.color = '#3DAA5C';
+            populateClassDropdown();
+            showToast('Connected and synced to Upstash Redis!', 'success', 3000);
+          } else {
+            msgSpan.textContent = '⚠️ Cloud sync failed. Check URL & Token.';
+            msgSpan.style.color = '#FF6B6B';
+          }
+        } catch (err) {
+          msgSpan.textContent = `❌ Error: ${err.message}`;
+          msgSpan.style.color = '#FF6B6B';
+        }
+      });
+    }
+
+    // Export JSON
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        const json = ClassesManager.exportJSON();
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `phonics-flash-classes-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Classes backup exported!', 'success', 2000);
+      });
+    }
+
+    // Import JSON
+    if (importInput) {
+      importInput.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const res = ClassesManager.importJSON(ev.target.result);
+          if (res && res.success) {
+            populateClassDropdown();
+            renderClassesListModal();
+            renderMenu();
+            showToast(`Imported ${res.count} classes!`, 'success', 3000);
+          } else {
+            showToast(`Import failed: ${res.error}`, 'error', 4000);
+          }
+        };
+        reader.readAsText(file);
+      });
     }
   }
 

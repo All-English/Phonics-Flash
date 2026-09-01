@@ -20,8 +20,36 @@
        ============================================================ -->
   <div id="menu-screen">
     <header class="menu-header">
-      <h1>Phonics Flash</h1>
-      <p>Select levels and units to review</p>
+      <div class="menu-header-content">
+        <div class="menu-title-group">
+          <h1>Phonics Flash</h1>
+          <p>Select levels and units to review</p>
+        </div>
+
+        <!-- Class Control Bar -->
+        <div class="class-control-bar">
+          <div class="class-select-group">
+            <label for="class-select" class="class-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+              <span>Class:</span>
+            </label>
+            <div class="custom-select-wrapper">
+              <select id="class-select" class="class-dropdown" aria-label="Select active class profile">
+                <option value="">General (No Class)</option>
+              </select>
+            </div>
+          </div>
+
+          <button id="manage-classes-btn" class="class-action-btn" title="Manage classes and schedules">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>Classes</span>
+          </button>
+
+          <button id="quick-cloud-sync-btn" class="class-action-btn sync-btn-icon" title="Sync with Upstash Cloud">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+          </button>
+        </div>
+      </div>
     </header>
 
     <!-- Options Bar -->
@@ -131,6 +159,114 @@
     </main>
   </div>
 
+  <!-- ============================================================
+       CLASS MANAGER MODAL
+       ============================================================ -->
+  <div id="class-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modal-title">Class Manager &amp; Schedule</h2>
+        <button id="modal-close-btn" class="modal-close-btn" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab-btn active" data-tab="classes-tab">My Classes</button>
+        <button class="modal-tab-btn" data-tab="schedule-tab">Schedule &amp; Times</button>
+        <button class="modal-tab-btn" data-tab="sync-tab">Cloud Sync &amp; Backup</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- TAB 1: Classes -->
+        <div id="classes-tab" class="modal-tab-content active">
+          <div class="tab-toolbar">
+            <button id="add-class-btn" class="btn btn-primary">+ New Class</button>
+            <span class="tab-subtitle">Click a class to edit or use</span>
+          </div>
+          <div id="classes-list-container" class="classes-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- TAB 2: Class Editor (create/edit class) -->
+        <div id="schedule-tab" class="modal-tab-content">
+          <form id="class-form" class="class-form">
+            <input type="hidden" id="form-class-id" value="">
+
+            <div class="form-group">
+              <label for="form-class-name">Class Name</label>
+              <input type="text" id="form-class-name" placeholder="e.g. Level 2 Mon/Wed/Fri (3:00 PM)" required>
+            </div>
+
+            <div class="form-group">
+              <label>Scheduled Days</label>
+              <div class="days-checkbox-group">
+                <label class="day-chip"><input type="checkbox" name="days" value="Mon"><span>Mon</span></label>
+                <label class="day-chip"><input type="checkbox" name="days" value="Tue"><span>Tue</span></label>
+                <label class="day-chip"><input type="checkbox" name="days" value="Wed"><span>Wed</span></label>
+                <label class="day-chip"><input type="checkbox" name="days" value="Thu"><span>Thu</span></label>
+                <label class="day-chip"><input type="checkbox" name="days" value="Fri"><span>Fri</span></label>
+                <label class="day-chip"><input type="checkbox" name="days" value="Sat"><span>Sat</span></label>
+                <label class="day-chip"><input type="checkbox" name="days" value="Sun"><span>Sun</span></label>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="form-start-time">Start Time</label>
+                <input type="time" id="form-start-time" value="15:00" required>
+              </div>
+              <div class="form-group flex-1">
+                <label for="form-end-time">End Time</label>
+                <input type="time" id="form-end-time" value="15:50" required>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Save Class</button>
+              <button type="button" id="form-cancel-btn" class="btn btn-secondary">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- TAB 3: Cloud Sync & Backup -->
+        <div id="sync-tab" class="modal-tab-content">
+          <div class="sync-section">
+            <h3>☁️ Upstash Redis Cloud Sync</h3>
+            <p class="sync-desc">
+              Synchronize your classes across devices. Uses isolated Redis key <code>phonics_flash:classes</code> safely on your single shared Upstash database.
+            </p>
+            <div class="form-group">
+              <label for="upstash-url-input">Upstash REST URL</label>
+              <input type="text" id="upstash-url-input" placeholder="https://example.upstash.io">
+            </div>
+            <div class="form-group">
+              <label for="upstash-token-input">Upstash REST Token</label>
+              <input type="password" id="upstash-token-input" placeholder="A...=">
+            </div>
+            <div class="sync-btn-row">
+              <button id="save-upstash-btn" class="btn btn-primary">Save &amp; Sync Now</button>
+              <span id="sync-status-msg" class="sync-status-msg"></span>
+            </div>
+          </div>
+
+          <hr class="modal-divider">
+
+          <div class="sync-section">
+            <h3>💾 JSON Backup &amp; Restore</h3>
+            <p class="sync-desc">Export your class configurations to a file or import a previous backup.</p>
+            <div class="backup-btn-row">
+              <button id="export-classes-btn" class="btn btn-secondary">⬇️ Export JSON</button>
+              <label class="btn btn-secondary file-upload-btn">
+                ⬆️ Import JSON
+                <input type="file" id="import-classes-input" accept=".json" style="display:none;">
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Theme Toggle (always visible, persists across screens) -->
   <button id="theme-toggle" title="Toggle theme" aria-label="Toggle light/dark mode"></button>
 
@@ -140,8 +276,11 @@
   <!-- reveal.js -->
   <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
 
-  <!-- ElevenLabs config (gitignored — create from config template) -->
+  <!-- ElevenLabs & Upstash config (gitignored — create from config template) -->
   <script src="js/config.js"></script>
+
+  <!-- Classes and Auto-Schedule Management -->
+  <script src="js/classes.js"></script>
 
   <!-- Audio playback module -->
   <script src="js/audio.js"></script>
