@@ -997,11 +997,22 @@
 
         <h1 class="intro-title" aria-label="Practice Time!">
           <span class="intro-word">
-            <span style="--i:1">P</span><span style="--i:2">R</span><span style="--i:3">A</span><span style="--i:4">C</span><span style="--i:5">T</span><span style="--i:6">I</span><span style="--i:7">C</span><span style="--i:8">E</span>
+            <span class="wave-letter" style="--i:1"><span class="wave-letter-inner">P</span></span>
+            <span class="wave-letter" style="--i:2"><span class="wave-letter-inner">R</span></span>
+            <span class="wave-letter" style="--i:3"><span class="wave-letter-inner">A</span></span>
+            <span class="wave-letter" style="--i:4"><span class="wave-letter-inner">C</span></span>
+            <span class="wave-letter" style="--i:5"><span class="wave-letter-inner">T</span></span>
+            <span class="wave-letter" style="--i:6"><span class="wave-letter-inner">I</span></span>
+            <span class="wave-letter" style="--i:7"><span class="wave-letter-inner">C</span></span>
+            <span class="wave-letter" style="--i:8"><span class="wave-letter-inner">E</span></span>
           </span>
           <span class="intro-word-space">&nbsp;</span>
           <span class="intro-word">
-            <span style="--i:9">T</span><span style="--i:10">I</span><span style="--i:11">M</span><span style="--i:12">E</span><span style="--i:13">!</span>
+            <span class="wave-letter" style="--i:9"><span class="wave-letter-inner">T</span></span>
+            <span class="wave-letter" style="--i:10"><span class="wave-letter-inner">I</span></span>
+            <span class="wave-letter" style="--i:11"><span class="wave-letter-inner">M</span></span>
+            <span class="wave-letter" style="--i:12"><span class="wave-letter-inner">E</span></span>
+            <span class="wave-letter" style="--i:13"><span class="wave-letter-inner">!</span></span>
           </span>
         </h1>
 

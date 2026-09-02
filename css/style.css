@@ -1372,7 +1372,7 @@ body {
   font-family: var(--font-word);
   font-size: clamp(2.5rem, 6vw, 4.4rem);
   font-weight: 900;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   line-height: 1.1;
   margin-bottom: 1.25rem;
   display: inline-flex;
@@ -1384,24 +1384,32 @@ body {
 
 .intro-word {
   display: inline-flex;
-}
-
-.intro-word span {
-  display: inline-block;
-  background: linear-gradient(135deg, #FF6B6B 0%, #FFA07A 35%, #FFD93D 70%, #FF6B6B 100%);
-  background-size: 300% 300%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: letterWave 2.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite, gradientFlow 4s linear infinite;
-  animation-delay: calc(var(--i) * 0.08s);
-  filter: drop-shadow(0 4px 14px rgba(255, 107, 107, 0.3));
-  transform-origin: 50% 85%;
+  align-items: center;
 }
 
 .intro-word-space {
   display: inline-block;
   width: 0.35em;
+}
+
+.wave-letter {
+  display: inline-block;
+  transform-origin: 50% 100%;
+  animation: letterWave 1.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  animation-delay: calc(var(--i) * 0.09s);
+  will-change: transform;
+}
+
+.wave-letter-inner {
+  display: inline-block;
+  background: linear-gradient(135deg, #FF6B6B 0%, #FFA07A 40%, #FFD93D 75%, #FF6B6B 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 4px 12px rgba(255, 107, 107, 0.35));
+  animation: gradientFlow 3.5s linear infinite;
+  animation-delay: calc(var(--i) * -0.2s);
 }
 
 .intro-overview-panel {
@@ -1585,6 +1593,24 @@ body {
 
 @keyframes ctaPing {
   75%, 100% { transform: scale(1.22); opacity: 0; }
+}
+
+@keyframes letterWave {
+  0%, 100% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-12px) scale(1.12) rotate(-3deg);
+  }
+  50% {
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes gradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 /* Intro slide themes are dynamically managed via light-dark() */
