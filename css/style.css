@@ -1344,26 +1344,21 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 68px;
-  height: 68px;
-  border-radius: 50%;
-  background: light-dark(rgba(245, 166, 35, 0.15), rgba(245, 166, 35, 0.22));
-  border: 2px solid light-dark(rgba(245, 166, 35, 0.4), rgba(245, 166, 35, 0.55));
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.6rem;
   animation: floatBounce 3s ease-in-out infinite;
 }
 
 .intro-icon-emoji {
-  font-size: 2rem;
-  filter: drop-shadow(0 4px 10px rgba(245, 166, 35, 0.5));
+  font-size: 3.2rem;
+  filter: drop-shadow(0 6px 16px rgba(255, 107, 107, 0.3));
   line-height: 1;
 }
 
 .intro-icon-glow {
   position: absolute;
-  inset: -8px;
+  inset: -12px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(245, 166, 35, 0.35) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 142, 83, 0.22) 0%, transparent 70%);
   animation: pulseGlow 2.5s ease-in-out infinite;
   pointer-events: none;
 }

@@ -992,7 +992,7 @@
       <div class="slide-center intro-content">
         <div class="intro-hero-icon" aria-hidden="true">
           <div class="intro-icon-glow"></div>
-          <span class="intro-icon-emoji">⚡</span>
+          <span class="intro-icon-emoji">📖</span>
         </div>
 
         <h1 class="intro-title" aria-label="Practice Time!">
