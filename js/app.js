@@ -800,7 +800,7 @@
   // ── Normal Mode: Horizontal = Units, Vertical = Words ─────
   function buildNormalModeSlides(container, units, opts) {
     // Prepend welcome intro slide
-    container.appendChild(createIntroSlide());
+    container.appendChild(createIntroSlide(units, opts));
 
     units.forEach(unit => {
       const unitSection = document.createElement('section');
@@ -837,7 +837,7 @@
   // ── Mix Mode: Round-Robin Interleaving ─────────────────────
   function buildMixModeSlides(container, units, opts) {
     // Prepend welcome intro slide
-    container.appendChild(createIntroSlide());
+    container.appendChild(createIntroSlide(units, opts));
 
     // Prepare main words queues per unit (shuffled)
     const mainQueues = units.map(unit => {
@@ -952,8 +952,8 @@
     return result;
   }
 
-  // ── Create the Intro Welcome Slide ──────────────────────────
-  function createIntroSlide() {
+  // ── Create the Intro Welcome Slide (Combined Option 1 & 2) ──
+  function createIntroSlide(units = [], opts = options) {
     const section = document.createElement('section');
     section.classList.add('word-slide', 'intro-slide');
 
@@ -964,9 +964,57 @@
     section.dataset.progress = 'Start';
     section.dataset.isIntro = 'true';
 
+    // Build unit review cards with target sounds
+    const unitPills = units.map(u => {
+      const sound = u.targetSound || u.sound || '';
+      return `
+        <div class="intro-unit-card slide-bg-${u.levelId || 'L1'}">
+          <div class="intro-unit-level">${u.levelName || ''}</div>
+          <div class="intro-unit-name">${u.name || ''}</div>
+          ${sound ? `<div class="intro-target-sound">Target Sound: <span>${sound}</span></div>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    // Additional mode tags
+    const modeTags = [];
+    if (opts && opts.mixMode) modeTags.push('🔀 Mix Mode');
+    if (opts && opts.dictationMode) modeTags.push('✍️ Dictation');
+    if (opts && opts.quizMode) modeTags.push('❓ Quiz Mode');
+    if (opts && opts.includeSightWords) modeTags.push('👁️ Sight Words');
+    if (opts && opts.includeExtras) modeTags.push('★ Extra Words');
+
+    const modeBadgesHTML = modeTags.length > 0
+      ? `<div class="intro-modes-row">${modeTags.map(t => `<span class="intro-mode-pill">${t}</span>`).join('')}</div>`
+      : '';
+
     section.innerHTML = `
       <div class="slide-center intro-content">
-        <img src="media/practice_time.png" alt="Practice Time!" class="intro-image" onerror="this.style.display='none'">
+        <div class="intro-hero-icon" aria-hidden="true">
+          <div class="intro-icon-glow"></div>
+          <span class="intro-icon-emoji">⚡</span>
+        </div>
+
+        <h1 class="intro-title">PRACTICE TIME!</h1>
+        <p class="intro-tagline">Listen, speak, and read together with big, clear voices!</p>
+
+        <div class="intro-overview-panel">
+          <div class="intro-panel-header">
+            <span class="intro-panel-title">🎯 Today's Target Sounds &amp; Units</span>
+            ${modeBadgesHTML}
+          </div>
+          <div class="intro-units-grid ${units.length > 3 ? 'compact' : ''}">
+            ${unitPills}
+          </div>
+        </div>
+
+        <div class="intro-cta-wrapper">
+          <button class="intro-start-cta" type="button" aria-label="Start Practice">
+            <span class="cta-pulse"></span>
+            <span>Let's Read! ▶</span>
+          </button>
+          <p class="intro-hint">Press <kbd>Space</kbd>, <kbd>Enter</kbd>, <kbd>→</kbd> or click anywhere to begin</p>
+        </div>
       </div>
     `;
 
