@@ -995,8 +995,15 @@
           <span class="intro-icon-emoji">⚡</span>
         </div>
 
-        <h1 class="intro-title">PRACTICE TIME!</h1>
-        <p class="intro-tagline">Listen, speak, and read together with big, clear voices!</p>
+        <h1 class="intro-title" aria-label="Practice Time!">
+          <span class="intro-word">
+            <span style="--i:1">P</span><span style="--i:2">R</span><span style="--i:3">A</span><span style="--i:4">C</span><span style="--i:5">T</span><span style="--i:6">I</span><span style="--i:7">C</span><span style="--i:8">E</span>
+          </span>
+          <span class="intro-word-space">&nbsp;</span>
+          <span class="intro-word">
+            <span style="--i:9">T</span><span style="--i:10">I</span><span style="--i:11">M</span><span style="--i:12">E</span><span style="--i:13">!</span>
+          </span>
+        </h1>
 
         <div class="intro-overview-panel">
           <div class="intro-panel-header">

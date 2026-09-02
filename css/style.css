@@ -1370,23 +1370,38 @@ body {
 
 .intro-title {
   font-family: var(--font-word);
-  font-size: clamp(2.4rem, 5.5vw, 4rem);
+  font-size: clamp(2.5rem, 6vw, 4.4rem);
   font-weight: 900;
-  background: var(--accent-gradient);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  user-select: none;
+}
+
+.intro-word {
+  display: inline-flex;
+}
+
+.intro-word span {
+  display: inline-block;
+  background: linear-gradient(135deg, #FF6B6B 0%, #FFA07A 35%, #FFD93D 70%, #FF6B6B 100%);
+  background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  margin-bottom: 0.35rem;
-  text-shadow: light-dark(0 4px 16px rgba(255, 107, 107, 0.2), 0 4px 28px rgba(255, 107, 107, 0.35));
+  animation: letterWave 2.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite, gradientFlow 4s linear infinite;
+  animation-delay: calc(var(--i) * 0.08s);
+  filter: drop-shadow(0 4px 14px rgba(255, 107, 107, 0.3));
+  transform-origin: 50% 85%;
 }
 
-.intro-tagline {
-  font-size: clamp(0.95rem, 2vw, 1.2rem);
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 1.25rem;
+.intro-word-space {
+  display: inline-block;
+  width: 0.35em;
 }
 
 .intro-overview-panel {
