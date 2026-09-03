@@ -1035,7 +1035,6 @@
 
         <div class="intro-cta-wrapper">
           <button class="intro-start-cta" type="button" aria-label="Start Practice">
-            <span class="cta-pulse"></span>
             <span>Let's Read! ▶</span>
           </button>
           <p class="intro-hint">Press <kbd>Space</kbd>, <kbd>Enter</kbd>, <kbd>→</kbd> or click anywhere to begin</p>

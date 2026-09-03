@@ -59,6 +59,7 @@
   --radius-md: 14px;
   --radius-lg: 20px;
   --radius-xl: 28px;
+  --radius-full: 9999px;
 
   --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-smooth: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1520,41 +1521,47 @@ body {
 }
 
 .intro-start-cta {
+  font-family: var(--font-word);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+  background: var(--accent-gradient);
+  border: none;
+  border-radius: var(--radius-xl);
+  padding: 1rem 3.5rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 8px 30px rgba(255, 107, 107, 0.3);
   position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.85rem 2.5rem;
-  font-family: var(--font-ui);
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: #ffffff;
-  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
-  border: none;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(255, 107, 107, 0.38);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
   user-select: none;
 }
 
+.intro-start-cta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
 .intro-start-cta:hover {
-  transform: scale(1.05);
-  box-shadow: 0 12px 32px rgba(255, 107, 107, 0.52);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(255, 107, 107, 0.45);
+}
+
+.intro-start-cta:hover::before {
+  opacity: 1;
 }
 
 .intro-start-cta:active {
-  transform: scale(0.96);
-}
-
-.cta-pulse {
-  position: absolute;
-  inset: -4px;
-  border-radius: var(--radius-full);
-  border: 2px solid rgba(255, 107, 107, 0.6);
-  animation: ctaPing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-  pointer-events: none;
+  transform: translateY(0);
 }
 
 .intro-hint {
@@ -1582,10 +1589,6 @@ body {
 @keyframes pulseGlow {
   0%, 100% { transform: scale(1); opacity: 0.4; }
   50% { transform: scale(1.18); opacity: 0.85; }
-}
-
-@keyframes ctaPing {
-  75%, 100% { transform: scale(1.22); opacity: 0; }
 }
 
 @keyframes letterWaveOnce {
