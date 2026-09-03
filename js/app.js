@@ -1791,7 +1791,6 @@
   function initClassesUI() {
     const classSelect = document.getElementById('class-select');
     const manageBtn = document.getElementById('manage-classes-btn');
-    const quickSyncBtn = document.getElementById('quick-cloud-sync-btn');
     const modal = document.getElementById('class-modal');
     const closeBtn = document.getElementById('modal-close-btn');
     const tabBtns = document.querySelectorAll('.modal-tab-btn');
@@ -1849,26 +1848,6 @@
     if (manageBtn && modal) {
       manageBtn.addEventListener('click', () => {
         openClassModal('classes-tab');
-      });
-    }
-
-    // Quick Cloud Sync button
-    if (quickSyncBtn) {
-      quickSyncBtn.addEventListener('click', async () => {
-        quickSyncBtn.classList.add('syncing');
-        try {
-          const res = await ClassesManager.syncCloud();
-          if (res && res.success) {
-            populateClassDropdown();
-            showToast('☁️ Synced with Upstash Redis!', 'success', 3000);
-          } else {
-            showToast('Cloud sync skipped (check Upstash URL & Token in Manage Classes)', 'warning', 3500);
-          }
-        } catch (e) {
-          showToast(`Sync error: ${e.message}`, 'error', 3000);
-        } finally {
-          quickSyncBtn.classList.remove('syncing');
-        }
       });
     }
 
