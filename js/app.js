@@ -1807,13 +1807,13 @@
       const classes = ClassesManager.getClasses();
       const activeClass = ClassesManager.getActiveClass();
 
+      const sortedClasses = [...classes].sort((a, b) => a.name.localeCompare(b.name));
+
       classSelect.innerHTML = `<option value="">General (No Class)</option>`;
-      classes.forEach(c => {
+      sortedClasses.forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.id;
-        const daysStr = c.schedule?.days?.join('/') || 'No days';
-        const timeStr = c.schedule?.startTime ? ` (${c.schedule.startTime})` : '';
-        opt.textContent = `${c.name} [${daysStr}${timeStr}]`;
+        opt.textContent = c.name;
         classSelect.appendChild(opt);
       });
 
@@ -1925,7 +1925,8 @@
       }
 
       container.innerHTML = '';
-      classes.forEach(c => {
+      const sortedClasses = [...classes].sort((a, b) => a.name.localeCompare(b.name));
+      sortedClasses.forEach(c => {
         const isActive = activeClass && activeClass.id === c.id;
         const daysStr = c.schedule?.days?.join(', ') || 'No days';
         const timeStr = `${c.schedule?.startTime || '15:00'} - ${c.schedule?.endTime || '15:50'}`;
