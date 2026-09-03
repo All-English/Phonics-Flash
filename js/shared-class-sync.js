@@ -4,10 +4,15 @@
  * Shared across Phonics Flash, Word-Tac-Toe, MatchMaker, and Treasure Hunt.
  */
 (function (root, factory) {
+  const lib = factory();
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
-  } else {
-    root.SharedClassSync = factory();
+    module.exports = lib;
+  }
+  if (typeof root !== 'undefined') {
+    root.SharedClassSync = lib;
+  }
+  if (typeof window !== 'undefined') {
+    window.SharedClassSync = lib;
   }
 })(typeof self !== 'undefined' ? self : this, function () {
 

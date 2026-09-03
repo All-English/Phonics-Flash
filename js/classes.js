@@ -12,13 +12,22 @@ window.ClassesManager = (() => {
 
   // ── Helper: Get Upstash Credentials ─────────────────────────
   function getUpstashConfig() {
-    // Check localStorage first
+    // 1. Check shared Upstash keys used across all apps
+    if (typeof localStorage !== 'undefined') {
+      const sharedUrl = localStorage.getItem('upstash_redis_url');
+      const sharedToken = localStorage.getItem('upstash_redis_token');
+      if (sharedUrl && sharedToken) {
+        return { url: sharedUrl.trim(), token: sharedToken.trim() };
+      }
+    }
+
+    // 2. Check localStorage phonics-flash-upstash-config
     try {
       const local = JSON.parse(localStorage.getItem(UPSTASH_LOCAL_KEY) || '{}');
       if (local.url && local.token) return local;
     } catch (e) { /* ignore */ }
 
-    // Fall back to config.js if defined
+    // 3. Fall back to config.js if defined
     if (typeof UPSTASH_CONFIG !== 'undefined' && UPSTASH_CONFIG.url && UPSTASH_CONFIG.token) {
       return UPSTASH_CONFIG;
     }
@@ -31,17 +40,24 @@ window.ClassesManager = (() => {
       localStorage.removeItem(UPSTASH_LOCAL_KEY);
     } else {
       localStorage.setItem(UPSTASH_LOCAL_KEY, JSON.stringify({ url: url.trim(), token: token.trim() }));
+      // Also write to shared keys so all apps stay aligned
+      localStorage.setItem('upstash_redis_url', url.trim());
+      localStorage.setItem('upstash_redis_token', token.trim());
     }
   }
 
   // ── Local Storage Store ─────────────────────────────────────
   function loadLocalData() {
+    let classes = [];
+    let activeClassId = null;
+
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed && Array.isArray(parsed.classes)) {
-          return parsed;
+          classes = parsed.classes;
+          activeClassId = parsed.activeClassId || null;
         }
       }
     } catch (e) {
@@ -55,14 +71,6 @@ window.ClassesManager = (() => {
         const rawProfiles = localStorage.getItem(SharedClassSync.SHARED_CLASS_PROFILES_KEY);
         const sets = rawSets ? JSON.parse(rawSets) : {};
         const profiles = rawProfiles ? JSON.parse(rawProfiles) : {};
-
-        let classes = [];
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && Array.isArray(parsed.classes)) {
-            classes = parsed.classes;
-          }
-        }
 
         // Ensure all shared player sets exist as classes
         for (const [setName, playerList] of Object.entries(sets)) {
@@ -99,20 +107,14 @@ window.ClassesManager = (() => {
             if (Array.isArray(playerList)) existing.players = playerList;
           }
         }
-
-        return {
-          classes,
-          activeClassId: (raw ? JSON.parse(raw)?.activeClassId : null) || null,
-          updatedAt: Date.now()
-        };
       } catch (err) {
         console.warn('[ClassesManager] Error merging shared sets:', err);
       }
     }
 
     return {
-      classes: [],
-      activeClassId: null,
+      classes,
+      activeClassId,
       updatedAt: Date.now()
     };
   }

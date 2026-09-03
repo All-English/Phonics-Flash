@@ -100,6 +100,14 @@
 
     // Check auto-schedule matching for classes
     if (typeof ClassesManager !== 'undefined') {
+      if (typeof SharedClassSync !== 'undefined') {
+        try {
+          await SharedClassSync.loadAllClasses();
+        } catch (e) {
+          console.warn('[ClassesManager] Error loading shared classes:', e);
+        }
+      }
+
       const scheduledClass = ClassesManager.findCurrentScheduledClass();
       if (scheduledClass) {
         ClassesManager.setActiveClassId(scheduledClass.id);
