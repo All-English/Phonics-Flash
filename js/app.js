@@ -1832,13 +1832,11 @@
         const classId = e.target.value;
         if (!classId) {
           ClassesManager.setActiveClassId(null);
-          showToast('Switched to General profile', 'info', 2000);
         } else {
           const cls = ClassesManager.getClasses().find(c => c.id === classId);
           if (cls) {
             ClassesManager.setActiveClassId(cls.id);
             applyClassProfile(cls);
-            showToast(`🏫 Switched to: ${cls.name}`, 'success', 2500);
           }
         }
       });
@@ -1937,7 +1935,6 @@
           applyClassProfile(c);
           populateClassDropdown();
           modal.classList.add('hidden');
-          showToast(`🏫 Active class: ${c.name}`, 'success', 2500);
         });
 
         card.querySelector('.select-btn').addEventListener('click', () => {
@@ -1945,7 +1942,6 @@
           applyClassProfile(c);
           populateClassDropdown();
           modal.classList.add('hidden');
-          showToast(`🏫 Active class: ${c.name}`, 'success', 2500);
         });
 
         card.querySelector('.edit-btn').addEventListener('click', (e) => {
