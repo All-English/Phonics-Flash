@@ -48,6 +48,68 @@ window.ClassesManager = (() => {
       console.warn('[ClassesManager] Error loading local classes:', e);
     }
 
+    // Merge with SharedClassSync player sets & profiles if available
+    if (typeof SharedClassSync !== 'undefined') {
+      try {
+        const rawSets = localStorage.getItem(SharedClassSync.SHARED_SETS_KEY);
+        const rawProfiles = localStorage.getItem(SharedClassSync.SHARED_CLASS_PROFILES_KEY);
+        const sets = rawSets ? JSON.parse(rawSets) : {};
+        const profiles = rawProfiles ? JSON.parse(rawProfiles) : {};
+
+        let classes = [];
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.classes)) {
+            classes = parsed.classes;
+          }
+        }
+
+        // Ensure all shared player sets exist as classes
+        for (const [setName, playerList] of Object.entries(sets)) {
+          let existing = classes.find(c => c.name === setName);
+          const prof = profiles[setName] || {};
+          const sched = prof.schedule || SharedClassSync.parseScheduleFromName(setName);
+          const savedUnits = prof.units || [];
+
+          if (!existing) {
+            existing = {
+              id: `shared_${setName.replace(/[^a-zA-Z0-9]/g, '_')}`,
+              name: setName,
+              schedule: sched,
+              selectedUnits: savedUnits,
+              options: {
+                includeExtras: false,
+                includeSightWords: true,
+                includeImages: true,
+                letterCase: 'both',
+                mixMode: false,
+                dictationMode: false,
+                quizMode: false
+              },
+              players: Array.isArray(playerList) ? playerList : [],
+              updatedAt: prof.updatedAt || Date.now()
+            };
+            classes.push(existing);
+          } else {
+            // Keep schedule and units aligned if profile has them
+            if (sched) existing.schedule = sched;
+            if (savedUnits.length > 0 && (!existing.selectedUnits || existing.selectedUnits.length === 0)) {
+              existing.selectedUnits = savedUnits;
+            }
+            if (Array.isArray(playerList)) existing.players = playerList;
+          }
+        }
+
+        return {
+          classes,
+          activeClassId: (raw ? JSON.parse(raw)?.activeClassId : null) || null,
+          updatedAt: Date.now()
+        };
+      } catch (err) {
+        console.warn('[ClassesManager] Error merging shared sets:', err);
+      }
+    }
+
     return {
       classes: [],
       activeClassId: null,
@@ -61,50 +123,39 @@ window.ClassesManager = (() => {
     return data;
   }
 
-  // ── Auto-Schedule Day/Time Matching ─────────────────────────
+  // ── Auto-Schedule Day/Time Matching (Strict In-Session) ──────
   function findCurrentScheduledClass(classes, date = new Date()) {
     if (!classes || classes.length === 0) return null;
+
+    if (typeof SharedClassSync !== 'undefined') {
+      const profiles = {};
+      classes.forEach(c => {
+        profiles[c.name] = { schedule: c.schedule };
+      });
+      const match = SharedClassSync.findActiveScheduledClass(profiles, date);
+      if (match) {
+        return classes.find(c => c.name === match.className) || null;
+      }
+      return null;
+    }
 
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const currentDay = dayNames[date.getDay()];
     const currentMinutes = date.getHours() * 60 + date.getMinutes();
 
-    // Filter classes that run on the current day
-    const todaysClasses = classes.filter(cls => 
-      cls.schedule && Array.isArray(cls.schedule.days) && cls.schedule.days.includes(currentDay)
-    ).map(cls => {
+    for (const cls of classes) {
+      if (!cls.schedule || !Array.isArray(cls.schedule.days) || !cls.schedule.days.includes(currentDay)) {
+        continue;
+      }
       const startParts = (cls.schedule.startTime || '00:00').split(':').map(Number);
       const endParts = (cls.schedule.endTime || '23:59').split(':').map(Number);
       const startMin = (startParts[0] || 0) * 60 + (startParts[1] || 0);
       let endMin = (endParts[0] || 0) * 60 + (endParts[1] || 0);
-      if (endMin <= startMin) {
-        endMin = startMin + 45; // Default 45 min duration
+      if (endMin <= startMin) endMin = startMin + 60;
+
+      if (currentMinutes >= startMin && currentMinutes < endMin) {
+        return cls;
       }
-      return { cls, startMin, endMin };
-    });
-
-    if (todaysClasses.length === 0) return null;
-
-    // 1. First Priority: Is a class currently in-session right now?
-    const inSession = todaysClasses.filter(c => currentMinutes >= c.startMin && currentMinutes < c.endMin);
-    if (inSession.length > 0) {
-      // If boundary overlap, pick the most recently started active class
-      inSession.sort((a, b) => b.startMin - a.startMin);
-      return inSession[0].cls;
-    }
-
-    // 2. Second Priority: An upcoming class starting soon (within 20 minutes before class)
-    const upcoming = todaysClasses.filter(c => currentMinutes < c.startMin && (c.startMin - currentMinutes) <= 20);
-    if (upcoming.length > 0) {
-      upcoming.sort((a, b) => a.startMin - b.startMin);
-      return upcoming[0].cls;
-    }
-
-    // 3. Third Priority: Class just finished (within 10 minutes grace wrap-up window)
-    const justEnded = todaysClasses.filter(c => currentMinutes >= c.endMin && (currentMinutes - c.endMin) <= 10);
-    if (justEnded.length > 0) {
-      justEnded.sort((a, b) => b.endMin - a.endMin);
-      return justEnded[0].cls;
     }
 
     return null;
@@ -280,6 +331,10 @@ window.ClassesManager = (() => {
 
       saveLocalData(store);
       debouncedPushToUpstash(store);
+
+      if (typeof SharedClassSync !== 'undefined') {
+        SharedClassSync.saveClassUnits(cls.name, selectedUnits);
+      }
       return cls;
     },
 

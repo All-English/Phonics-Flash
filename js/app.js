@@ -104,7 +104,6 @@
       if (scheduledClass) {
         ClassesManager.setActiveClassId(scheduledClass.id);
         applyClassProfile(scheduledClass);
-        showToast(`⏰ Auto-selected: ${scheduledClass.name}`, 'info', 4000);
       } else {
         const activeClass = ClassesManager.getActiveClass();
         if (activeClass) {
