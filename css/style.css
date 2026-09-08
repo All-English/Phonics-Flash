@@ -267,7 +267,7 @@ body {
   transform: scale(0.95);
 }
 
-/* ---------- Chart Launch Button in Level 1 ---------- */
+/* ---------- Chart Launch Button (Letter / Word Charts) ---------- */
 .chart-launch-btn {
   display: inline-flex;
   align-items: center;
@@ -276,7 +276,7 @@ body {
   background: light-dark(rgba(41, 168, 224, 0.12), rgba(41, 168, 224, 0.18));
   border: 1px solid light-dark(rgba(41, 168, 224, 0.3), rgba(41, 168, 224, 0.35));
   border-radius: var(--radius-md);
-  color: light-dark(#01579b, #ffffff);
+  color: light-dark(#01579b, #5bc0eb);
   font-family: var(--font-ui);
   font-size: 0.85rem;
   font-weight: 700;
@@ -299,6 +299,66 @@ body {
 .chart-launch-btn svg {
   width: 16px;
   height: 16px;
+}
+
+/* Level 1 - Blue */
+.chart-launch-btn[data-level="L1"] {
+  background: light-dark(rgba(41, 168, 224, 0.12), rgba(41, 168, 224, 0.18));
+  border-color: light-dark(rgba(41, 168, 224, 0.3), rgba(41, 168, 224, 0.35));
+  color: light-dark(#01579b, #5bc0eb);
+}
+.chart-launch-btn[data-level="L1"]:hover {
+  background: light-dark(rgba(41, 168, 224, 0.22), rgba(41, 168, 224, 0.28));
+  border-color: light-dark(#0288d1, #29A8E0);
+  box-shadow: light-dark(0 4px 12px rgba(41, 168, 224, 0.25), 0 0 15px rgba(41, 168, 224, 0.35));
+}
+
+/* Level 2 - Orange / Amber */
+.chart-launch-btn[data-level="L2"] {
+  background: light-dark(rgba(245, 166, 35, 0.12), rgba(245, 166, 35, 0.18));
+  border-color: light-dark(rgba(245, 166, 35, 0.35), rgba(245, 166, 35, 0.35));
+  color: light-dark(#924c00, #F5A623);
+}
+.chart-launch-btn[data-level="L2"]:hover {
+  background: light-dark(rgba(245, 166, 35, 0.22), rgba(245, 166, 35, 0.28));
+  border-color: light-dark(#d97706, #F5A623);
+  box-shadow: light-dark(0 4px 12px rgba(245, 166, 35, 0.25), 0 0 15px rgba(245, 166, 35, 0.35));
+}
+
+/* Level 3 - Coral / Red */
+.chart-launch-btn[data-level="L3"] {
+  background: light-dark(rgba(192, 69, 42, 0.12), rgba(192, 69, 42, 0.18));
+  border-color: light-dark(rgba(192, 69, 42, 0.35), rgba(192, 69, 42, 0.35));
+  color: light-dark(#99250f, #ff7a5c);
+}
+.chart-launch-btn[data-level="L3"]:hover {
+  background: light-dark(rgba(192, 69, 42, 0.22), rgba(192, 69, 42, 0.28));
+  border-color: light-dark(#c0452a, #ff7a5c);
+  box-shadow: light-dark(0 4px 12px rgba(192, 69, 42, 0.25), 0 0 15px rgba(192, 69, 42, 0.35));
+}
+
+/* Level 4 - Green */
+.chart-launch-btn[data-level="L4"] {
+  background: light-dark(rgba(61, 170, 92, 0.12), rgba(61, 170, 92, 0.18));
+  border-color: light-dark(rgba(61, 170, 92, 0.35), rgba(61, 170, 92, 0.35));
+  color: light-dark(#1d6a36, #4ade80);
+}
+.chart-launch-btn[data-level="L4"]:hover {
+  background: light-dark(rgba(61, 170, 92, 0.22), rgba(61, 170, 92, 0.28));
+  border-color: light-dark(#2e8548, #3DAA5C);
+  box-shadow: light-dark(0 4px 12px rgba(61, 170, 92, 0.25), 0 0 15px rgba(61, 170, 92, 0.35));
+}
+
+/* Level 5 - Purple */
+.chart-launch-btn[data-level="L5"] {
+  background: light-dark(rgba(155, 63, 173, 0.12), rgba(155, 63, 173, 0.18));
+  border-color: light-dark(rgba(155, 63, 173, 0.35), rgba(155, 63, 173, 0.35));
+  color: light-dark(#6b217a, #c084fc);
+}
+.chart-launch-btn[data-level="L5"]:hover {
+  background: light-dark(rgba(155, 63, 173, 0.22), rgba(155, 63, 173, 0.28));
+  border-color: light-dark(#7c2d94, #9B3FAD);
+  box-shadow: light-dark(0 4px 12px rgba(155, 63, 173, 0.25), 0 0 15px rgba(155, 63, 173, 0.35));
 }
 
 /* ---------- Levels Container ---------- */
