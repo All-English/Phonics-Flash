@@ -38,7 +38,9 @@
     speaker: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`,
     back: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>`,
     sun: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`,
-    moon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`
+    moon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
+    shuffle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>`,
+    undo: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>`
   };
 
   // ── Level Colors ───────────────────────────────────────────
@@ -169,7 +171,7 @@
     if (urlConfig) {
       if (urlConfig.isChart) {
         options.letterCase = urlConfig.letterCase;
-        openLetterChart(urlConfig.unitIds.length > 0 ? urlConfig.unitIds : null);
+        openChart(urlConfig.chartLevel || 'L1', urlConfig.unitIds.length > 0 ? urlConfig.unitIds : null);
         return;
       }
 
@@ -255,10 +257,20 @@
     if (!units && !isChart) return null;
 
     const caseParam = params.get('case') || params.get('c');
+    const levelParam = params.get('level') || params.get('l');
+    const unitIds = units ? units.split(/[,-]/).map(s => s.trim()).filter(Boolean) : [];
+
+    let chartLevel = levelParam ? levelParam.toUpperCase() : null;
+    if (!chartLevel && unitIds.length > 0) {
+      const match = unitIds[0].match(/^(L\d+)/i);
+      if (match) chartLevel = match[1].toUpperCase();
+    }
+    if (!chartLevel) chartLevel = 'L1';
 
     return {
       isChart: isChart,
-      unitIds: units ? units.split(/[,-]/).map(s => s.trim()).filter(Boolean) : [],
+      chartLevel: chartLevel,
+      unitIds: unitIds,
       extras: params.get('extras') === '1',
       sightWords: params.get('sight') === '1' || params.get('sightwords') === '1',
       images: params.get('images') !== '0', // default true
@@ -476,8 +488,8 @@
         </div>
       </div>
       <div class="units-container">
-        ${level.id === 'L1' ? `
-          <div class="level-tools-bar">
+        <div class="level-tools-bar">
+          ${level.id === 'L1' ? `
             <div class="case-selector-group" title="Select letter casing for Level 1">
               <span class="case-label">Letter Case:</span>
               <div class="case-btn-group">
@@ -487,7 +499,7 @@
                 <button class="case-btn ${options.letterCase === 'lower' ? 'active' : ''}" data-case="lower" title="Lowercase only (a)">a</button>
               </div>
             </div>
-            <button class="chart-launch-btn" title="Open full screen letter chart for selected Level 1 units">
+            <button class="chart-launch-btn" data-level="${level.id}" title="Open full screen letter chart for selected Level 1 units">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="7" height="7"></rect>
                 <rect x="14" y="3" width="7" height="7"></rect>
@@ -496,8 +508,18 @@
               </svg>
               <span>Letter Chart</span>
             </button>
-          </div>
-        ` : ''}
+          ` : `
+            <button class="chart-launch-btn" data-level="${level.id}" title="Open full screen word chart for selected ${level.name} units">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <span>Word Chart</span>
+            </button>
+          `}
+        </div>
         <div class="units-grid">
           ${level.units.map(unit => {
             const isChecked = savedUnits.includes(unit.id);
@@ -535,7 +557,7 @@
       saveSelectedUnits();
     });
 
-    // Level 1 specific handlers (Case buttons & Chart Launch button)
+    // Level 1 specific case buttons
     if (level.id === 'L1') {
       card.querySelectorAll('.case-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -548,14 +570,15 @@
           updateStartButton();
         });
       });
+    }
 
-      const chartBtn = card.querySelector('.chart-launch-btn');
-      if (chartBtn) {
-        chartBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          openLetterChart();
-        });
-      }
+    // Chart Launch button handler (Letter Chart for L1, Word Chart for L2-L5)
+    const chartBtn = card.querySelector('.chart-launch-btn');
+    if (chartBtn) {
+      chartBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openChart(level.id);
+      });
     }
 
     // Unit checkbox clicks
@@ -1452,78 +1475,125 @@
     }
   }
 
-  // ── Letter Chart Mode (Level 1 Fullscreen Grid) ───────────
+  // ── Chart Mode (Letter Chart for L1, Word Chart for L2-L5) ──
   let chartKeyboardHandler = null;
   let currentChartIndex = -1;
+  let currentChartLevel = null;
+  let chartIsRandom = false;
 
-  function updateChartURL(targetUnits) {
+  function shuffleArray(arr) {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function updateChartURL(targetUnits, level) {
     const params = new URLSearchParams();
     params.set('q', 'chart');
+    if (level && level.id !== 'L1') {
+      params.set('level', level.id);
+    }
     if (targetUnits && targetUnits.length > 0) {
-      const allL1Count = phonicsData.levels.find(l => l.id === 'L1')?.units.length || 8;
-      if (targetUnits.length < allL1Count) {
+      const allCount = level?.units?.length || 8;
+      if (targetUnits.length < allCount) {
         params.set('units', targetUnits.map(u => u.id).join('-'));
       }
     }
-    if (options.letterCase && options.letterCase !== 'both') {
+    if (level && level.id === 'L1' && options.letterCase && options.letterCase !== 'both') {
       params.set('case', options.letterCase);
     }
     const newURL = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState({}, '', newURL);
   }
 
-  function openLetterChart(customUnitIds = null) {
+  function openChart(levelId = 'L1', customUnitIds = null) {
     const selectedIds = customUnitIds || getSelectedUnitIds();
-    const l1Level = phonicsData.levels.find(l => l.id === 'L1');
-    if (!l1Level) return;
+    const level = phonicsData.levels.find(l => l.id === levelId) || phonicsData.levels[0];
+    if (!level) return;
 
-    // Filter selected Level 1 units, or if none in Level 1 are selected, use all Level 1 units
-    let targetUnits = l1Level.units.filter(u => selectedIds.includes(u.id));
+    currentChartLevel = level;
+    currentChartIndex = -1;
+    chartIsRandom = false;
+
+    // Filter selected units in this level, or if none selected, use all units of this level
+    let targetUnits = level.units.filter(u => selectedIds.includes(u.id));
     if (targetUnits.length === 0) {
-      targetUnits = l1Level.units;
+      targetUnits = level.units;
     }
 
-    currentChartIndex = -1;
+    // Update URL with q=chart and level
+    updateChartURL(targetUnits, level);
 
-    // Update URL with q=chart
-    updateChartURL(targetUnits);
+    // Update header title
+    const titleEl = document.querySelector('#chart-screen .chart-title');
+    if (titleEl) {
+      titleEl.textContent = level.id === 'L1' ? 'Level 1 Letter Chart' : `${level.name} Word Chart`;
+    }
+
+    // Show/hide case controls (only relevant for Level 1 alphabet)
+    const caseBar = document.querySelector('#chart-screen .chart-case-bar');
+    if (caseBar) {
+      caseBar.style.display = level.id === 'L1' ? '' : 'none';
+    }
 
     // Switch screen to chart-screen
     document.getElementById('menu-screen').classList.add('hidden');
     document.getElementById('slideshow-screen').classList.add('hidden');
     document.getElementById('chart-screen').classList.remove('hidden');
 
-    // Render the grid
-    renderLetterChartGrid(targetUnits);
-
     // Wire up header buttons inside chart screen
     const backBtn = document.getElementById('chart-back-btn');
     if (backBtn) {
-      backBtn.onclick = closeLetterChart;
+      backBtn.onclick = closeChart;
     }
 
-    // Wire up case buttons inside chart screen
+    const randomBtn = document.getElementById('chart-random-btn');
+    if (randomBtn) {
+      randomBtn.onclick = () => {
+        chartIsRandom = true;
+        currentChartIndex = -1;
+        renderChartGrid(targetUnits, currentChartLevel);
+      };
+    }
+
+    const resetOrderBtn = document.getElementById('chart-reset-order-btn');
+    if (resetOrderBtn) {
+      resetOrderBtn.onclick = () => {
+        chartIsRandom = false;
+        currentChartIndex = -1;
+        renderChartGrid(targetUnits, currentChartLevel);
+      };
+    }
+
+    // Render the grid
+    renderChartGrid(targetUnits, level);
+
+    // Wire up case buttons inside chart screen (Level 1 only)
     const chartCaseBtns = document.querySelectorAll('#chart-screen .case-btn');
     chartCaseBtns.forEach(btn => {
       btn.onclick = () => {
+        if (!currentChartLevel || currentChartLevel.id !== 'L1') return;
         const selectedCase = normalizeLetterCase(btn.dataset.case);
         options.letterCase = selectedCase;
         syncCaseButtons(selectedCase);
         localStorage.setItem('phonics-flash-letter-case', selectedCase);
         updateStartButton();
-        updateChartURL(targetUnits);
+        updateChartURL(targetUnits, currentChartLevel);
         currentChartIndex = -1;
-        renderLetterChartGrid(targetUnits);
+        renderChartGrid(targetUnits, currentChartLevel);
       };
     });
 
-    // Wire up keyboard shortcuts (Arrow keys, letters a-z, Space/Enter, Escape)
+    // Wire up keyboard shortcuts (Arrow keys for 2D grid, letters A-Z, Space/Enter, Escape)
     if (chartKeyboardHandler) {
       window.removeEventListener('keydown', chartKeyboardHandler);
     }
     chartKeyboardHandler = (e) => {
       if (e.key === 'Escape') {
-        closeLetterChart();
+        closeChart();
         return;
       }
       if (e.key === 'ArrowRight') {
@@ -1559,14 +1629,28 @@
       const char = e.key.toUpperCase();
       if (/^[A-Z]$/.test(char)) {
         const tiles = Array.from(document.querySelectorAll('#chart-grid .letter-tile'));
-        const targetIndex = tiles.findIndex(t => t.dataset.baseLetter === char);
-        if (targetIndex >= 0) {
-          setActiveChartTile(targetIndex, true);
+        const matchingIndices = [];
+        tiles.forEach((t, idx) => {
+          if (t.dataset.baseLetter === char) {
+            matchingIndices.push(idx);
+          }
+        });
+
+        if (matchingIndices.length > 0) {
+          const currPos = matchingIndices.indexOf(currentChartIndex);
+          if (currPos >= 0) {
+            const nextIdx = matchingIndices[(currPos + 1) % matchingIndices.length];
+            setActiveChartTile(nextIdx, true);
+          } else {
+            setActiveChartTile(matchingIndices[0], true);
+          }
         }
       }
     };
     window.addEventListener('keydown', chartKeyboardHandler);
   }
+
+  const openLetterChart = (customUnitIds = null) => openChart('L1', customUnitIds);
 
   function setActiveChartTile(index, playAudio = true) {
     const tiles = Array.from(document.querySelectorAll('#chart-grid .letter-tile'));
@@ -1582,8 +1666,11 @@
     });
 
     const targetTile = tiles[currentChartIndex];
-    if (targetTile && playAudio) {
-      playLetterTile(targetTile);
+    if (targetTile) {
+      targetTile.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      if (playAudio) {
+        playLetterTile(targetTile);
+      }
     }
   }
 
@@ -1628,68 +1715,93 @@
     }
   }
 
-  function renderLetterChartGrid(targetUnits) {
+  function renderChartGrid(targetUnits, level) {
     const grid = document.getElementById('chart-grid');
     if (!grid) return;
     grid.innerHTML = '';
 
-    // Collect all unique base letters from the target units in order
-    const letterMap = new Map();
-    targetUnits.forEach(unit => {
-      unit.words.forEach(w => {
-        const baseLetter = w.word ? w.word.charAt(0).toUpperCase() : '';
-        if (baseLetter && !letterMap.has(baseLetter)) {
-          // Use dedicated single-sound audio files for the letter chart
-          const singleAudio = `media/SmartPhonics/1/sounds/SingleLetters_single/${baseLetter}${baseLetter.toLowerCase()}.mp3`;
-          letterMap.set(baseLetter, {
-            baseLetter: baseLetter,
-            word: w.word,
-            audio: singleAudio
-          });
-        }
-      });
-    });
+    const isLevel1 = level ? level.id === 'L1' : true;
+    grid.classList.toggle('words-mode', !isLevel1);
 
-    const uniqueLetters = Array.from(letterMap.values());
-    // Sort in standard alphabetical order
-    uniqueLetters.sort((a, b) => a.baseLetter.localeCompare(b.baseLetter));
-
-    // Determine letter items based on active case
-    const letterCase = options.letterCase || 'both';
     let displayItems = [];
 
-    if (letterCase === 'separate') {
-      uniqueLetters.forEach(item => {
-        displayItems.push({
+    if (isLevel1) {
+      // Collect all unique base letters from target units in order
+      const letterMap = new Map();
+      targetUnits.forEach(unit => {
+        unit.words.forEach(w => {
+          const baseLetter = w.word ? w.word.charAt(0).toUpperCase() : '';
+          if (baseLetter && !letterMap.has(baseLetter)) {
+            // Use dedicated single-sound audio files for letter chart
+            const singleAudio = `media/SmartPhonics/1/sounds/SingleLetters_single/${baseLetter}${baseLetter.toLowerCase()}.mp3`;
+            letterMap.set(baseLetter, {
+              baseLetter: baseLetter,
+              word: w.word,
+              audio: singleAudio
+            });
+          }
+        });
+      });
+
+      const uniqueLetters = Array.from(letterMap.values());
+      uniqueLetters.sort((a, b) => a.baseLetter.localeCompare(b.baseLetter));
+
+      const letterCase = options.letterCase || 'both';
+      if (letterCase === 'separate') {
+        uniqueLetters.forEach(item => {
+          displayItems.push({
+            displayText: item.baseLetter.toUpperCase(),
+            baseLetter: item.baseLetter,
+            audio: item.audio
+          });
+          displayItems.push({
+            displayText: item.baseLetter.toLowerCase(),
+            baseLetter: item.baseLetter,
+            audio: item.audio
+          });
+        });
+      } else if (letterCase === 'upper') {
+        displayItems = uniqueLetters.map(item => ({
           displayText: item.baseLetter.toUpperCase(),
           baseLetter: item.baseLetter,
           audio: item.audio
-        });
-        displayItems.push({
+        }));
+      } else if (letterCase === 'lower') {
+        displayItems = uniqueLetters.map(item => ({
           displayText: item.baseLetter.toLowerCase(),
           baseLetter: item.baseLetter,
           audio: item.audio
+        }));
+      } else {
+        displayItems = uniqueLetters.map(item => ({
+          displayText: item.baseLetter.toUpperCase() + item.baseLetter.toLowerCase(),
+          baseLetter: item.baseLetter,
+          audio: item.audio
+        }));
+      }
+
+      syncCaseButtons(letterCase);
+    } else {
+      // Word Chart Mode (Levels 2–5): extract unique target words in curriculum order
+      const seenWords = new Set();
+      targetUnits.forEach(unit => {
+        (unit.words || []).forEach(w => {
+          const cleanWord = w.word ? w.word.trim() : '';
+          if (cleanWord && !seenWords.has(cleanWord.toLowerCase())) {
+            seenWords.add(cleanWord.toLowerCase());
+            displayItems.push({
+              displayText: cleanWord,
+              baseLetter: cleanWord.charAt(0).toUpperCase(),
+              word: cleanWord,
+              audio: w.audio
+            });
+          }
         });
       });
-    } else if (letterCase === 'upper') {
-      displayItems = uniqueLetters.map(item => ({
-        displayText: item.baseLetter.toUpperCase(),
-        baseLetter: item.baseLetter,
-        audio: item.audio
-      }));
-    } else if (letterCase === 'lower') {
-      displayItems = uniqueLetters.map(item => ({
-        displayText: item.baseLetter.toLowerCase(),
-        baseLetter: item.baseLetter,
-        audio: item.audio
-      }));
-    } else {
-      // 'both'
-      displayItems = uniqueLetters.map(item => ({
-        displayText: item.baseLetter.toUpperCase() + item.baseLetter.toLowerCase(),
-        baseLetter: item.baseLetter,
-        audio: item.audio
-      }));
+    }
+
+    if (chartIsRandom) {
+      displayItems = shuffleArray(displayItems);
     }
 
     // Preload audio files for instant chart tile playback
@@ -1700,14 +1812,23 @@
     // Update count badge
     const badge = document.getElementById('chart-count-badge');
     if (badge) {
-      badge.textContent = `${displayItems.length} Letter${displayItems.length > 1 ? 's' : ''}`;
+      const noun = isLevel1 ? 'Letter' : 'Word';
+      badge.textContent = `${displayItems.length} ${noun}${displayItems.length === 1 ? '' : 's'}`;
     }
 
-    // Update case button active state in chart header
-    syncCaseButtons(letterCase);
+    // Update randomize and reset order button states
+    const randomBtn = document.getElementById('chart-random-btn');
+    if (randomBtn) {
+      randomBtn.classList.toggle('active', chartIsRandom);
+      randomBtn.title = chartIsRandom ? 'Randomized order (click to re-shuffle)' : 'Randomize word/letter order';
+    }
+    const resetOrderBtn = document.getElementById('chart-reset-order-btn');
+    if (resetOrderBtn) {
+      resetOrderBtn.classList.toggle('hidden', !chartIsRandom);
+    }
 
     // Calculate balanced row distribution
-    const rowCounts = calculateRowDistribution(displayItems.length);
+    const rowCounts = calculateRowDistribution(displayItems.length, !isLevel1);
     grid.dataset.rows = rowCounts.length;
 
     let itemIndex = 0;
@@ -1723,7 +1844,7 @@
         const tile = document.createElement('div');
         tile.className = 'letter-tile';
         tile.dataset.baseLetter = item.baseLetter;
-        tile.dataset.audio = item.audio;
+        tile.dataset.audio = item.audio || '';
         tile.dataset.text = item.displayText;
         tile.dataset.tileIndex = currentIdx;
         tile.innerHTML = `<span class="letter-tile-text">${item.displayText}</span>`;
@@ -1740,16 +1861,29 @@
     });
   }
 
-  function calculateRowDistribution(totalItems) {
+  const renderLetterChartGrid = (targetUnits) => renderChartGrid(targetUnits, currentChartLevel || phonicsData.levels[0]);
+
+  function calculateRowDistribution(totalItems, isWordsMode = false) {
     if (totalItems <= 4) {
       return [totalItems];
     }
     let numRows = 2;
-    if (totalItems <= 8) numRows = 2;
-    else if (totalItems <= 18) numRows = 3;
-    else if (totalItems <= 28) numRows = 4;
-    else if (totalItems <= 42) numRows = 5;
-    else numRows = 6;
+    if (isWordsMode) {
+      if (totalItems <= 8) numRows = 2;
+      else if (totalItems <= 16) numRows = 3;
+      else if (totalItems <= 24) numRows = 4;
+      else if (totalItems <= 36) numRows = 5;
+      else if (totalItems <= 50) numRows = 6;
+      else if (totalItems <= 72) numRows = 7;
+      else numRows = 8;
+    } else {
+      if (totalItems <= 8) numRows = 2;
+      else if (totalItems <= 18) numRows = 3;
+      else if (totalItems <= 28) numRows = 4;
+      else if (totalItems <= 42) numRows = 5;
+      else if (totalItems <= 56) numRows = 6;
+      else numRows = 7;
+    }
 
     const base = Math.floor(totalItems / numRows);
     const remainder = totalItems % numRows;
@@ -1769,20 +1903,22 @@
     tile.classList.add('playing');
     setTimeout(() => {
       tile.classList.remove('playing');
-    }, 600);
+    }, 500);
 
     const audioPath = tile.dataset.audio;
     const text = tile.dataset.text;
     AudioPlayer.playWord(text, audioPath || undefined);
   }
 
-  function closeLetterChart() {
+  function closeChart() {
     AudioPlayer.stop();
     if (chartKeyboardHandler) {
       window.removeEventListener('keydown', chartKeyboardHandler);
       chartKeyboardHandler = null;
     }
     currentChartIndex = -1;
+    currentChartLevel = null;
+    chartIsRandom = false;
     document.getElementById('chart-screen').classList.add('hidden');
     document.getElementById('menu-screen').classList.remove('hidden');
     renderMenu();
@@ -1792,6 +1928,8 @@
       window.history.replaceState({}, '', window.location.pathname);
     }
   }
+
+  const closeLetterChart = closeChart;
 
   // ── Classes & Schedule UI Management ──────────────────────
   function initClassesUI() {
