@@ -1927,7 +1927,6 @@
   // ── Classes & Schedule UI Management ──────────────────────
   function initClassesUI() {
     const classSelect = document.getElementById('class-select');
-    const manageBtn = document.getElementById('manage-classes-btn');
     const settingsBtn = document.getElementById('open-settings-btn');
     const modal = document.getElementById('class-modal');
     const modalTitle = document.getElementById('modal-title');
@@ -1936,6 +1935,10 @@
     const addClassBtn = document.getElementById('add-class-btn');
     const classForm = document.getElementById('class-form');
     const cancelFormBtn = document.getElementById('form-cancel-btn');
+    const formBackBtn = document.getElementById('form-back-btn');
+    const classesListView = document.getElementById('classes-list-view');
+    const classFormView = document.getElementById('class-form-view');
+    const classFormTitle = document.getElementById('class-form-title');
     const saveUpstashBtn = document.getElementById('save-upstash-btn');
     const exportBtn = document.getElementById('export-classes-btn');
     const importInput = document.getElementById('import-classes-input');
@@ -2002,17 +2005,10 @@
       });
     }
 
-    // Manage button -> Open modal to Classes tab
-    if (manageBtn && modal) {
-      manageBtn.addEventListener('click', () => {
-        openClassModal('classes-tab');
-      });
-    }
-
-    // Settings button -> Open modal to TTS Settings tab
+    // Settings button -> Open modal to My Classes tab
     if (settingsBtn && modal) {
       settingsBtn.addEventListener('click', () => {
-        openClassModal('tts-tab');
+        openClassModal('classes-tab');
       });
     }
 
@@ -2039,17 +2035,17 @@
       });
 
       if (modalTitle) {
-        if (tabId === 'tts-tab') modalTitle.textContent = 'Voice & TTS Settings';
-        else if (tabId === 'classes-tab') modalTitle.textContent = 'Class Manager';
-        else if (tabId === 'schedule-tab') modalTitle.textContent = 'Class Schedule Editor';
+        if (tabId === 'classes-tab') modalTitle.textContent = 'My Classes';
+        else if (tabId === 'tts-tab') modalTitle.textContent = 'Voice & TTS Settings';
         else if (tabId === 'sync-tab') modalTitle.textContent = 'Cloud Sync & Backup';
         else modalTitle.textContent = 'Settings & Classes';
       }
 
-      if (tabId === 'tts-tab') {
-        populateTTSSettings();
-      } else if (tabId === 'classes-tab') {
+      if (tabId === 'classes-tab') {
+        hideClassForm();
         renderClassesListModal();
+      } else if (tabId === 'tts-tab') {
+        populateTTSSettings();
       } else if (tabId === 'sync-tab') {
         populateSyncForm();
       }
@@ -2254,7 +2250,7 @@
         container.innerHTML = `
           <div style="text-align:center;padding:2rem;color:var(--text-muted);">
             <p>No classes created yet.</p>
-            <p style="margin-top:0.5rem;font-size:0.85rem;">Click "+ New Class" above to set up your schedule.</p>
+            <p style="margin-top:0.5rem;font-size:0.85rem;">Click "+ New Class" above to create one.</p>
           </div>
         `;
         return;
@@ -2264,30 +2260,23 @@
       const sortedClasses = [...classes].sort((a, b) => a.name.localeCompare(b.name));
       sortedClasses.forEach(c => {
         const isActive = activeClass && activeClass.id === c.id;
-        const daysStr = c.schedule?.days?.join(', ') || 'No days';
-        const timeStr = `${c.schedule?.startTime || '15:00'} - ${c.schedule?.endTime || '15:50'}`;
-        const unitCount = Array.isArray(c.selectedUnits) ? c.selectedUnits.length : 0;
 
         const card = document.createElement('div');
         card.className = `class-card-item ${isActive ? 'active-class' : ''}`;
         card.innerHTML = `
-          <div class="class-card-info">
+          <div class="class-card-info" title="Click to use this class">
             <div class="class-card-name">
-              <span>${c.name}</span>
+              <span class="class-name-text"></span>
               ${isActive ? '<span class="active-pill">Active</span>' : ''}
-            </div>
-            <div class="class-card-meta">
-              <span>📅 ${daysStr}</span>
-              <span>⏰ ${timeStr}</span>
-              <span>📚 ${unitCount} unit${unitCount === 1 ? '' : 's'}</span>
             </div>
           </div>
           <div class="class-card-actions">
-            <button class="btn-icon-small edit-btn" title="Edit schedule">✏️ Edit</button>
-            <button class="btn-icon-small select-btn" title="Select this class">✔️ Use</button>
+            <button class="btn-icon-small edit-btn" title="Edit class">✏️ Edit</button>
+            <button class="btn-icon-small select-btn" title="Use this class">✔️ Use</button>
             <button class="btn-icon-small delete delete-btn" title="Delete class">🗑️</button>
           </div>
         `;
+        card.querySelector('.class-name-text').textContent = c.name;
 
         card.querySelector('.class-card-info').addEventListener('click', () => {
           ClassesManager.setActiveClassId(c.id);
@@ -2305,7 +2294,7 @@
 
         card.querySelector('.edit-btn').addEventListener('click', (e) => {
           e.stopPropagation();
-          editClassForm(c);
+          showClassForm(c);
         });
 
         card.querySelector('.delete-btn').addEventListener('click', (e) => {
@@ -2322,29 +2311,50 @@
       });
     }
 
-    function editClassForm(cls) {
+    function showClassForm(cls) {
+      if (classesListView) classesListView.classList.add('hidden');
+      if (classFormView) classFormView.classList.remove('hidden');
+
+      const nameInput = document.getElementById('form-class-name');
       document.getElementById('form-class-id').value = cls ? cls.id : '';
-      document.getElementById('form-class-name').value = cls ? cls.name : '';
+      if (nameInput) nameInput.value = cls ? cls.name : '';
       document.getElementById('form-start-time').value = cls?.schedule?.startTime || '15:00';
       document.getElementById('form-end-time').value = cls?.schedule?.endTime || '15:50';
 
       const selectedDays = cls?.schedule?.days || ['Mon', 'Wed', 'Fri'];
-      document.querySelectorAll('#schedule-tab input[name="days"]').forEach(cb => {
+      document.querySelectorAll('#class-form input[name="days"]').forEach(cb => {
         cb.checked = selectedDays.includes(cb.value);
       });
 
-      switchModalTab('schedule-tab');
+      if (classFormTitle) {
+        classFormTitle.textContent = cls ? `Edit Class: ${cls.name}` : 'Create New Class';
+      }
+
+      if (nameInput) {
+        setTimeout(() => nameInput.focus(), 50);
+      }
+    }
+
+    function hideClassForm() {
+      if (classFormView) classFormView.classList.add('hidden');
+      if (classesListView) classesListView.classList.remove('hidden');
     }
 
     if (addClassBtn) {
       addClassBtn.addEventListener('click', () => {
-        editClassForm(null);
+        showClassForm(null);
       });
     }
 
     if (cancelFormBtn) {
       cancelFormBtn.addEventListener('click', () => {
-        switchModalTab('classes-tab');
+        hideClassForm();
+      });
+    }
+
+    if (formBackBtn) {
+      formBackBtn.addEventListener('click', () => {
+        hideClassForm();
       });
     }
 
@@ -2355,7 +2365,7 @@
         const name = document.getElementById('form-class-name').value.trim();
         const startTime = document.getElementById('form-start-time').value;
         const endTime = document.getElementById('form-end-time').value;
-        const checkedDays = Array.from(document.querySelectorAll('#schedule-tab input[name="days"]:checked')).map(cb => cb.value);
+        const checkedDays = Array.from(document.querySelectorAll('#class-form input[name="days"]:checked')).map(cb => cb.value);
 
         if (!name) return;
 
@@ -2379,7 +2389,8 @@
         }
 
         populateClassDropdown();
-        switchModalTab('classes-tab');
+        renderClassesListModal();
+        hideClassForm();
       });
     }
 

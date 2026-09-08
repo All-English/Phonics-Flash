@@ -43,12 +43,7 @@
             </div>
           </div>
 
-          <button id="manage-classes-btn" class="class-action-btn" title="Manage classes and schedules">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            <span>Classes</span>
-          </button>
-
-          <button id="open-settings-btn" class="class-action-btn" title="Voice & TTS Settings">
+          <button id="open-settings-btn" class="class-action-btn" title="Settings &amp; Classes">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             <span>Settings</span>
           </button>
@@ -195,14 +190,72 @@
       </div>
 
       <div class="modal-tabs">
-        <button class="modal-tab-btn" data-tab="tts-tab">🎙️ Voice &amp; TTS</button>
         <button class="modal-tab-btn active" data-tab="classes-tab">My Classes</button>
-        <button class="modal-tab-btn" data-tab="schedule-tab">Schedule &amp; Times</button>
+        <button class="modal-tab-btn" data-tab="tts-tab">🎙️ Voice &amp; TTS</button>
         <button class="modal-tab-btn" data-tab="sync-tab">Cloud Sync &amp; Backup</button>
       </div>
 
       <div class="modal-body">
-        <!-- TAB 0: Voice & TTS Settings -->
+        <!-- TAB 1: My Classes -->
+        <div id="classes-tab" class="modal-tab-content active">
+          <!-- View 1: Classes List -->
+          <div id="classes-list-view">
+            <div class="tab-toolbar">
+              <button id="add-class-btn" class="btn btn-primary">+ New Class</button>
+              <span class="tab-subtitle">Click a class to use, edit, or delete</span>
+            </div>
+            <div id="classes-list-container" class="classes-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- View 2: Create / Edit Class Form -->
+          <div id="class-form-view" class="hidden">
+            <div class="form-header-row">
+              <h3 id="class-form-title">Create New Class</h3>
+              <button type="button" id="form-back-btn" class="btn-link">&larr; Back to Classes</button>
+            </div>
+            <form id="class-form" class="class-form">
+              <input type="hidden" id="form-class-id" value="">
+
+              <div class="form-group">
+                <label for="form-class-name">Class Name</label>
+                <input type="text" id="form-class-name" placeholder="e.g. Level 2 Mon/Wed/Fri (3:00 PM)" required>
+              </div>
+
+              <div class="form-group">
+                <label>Scheduled Days</label>
+                <div class="days-checkbox-group">
+                  <label class="day-chip"><input type="checkbox" name="days" value="Mon"><span>Mon</span></label>
+                  <label class="day-chip"><input type="checkbox" name="days" value="Tue"><span>Tue</span></label>
+                  <label class="day-chip"><input type="checkbox" name="days" value="Wed"><span>Wed</span></label>
+                  <label class="day-chip"><input type="checkbox" name="days" value="Thu"><span>Thu</span></label>
+                  <label class="day-chip"><input type="checkbox" name="days" value="Fri"><span>Fri</span></label>
+                  <label class="day-chip"><input type="checkbox" name="days" value="Sat"><span>Sat</span></label>
+                  <label class="day-chip"><input type="checkbox" name="days" value="Sun"><span>Sun</span></label>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label for="form-start-time">Start Time</label>
+                  <input type="time" id="form-start-time" value="15:00" required>
+                </div>
+                <div class="form-group flex-1">
+                  <label for="form-end-time">End Time</label>
+                  <input type="time" id="form-end-time" value="15:50" required>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary" id="form-submit-btn">Save Class</button>
+                <button type="button" id="form-cancel-btn" class="btn btn-secondary">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- TAB 2: Voice & TTS Settings -->
         <div id="tts-tab" class="modal-tab-content">
           <div class="sync-section">
             <div class="tts-header-row">
@@ -292,58 +345,6 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- TAB 1: Classes -->
-        <div id="classes-tab" class="modal-tab-content active">
-          <div class="tab-toolbar">
-            <button id="add-class-btn" class="btn btn-primary">+ New Class</button>
-            <span class="tab-subtitle">Click a class to edit or use</span>
-          </div>
-          <div id="classes-list-container" class="classes-list">
-            <!-- Dynamically populated -->
-          </div>
-        </div>
-
-        <!-- TAB 2: Class Editor (create/edit class) -->
-        <div id="schedule-tab" class="modal-tab-content">
-          <form id="class-form" class="class-form">
-            <input type="hidden" id="form-class-id" value="">
-
-            <div class="form-group">
-              <label for="form-class-name">Class Name</label>
-              <input type="text" id="form-class-name" placeholder="e.g. Level 2 Mon/Wed/Fri (3:00 PM)" required>
-            </div>
-
-            <div class="form-group">
-              <label>Scheduled Days</label>
-              <div class="days-checkbox-group">
-                <label class="day-chip"><input type="checkbox" name="days" value="Mon"><span>Mon</span></label>
-                <label class="day-chip"><input type="checkbox" name="days" value="Tue"><span>Tue</span></label>
-                <label class="day-chip"><input type="checkbox" name="days" value="Wed"><span>Wed</span></label>
-                <label class="day-chip"><input type="checkbox" name="days" value="Thu"><span>Thu</span></label>
-                <label class="day-chip"><input type="checkbox" name="days" value="Fri"><span>Fri</span></label>
-                <label class="day-chip"><input type="checkbox" name="days" value="Sat"><span>Sat</span></label>
-                <label class="day-chip"><input type="checkbox" name="days" value="Sun"><span>Sun</span></label>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group flex-1">
-                <label for="form-start-time">Start Time</label>
-                <input type="time" id="form-start-time" value="15:00" required>
-              </div>
-              <div class="form-group flex-1">
-                <label for="form-end-time">End Time</label>
-                <input type="time" id="form-end-time" value="15:50" required>
-              </div>
-            </div>
-
-            <div class="form-actions">
-              <button type="submit" class="btn btn-primary">Save Class</button>
-              <button type="button" id="form-cancel-btn" class="btn btn-secondary">Cancel</button>
-            </div>
-          </form>
         </div>
 
         <!-- TAB 3: Cloud Sync & Backup -->
