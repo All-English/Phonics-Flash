@@ -1639,10 +1639,12 @@
       unit.words.forEach(w => {
         const baseLetter = w.word ? w.word.charAt(0).toUpperCase() : '';
         if (baseLetter && !letterMap.has(baseLetter)) {
+          // Use dedicated single-sound audio files for the letter chart
+          const singleAudio = `media/SmartPhonics/1/sounds/SingleLetters_single/${baseLetter}${baseLetter.toLowerCase()}.mp3`;
           letterMap.set(baseLetter, {
             baseLetter: baseLetter,
             word: w.word,
-            audio: w.audio || `media/SmartPhonics/1/sounds/SingleLetters/${baseLetter}${baseLetter.toLowerCase()}.mp3`
+            audio: singleAudio
           });
         }
       });
@@ -1689,6 +1691,11 @@
         audio: item.audio
       }));
     }
+
+    // Preload audio files for instant chart tile playback
+    displayItems.forEach(item => {
+      if (item.audio) AudioPlayer.preload(item.audio);
+    });
 
     // Update count badge
     const badge = document.getElementById('chart-count-badge');
