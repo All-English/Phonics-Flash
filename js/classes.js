@@ -169,6 +169,154 @@ window.ClassesManager = (() => {
     return null;
   }
 
+  // ── Helper: Schedule Auto-Parser from Class Name ────────────
+  function format24Hour(hour, minute, ampm) {
+    let h = hour;
+    const m = minute || 0;
+    if (ampm === 'pm' && h < 12) {
+      h += 12;
+    } else if (ampm === 'am' && h === 12) {
+      h = 0;
+    }
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  }
+
+  function addMinutesToTime(timeStr, minsToAdd) {
+    const [hStr, mStr] = timeStr.split(':');
+    const totalMins = (parseInt(hStr, 10) * 60 + parseInt(mStr, 10) + minsToAdd) % (24 * 60);
+    const newH = Math.floor(totalMins / 60);
+    const newM = totalMins % 60;
+    return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+  }
+
+  function parseScheduleFromClassName(name) {
+    if (!name || typeof name !== 'string') return { days: null, time: null };
+    const trimmed = name.trim();
+    if (!trimmed) return { days: null, time: null };
+
+    const ALL_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    let parsedDays = new Set();
+
+    // Strip out AM / PM strings so they do not falsely trigger day tokens like "M"
+    const cleanForDays = trimmed.replace(/\b[ap]\.?m\.?\b/gi, ' ');
+
+    if (/\b(?:mon(?:day)?\s*[-–~to]+\s*fri(?:day)?|m\s*[-–~]\s*f|weekdays?)\b/i.test(cleanForDays)) {
+      ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].forEach(d => parsedDays.add(d));
+    } else if (/\b(?:weekends?)\b/i.test(cleanForDays)) {
+      ['Sat', 'Sun'].forEach(d => parsedDays.add(d));
+    } else if (/\b(?:every\s*day|daily)\b/i.test(cleanForDays)) {
+      ALL_DAYS.forEach(d => parsedDays.add(d));
+    } else {
+      const upperTokens = cleanForDays.toUpperCase();
+      if (/\bMWF\b/.test(upperTokens) || /\bM[\/,\-\s]+W[\/,\-\s]+F\b/i.test(cleanForDays)) {
+        ['Mon', 'Wed', 'Fri'].forEach(d => parsedDays.add(d));
+      }
+      if (/\b(?:TTHS|TTS)\b/.test(upperTokens)) {
+        ['Tue', 'Thu', 'Sat'].forEach(d => parsedDays.add(d));
+      } else if (/\b(?:TTH|TR|TT)\b/.test(upperTokens) || /\bT[\/,\-\s]+TH\b/i.test(cleanForDays)) {
+        ['Tue', 'Thu'].forEach(d => parsedDays.add(d));
+      }
+      if (/\bMW\b/.test(upperTokens) || /\bM[\/,\-\s]+W\b/i.test(cleanForDays)) {
+        ['Mon', 'Wed'].forEach(d => parsedDays.add(d));
+      }
+      if (/\bWF\b/.test(upperTokens) || /\bW[\/,\-\s]+F\b/i.test(cleanForDays)) {
+        ['Wed', 'Fri'].forEach(d => parsedDays.add(d));
+      }
+      if (/\bMF\b/.test(upperTokens) || /\bM[\/,\-\s]+F\b/i.test(cleanForDays)) {
+        ['Mon', 'Fri'].forEach(d => parsedDays.add(d));
+      }
+
+      if (/\b(?:mon|monday)s?\b/i.test(cleanForDays)) parsedDays.add('Mon');
+      if (/\b(?:tue|tues|tuesday)s?\b/i.test(cleanForDays)) parsedDays.add('Tue');
+      if (/\b(?:wed|weds|wednesday)s?\b/i.test(cleanForDays)) parsedDays.add('Wed');
+      if (/\b(?:thu|thur|thurs|thursday|th)s?\b/i.test(cleanForDays)) parsedDays.add('Thu');
+      if (/\b(?:fri|friday)s?\b/i.test(cleanForDays)) parsedDays.add('Fri');
+      if (/\b(?:sat|satur|saturday|sa)s?\b/i.test(cleanForDays)) parsedDays.add('Sat');
+      if (/\b(?:sun|sunday|su)s?\b/i.test(cleanForDays)) parsedDays.add('Sun');
+
+      // Standalone single letters if no days matched yet
+      if (parsedDays.size === 0) {
+        if (/\bM\b/i.test(cleanForDays)) parsedDays.add('Mon');
+        if (/\bW\b/i.test(cleanForDays)) parsedDays.add('Wed');
+        if (/\bF\b/i.test(cleanForDays)) parsedDays.add('Fri');
+      }
+    }
+
+    const orderedDays = ALL_DAYS.filter(d => parsedDays.has(d));
+    let parsedTime = null;
+
+    // 1. Time range: e.g. "9:00 - 9:50", "9:00-9:50", "9 - 9:50", "9:00 to 9:50", "1:30pm - 2:20pm"
+    const rangeRegex = /\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|–|~|to)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/i;
+    const rangeMatch = trimmed.match(rangeRegex);
+
+    if (rangeMatch && (rangeMatch[2] !== undefined || rangeMatch[3] !== undefined || rangeMatch[5] !== undefined || rangeMatch[6] !== undefined)) {
+      const sH = parseInt(rangeMatch[1], 10);
+      const sM = rangeMatch[2] ? parseInt(rangeMatch[2], 10) : 0;
+      const sAmPm = rangeMatch[3]?.toLowerCase();
+
+      const eH = parseInt(rangeMatch[4], 10);
+      const eM = rangeMatch[5] ? parseInt(rangeMatch[5], 10) : 0;
+      const eAmPm = rangeMatch[6]?.toLowerCase();
+
+      if (sH >= 0 && sH <= 24 && eH >= 0 && eH <= 24 && sM >= 0 && sM < 60 && eM >= 0 && eM < 60) {
+        const resolvedEndAmPm = eAmPm || (eH < 12 ? 'pm' : undefined);
+        const resolvedStartAmPm = sAmPm || (eAmPm ? eAmPm : (sH < 12 ? 'pm' : undefined));
+
+        const startTime = format24Hour(sH, sM, resolvedStartAmPm);
+        const endTime = format24Hour(eH, eM, resolvedEndAmPm);
+        parsedTime = { startTime, endTime };
+      }
+    }
+
+    // 2. Single time with colon: e.g. "9:00", "9:00pm", "03:30", "15:00"
+    if (!parsedTime) {
+      const colonMatch = trimmed.match(/\b(\d{1,2}):(\d{2})\s*(am|pm)?\b/i);
+      if (colonMatch) {
+        const h = parseInt(colonMatch[1], 10);
+        const min = parseInt(colonMatch[2], 10);
+        const ampm = colonMatch[3]?.toLowerCase();
+        if (h >= 0 && h <= 24 && min >= 0 && min < 60) {
+          const resolvedAmPm = ampm || (h < 12 ? 'pm' : undefined);
+          const startTime = format24Hour(h, min, resolvedAmPm);
+          const endTime = addMinutesToTime(startTime, 50);
+          parsedTime = { startTime, endTime };
+        }
+      }
+    }
+
+    // 3. Single time with explicit am/pm: e.g. "9pm", "10am", "4 pm"
+    if (!parsedTime) {
+      const ampmMatch = trimmed.match(/\b(\d{1,2})\s*(am|pm)\b/i);
+      if (ampmMatch) {
+        const h = parseInt(ampmMatch[1], 10);
+        const ampm = ampmMatch[2].toLowerCase();
+        if (h >= 0 && h <= 24) {
+          const startTime = format24Hour(h, 0, ampm);
+          const endTime = addMinutesToTime(startTime, 50);
+          parsedTime = { startTime, endTime };
+        }
+      }
+    }
+
+    // 4. Standalone hour following day or at/@: e.g. "MWF 9", "Level 2 at 9", "Mon 3"
+    if (!parsedTime) {
+      const dayPrefixMatch = trimmed.match(/(?:@|\b(?:at|mon(?:day)?|tue(?:s|sday)?|wed(?:nesday)?|thu(?:r|rs|rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?|mwf|tth|tts|mw|wf|mf))\s+(\d{1,2})\b/i);
+      if (dayPrefixMatch) {
+        const h = parseInt(dayPrefixMatch[1], 10);
+        if (h >= 1 && h <= 12) {
+          const startTime = format24Hour(h, 0, 'pm');
+          const endTime = addMinutesToTime(startTime, 50);
+          parsedTime = { startTime, endTime };
+        }
+      }
+    }
+
+    return {
+      days: orderedDays.length > 0 ? orderedDays : null,
+      time: parsedTime
+    };
+  }
+
   // ── Upstash REST Cloud Sync (Key: phonics_flash:classes) ─────
   async function fetchFromUpstash() {
     const config = getUpstashConfig();
@@ -394,6 +542,10 @@ window.ClassesManager = (() => {
         return { success: false, error: e.message };
       }
       return { success: false, error: 'Invalid class backup format' };
+    },
+
+    parseScheduleFromClassName(name) {
+      return parseScheduleFromClassName(name);
     }
   };
 })();

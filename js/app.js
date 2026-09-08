@@ -2358,6 +2358,28 @@
       });
     }
 
+    // Auto-parse schedule (days and time) from class name input
+    const classNameInput = document.getElementById('form-class-name');
+    if (classNameInput) {
+      classNameInput.addEventListener('input', () => {
+        const val = classNameInput.value;
+        if (typeof ClassesManager !== 'undefined' && ClassesManager.parseScheduleFromClassName) {
+          const { days, time } = ClassesManager.parseScheduleFromClassName(val);
+          if (days && days.length > 0) {
+            document.querySelectorAll('#class-form input[name="days"]').forEach(cb => {
+              cb.checked = days.includes(cb.value);
+            });
+          }
+          if (time) {
+            const startEl = document.getElementById('form-start-time');
+            const endEl = document.getElementById('form-end-time');
+            if (startEl && time.startTime) startEl.value = time.startTime;
+            if (endEl && time.endTime) endEl.value = time.endTime;
+          }
+        }
+      });
+    }
+
     if (classForm) {
       classForm.addEventListener('submit', (e) => {
         e.preventDefault();
