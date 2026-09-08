@@ -99,11 +99,17 @@ window.ClassesManager = (() => {
             };
             classes.push(existing);
           } else {
-            // Keep schedule and units aligned if profile has them
+            // Keep schedule aligned with shared_class_profiles
             if (sched) existing.schedule = sched;
-            if (savedUnits.length > 0 && (!existing.selectedUnits || existing.selectedUnits.length === 0)) {
-              existing.selectedUnits = savedUnits;
+
+            // Adopt units from shared_class_profiles (universal cross-app curriculum state)
+            const profTime = prof.updatedAt || 0;
+            const localTime = existing.updatedAt || 0;
+            if (Array.isArray(prof.units) && (profTime >= localTime || !existing.selectedUnits || existing.selectedUnits.length === 0)) {
+              existing.selectedUnits = [...prof.units];
+              existing.updatedAt = profTime || Date.now();
             }
+
             if (Array.isArray(playerList)) existing.players = playerList;
           }
         }
@@ -361,7 +367,9 @@ window.ClassesManager = (() => {
 
       if (remoteTime > localTime) {
         saveLocalData(remote);
-        return { success: true, source: 'remote_loaded', data: remote };
+        const merged = loadLocalData();
+        saveLocalData(merged);
+        return { success: true, source: 'remote_loaded', data: merged };
       } else {
         await pushToUpstash(local);
         return { success: true, source: 'local_synced', data: local };
