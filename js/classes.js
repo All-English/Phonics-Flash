@@ -278,7 +278,7 @@ window.ClassesManager = (() => {
         if (h >= 0 && h <= 24 && min >= 0 && min < 60) {
           const resolvedAmPm = ampm || (h < 12 ? 'pm' : undefined);
           const startTime = format24Hour(h, min, resolvedAmPm);
-          const endTime = addMinutesToTime(startTime, 50);
+          const endTime = addMinutesToTime(startTime, 60);
           parsedTime = { startTime, endTime };
         }
       }
@@ -292,7 +292,7 @@ window.ClassesManager = (() => {
         const ampm = ampmMatch[2].toLowerCase();
         if (h >= 0 && h <= 24) {
           const startTime = format24Hour(h, 0, ampm);
-          const endTime = addMinutesToTime(startTime, 50);
+          const endTime = addMinutesToTime(startTime, 60);
           parsedTime = { startTime, endTime };
         }
       }
@@ -305,7 +305,7 @@ window.ClassesManager = (() => {
         const h = parseInt(dayPrefixMatch[1], 10);
         if (h >= 1 && h <= 12) {
           const startTime = format24Hour(h, 0, 'pm');
-          const endTime = addMinutesToTime(startTime, 50);
+          const endTime = addMinutesToTime(startTime, 60);
           parsedTime = { startTime, endTime };
         }
       }
@@ -417,7 +417,7 @@ window.ClassesManager = (() => {
         schedule: {
           days: classObj.schedule?.days || ['Mon', 'Wed', 'Fri'],
           startTime: classObj.schedule?.startTime || '15:00',
-          endTime: classObj.schedule?.endTime || '15:50'
+          endTime: classObj.schedule?.endTime || '16:00'
         },
         selectedUnits: classObj.selectedUnits || [],
         options: {

@@ -363,8 +363,43 @@
       saveCurrentOptionsToActiveClass();
     });
 
-    // Wire up start button
-    document.getElementById('start-btn').addEventListener('click', handleStart);
+    // Wire up start button click & Enter key shortcut
+    const startBtn = document.getElementById('start-btn');
+    startBtn.addEventListener('click', handleStart);
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || e.repeat) return;
+
+      // Only active when menu screen is visible
+      const menuScreen = document.getElementById('menu-screen');
+      if (!menuScreen || menuScreen.classList.contains('hidden')) return;
+
+      // Do not trigger if modal is open
+      const classModal = document.getElementById('class-modal');
+      if (classModal && !classModal.classList.contains('hidden')) return;
+
+      // Do not trigger if user is interacting with text inputs, textareas, or select dropdowns
+      const active = document.activeElement;
+      if (active) {
+        const tag = active.tagName;
+        const isEditable = active.isContentEditable || tag === 'TEXTAREA' || (tag === 'INPUT' && !['checkbox', 'radio'].includes(active.type));
+        if (isEditable || tag === 'SELECT') return;
+
+        // If user explicitly keyboard-navigated (:focus-visible) to utility buttons, let Enter trigger that button instead
+        if (
+          (active.id === 'open-settings-btn' || active.id === 'reset-btn' || active.id === 'theme-toggle') &&
+          active.matches && active.matches(':focus-visible')
+        ) {
+          return;
+        }
+      }
+
+      // Check if start button is available and enabled
+      if (!startBtn || startBtn.disabled) return;
+
+      e.preventDefault();
+      handleStart();
+    });
 
     // Wire up reset button
     const resetBtn = document.getElementById('reset-btn');
@@ -628,8 +663,10 @@
     const countSpan = btn.querySelector('.start-btn-count');
     if (selectedIds.length === 0) {
       countSpan.textContent = 'Select at least one unit';
+      btn.title = 'Select at least one unit to start review';
     } else {
       countSpan.textContent = `${selectedIds.length} unit${selectedIds.length > 1 ? 's' : ''} · ${count} words`;
+      btn.title = 'Start Review (Enter)';
     }
   }
 
@@ -2319,7 +2356,7 @@
       document.getElementById('form-class-id').value = cls ? cls.id : '';
       if (nameInput) nameInput.value = cls ? cls.name : '';
       document.getElementById('form-start-time').value = cls?.schedule?.startTime || '15:00';
-      document.getElementById('form-end-time').value = cls?.schedule?.endTime || '15:50';
+      document.getElementById('form-end-time').value = cls?.schedule?.endTime || '16:00';
 
       const selectedDays = cls?.schedule?.days || ['Mon', 'Wed', 'Fri'];
       document.querySelectorAll('#class-form input[name="days"]').forEach(cb => {

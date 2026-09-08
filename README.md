@@ -99,11 +99,15 @@ Phonics Flash/
 
 ## ⌨️ Keyboard & Navigation Shortcuts
 
-While inside the slideshow, use the following controls:
-
+### Main Menu Screen
 | Control | Action |
 | :--- | :--- |
-| **Space** or **Enter** | Replay current word audio |
+| **Enter** | Start review with selected units |
+
+### Review Slideshow
+| Control | Action |
+| :--- | :--- |
+| **Space** or **Enter** | Replay current word audio (or reveal word in Dictation/Quiz mode) |
 | **Arrow Right / Left** | Next / Previous unit (Normal Mode) or Next / Previous slide (Mix Mode) |
 | **Arrow Down / Up** | Next / Previous word within the unit (Normal Mode) |
 | **Escape (Esc)** | Exit slideshow and return to main menu |
