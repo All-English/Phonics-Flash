@@ -110,7 +110,7 @@ Phonics Flash/
 | **Space** or **Enter** | Replay current word audio (or reveal word in Dictation/Quiz mode) |
 | **Arrow Right / Left** | Next / Previous unit (Normal Mode) or Next / Previous slide (Mix Mode) |
 | **Arrow Down / Up** | Next / Previous word within the unit (Normal Mode) |
-| **Escape (Esc)** | Exit slideshow and return to main menu |
+| **Escape (Esc)** or **Backspace** | Exit slideshow and return to main menu |
 | **Left Click (Word)** | Replay word audio |
 | **Left Click (Background)** | Advance to the next slide |
 | **Swipe gestures** | Navigation on tablets and smartphones |

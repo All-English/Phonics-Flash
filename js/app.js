@@ -473,6 +473,21 @@
       handleStart();
     });
 
+    // Escape or Backspace returns to menu when inside slideshow
+    window.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' && e.key !== 'Backspace') return;
+      const slideshowScreen = document.getElementById('slideshow-screen');
+      if (!slideshowScreen || slideshowScreen.classList.contains('hidden')) return;
+
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
+        return;
+      }
+
+      e.preventDefault();
+      backToMenu();
+    });
+
     // Wire up reset button
     const resetBtn = document.getElementById('reset-btn');
     if (resetBtn) {
@@ -1384,11 +1399,12 @@
       slideNumber: false,
 
       // Disable default keyboard for Space/Enter (we use them for audio)
-      // and map Escape (27) to backToMenu()
+      // and map Escape (27) & Backspace (8) to backToMenu()
       keyboard: {
         32: () => { revealOrPlayCurrentSlideAudio(); },  // Space
         13: () => { revealOrPlayCurrentSlideAudio(); },  // Enter
-        27: () => { backToMenu(); }                      // Esc
+        27: () => { backToMenu(); },                     // Esc
+        8: () => { backToMenu(); }                       // Backspace
       },
 
       // Touch — let reveal.js handle swipe gestures natively
@@ -1700,7 +1716,8 @@
       window.removeEventListener('keydown', chartKeyboardHandler);
     }
     chartKeyboardHandler = (e) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' || e.key === 'Backspace') {
+        e.preventDefault();
         closeChart();
         return;
       }

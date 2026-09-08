@@ -231,7 +231,7 @@ body {
 
 /* ---------- Case Selector Group ---------- */
 .level-tools-bar {
-  padding: 0 1.5rem 0.85rem;
+  padding: 0.35rem 1.5rem 0.85rem;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -318,7 +318,6 @@ body {
 .chart-launch-btn:hover {
   background: light-dark(rgba(41, 168, 224, 0.22), rgba(41, 168, 224, 0.28));
   border-color: light-dark(#0288d1, #29A8E0);
-  transform: translateY(-1px);
   box-shadow: light-dark(0 4px 12px rgba(41, 168, 224, 0.25), 0 0 15px rgba(41, 168, 224, 0.35));
 }
 
