@@ -131,26 +131,19 @@
     }
 
     // Log audio engine configuration status to assist in debugging
-    if (typeof ELEVENLABS_CONFIG !== 'undefined') {
-      if (!ELEVENLABS_CONFIG.apiKey || ELEVENLABS_CONFIG.apiKey === 'your-api-key-here') {
-        console.log(
-          '%c[Audio Engine]%c ElevenLabs API key is placeholder ("your-api-key-here") or empty. Fallback browser SpeechSynthesis is active.',
-          'font-weight:bold;color:#4ECDC4;',
-          'color:#FF6B6B;'
-        );
-      } else {
-        const maskedKey = ELEVENLABS_CONFIG.apiKey.substring(0, 8) + '...';
-        console.log(
-          `%c[Audio Engine]%c ElevenLabs API is configured. Active key starts with: ${maskedKey}`,
-          'font-weight:bold;color:#4ECDC4;',
-          'color:#96CEB4;'
-        );
-      }
+    const effectiveKey = typeof AudioPlayer !== 'undefined' ? AudioPlayer.getApiKey() : null;
+    if (effectiveKey) {
+      const maskedKey = effectiveKey.substring(0, 8) + '...';
+      console.log(
+        `%c[Audio Engine]%c ElevenLabs API is active via browser storage. Key starts with: ${maskedKey}`,
+        'font-weight:bold;color:#4ECDC4;',
+        'color:#96CEB4;'
+      );
     } else {
       console.log(
-        '%c[Audio Engine]%c ELEVENLABS_CONFIG is undefined. Using browser SpeechSynthesis fallback.',
+        '%c[Audio Engine]%c No ElevenLabs API key saved in browser storage. Fallback browser SpeechSynthesis is active.',
         'font-weight:bold;color:#4ECDC4;',
-        'color:#FFEAA7;'
+        'color:#FF6B6B;'
       );
     }
 
@@ -1935,7 +1928,9 @@
   function initClassesUI() {
     const classSelect = document.getElementById('class-select');
     const manageBtn = document.getElementById('manage-classes-btn');
+    const settingsBtn = document.getElementById('open-settings-btn');
     const modal = document.getElementById('class-modal');
+    const modalTitle = document.getElementById('modal-title');
     const closeBtn = document.getElementById('modal-close-btn');
     const tabBtns = document.querySelectorAll('.modal-tab-btn');
     const addClassBtn = document.getElementById('add-class-btn');
@@ -1944,6 +1939,27 @@
     const saveUpstashBtn = document.getElementById('save-upstash-btn');
     const exportBtn = document.getElementById('export-classes-btn');
     const importInput = document.getElementById('import-classes-input');
+
+    // ElevenLabs / TTS Settings Elements
+    const keyInput = document.getElementById('elevenlabs-key-input');
+    const visibilityBtn = document.getElementById('toggle-key-visibility');
+    const voiceSelect = document.getElementById('elevenlabs-voice-select');
+    const speedInput = document.getElementById('elevenlabs-speed-input');
+    const speedDisplay = document.getElementById('elevenlabs-speed-display');
+    const speedResetBtn = document.getElementById('speed-reset-default-btn');
+    const specsSpeedVal = document.getElementById('specs-speed-val');
+    const saveTtsBtn = document.getElementById('save-elevenlabs-btn');
+    const testTtsBtn = document.getElementById('test-elevenlabs-btn');
+    const clearTtsBtn = document.getElementById('clear-elevenlabs-btn');
+    const statusBadge = document.getElementById('tts-status-badge');
+    const feedbackEl = document.getElementById('tts-test-feedback');
+
+    function updateSpeedUI(val) {
+      const num = parseFloat(val);
+      const formatted = (isNaN(num) ? 0.85 : num).toFixed(2) + 'x';
+      if (speedDisplay) speedDisplay.textContent = formatted;
+      if (specsSpeedVal) specsSpeedVal.textContent = formatted;
+    }
 
     function populateClassDropdown() {
       if (!classSelect || typeof ClassesManager === 'undefined') return;
@@ -1986,10 +2002,17 @@
       });
     }
 
-    // Manage button -> Open modal
+    // Manage button -> Open modal to Classes tab
     if (manageBtn && modal) {
       manageBtn.addEventListener('click', () => {
         openClassModal('classes-tab');
+      });
+    }
+
+    // Settings button -> Open modal to TTS Settings tab
+    if (settingsBtn && modal) {
+      settingsBtn.addEventListener('click', () => {
+        openClassModal('tts-tab');
       });
     }
 
@@ -2015,7 +2038,17 @@
         c.classList.toggle('active', c.id === tabId);
       });
 
-      if (tabId === 'classes-tab') {
+      if (modalTitle) {
+        if (tabId === 'tts-tab') modalTitle.textContent = 'Voice & TTS Settings';
+        else if (tabId === 'classes-tab') modalTitle.textContent = 'Class Manager';
+        else if (tabId === 'schedule-tab') modalTitle.textContent = 'Class Schedule Editor';
+        else if (tabId === 'sync-tab') modalTitle.textContent = 'Cloud Sync & Backup';
+        else modalTitle.textContent = 'Settings & Classes';
+      }
+
+      if (tabId === 'tts-tab') {
+        populateTTSSettings();
+      } else if (tabId === 'classes-tab') {
         renderClassesListModal();
       } else if (tabId === 'sync-tab') {
         populateSyncForm();
@@ -2027,6 +2060,188 @@
       modal.classList.remove('hidden');
       switchModalTab(tabId);
     }
+
+    // ── Voice & TTS Settings UI Handlers ─────────────────────
+    function updateTTSBadge() {
+      if (!statusBadge || typeof AudioPlayer === 'undefined') return;
+      const key = AudioPlayer.getApiKey();
+      if (key) {
+        statusBadge.className = 'tts-status-badge active';
+        const masked = key.length > 8 ? key.slice(0, 4) + '...' + key.slice(-4) : 'Active';
+        statusBadge.textContent = `Active (${masked})`;
+        statusBadge.title = `ElevenLabs API active: ${key}`;
+      } else {
+        statusBadge.className = 'tts-status-badge fallback';
+        statusBadge.textContent = 'Browser Speech';
+        statusBadge.title = 'No ElevenLabs key saved. Using browser Web Speech API fallback.';
+      }
+    }
+
+    function populateTTSSettings() {
+      if (keyInput && typeof AudioPlayer !== 'undefined') {
+        keyInput.value = AudioPlayer.getApiKey() || '';
+      }
+      if (voiceSelect && typeof AudioPlayer !== 'undefined') {
+        voiceSelect.value = AudioPlayer.getSelectedVoiceId() || '';
+      }
+      if (typeof AudioPlayer !== 'undefined') {
+        const currentSpeed = AudioPlayer.getPlaybackSpeed();
+        if (speedInput) speedInput.value = currentSpeed.toFixed(2);
+        updateSpeedUI(currentSpeed);
+      }
+      if (feedbackEl) {
+        feedbackEl.className = 'tts-feedback-msg hidden';
+        feedbackEl.textContent = '';
+      }
+      updateTTSBadge();
+    }
+
+    // Speaking speed range slider & reset
+    if (speedInput) {
+      speedInput.addEventListener('input', (e) => {
+        updateSpeedUI(e.target.value);
+      });
+    }
+
+    if (speedResetBtn && speedInput) {
+      speedResetBtn.addEventListener('click', () => {
+        speedInput.value = '0.85';
+        updateSpeedUI(0.85);
+      });
+    }
+
+    // Toggle API key visibility (password vs text)
+    if (visibilityBtn && keyInput) {
+      visibilityBtn.addEventListener('click', () => {
+        const isPassword = keyInput.type === 'password';
+        keyInput.type = isPassword ? 'text' : 'password';
+        visibilityBtn.title = isPassword ? 'Hide API key' : 'Show API key';
+        visibilityBtn.classList.toggle('active', isPassword);
+      });
+    }
+
+    // Save API key & voice preferences
+    if (saveTtsBtn) {
+      saveTtsBtn.addEventListener('click', () => {
+        const newKey = (keyInput ? keyInput.value : '').trim();
+        const voiceId = (voiceSelect ? voiceSelect.value : '').trim();
+        const speedVal = speedInput ? parseFloat(speedInput.value) : 0.85;
+
+        if (newKey) {
+          localStorage.setItem('phonics-flash-elevenlabs-key', newKey);
+        } else {
+          localStorage.removeItem('phonics-flash-elevenlabs-key');
+        }
+
+        if (voiceId) {
+          localStorage.setItem('phonics-flash-elevenlabs-voice', voiceId);
+        } else {
+          localStorage.removeItem('phonics-flash-elevenlabs-voice');
+        }
+
+        if (!isNaN(speedVal)) {
+          localStorage.setItem('phonics-flash-elevenlabs-speed', speedVal.toString());
+        }
+
+        if (typeof AudioPlayer !== 'undefined') {
+          AudioPlayer.clearCache();
+        }
+
+        updateTTSBadge();
+
+        if (feedbackEl) {
+          feedbackEl.className = 'tts-feedback-msg success';
+          feedbackEl.textContent = newKey
+            ? '✓ ElevenLabs API key and voice preferences saved!'
+            : '✓ Preferences saved (using browser speech fallback).';
+          feedbackEl.classList.remove('hidden');
+          setTimeout(() => {
+            if (feedbackEl) feedbackEl.classList.add('hidden');
+          }, 4000);
+        }
+
+        showToast('Voice settings saved!', 'success', 2500);
+      });
+    }
+
+    // Test Voice directly with sample synthesis
+    if (testTtsBtn) {
+      testTtsBtn.addEventListener('click', async () => {
+        const testKey = (keyInput ? keyInput.value : '').trim() || (typeof AudioPlayer !== 'undefined' ? AudioPlayer.getApiKey() : null);
+        const voiceId = (voiceSelect ? voiceSelect.value : '').trim();
+        const testSpeed = speedInput ? parseFloat(speedInput.value) : null;
+
+        if (!testKey) {
+          if (feedbackEl) {
+            feedbackEl.className = 'tts-feedback-msg error';
+            feedbackEl.textContent = '⚠️ Please enter an ElevenLabs API key first.';
+            feedbackEl.classList.remove('hidden');
+          }
+          if (keyInput) keyInput.focus();
+          return;
+        }
+
+        const originalBtnHTML = testTtsBtn.innerHTML;
+        testTtsBtn.disabled = true;
+        testTtsBtn.innerHTML = `<span>Testing voice...</span>`;
+        if (feedbackEl) {
+          feedbackEl.className = 'tts-feedback-msg';
+          feedbackEl.textContent = 'Connecting to ElevenLabs API...';
+          feedbackEl.classList.remove('hidden');
+        }
+
+        try {
+          await AudioPlayer.testElevenLabs(testKey, voiceId, 'phonics', testSpeed);
+          if (feedbackEl) {
+            feedbackEl.className = 'tts-feedback-msg success';
+            feedbackEl.textContent = '✓ Voice synthesis connected! Test audio played successfully.';
+            feedbackEl.classList.remove('hidden');
+          }
+        } catch (err) {
+          if (feedbackEl) {
+            feedbackEl.className = 'tts-feedback-msg error';
+            feedbackEl.textContent = `✕ ${err.message || 'ElevenLabs request failed'}`;
+            feedbackEl.classList.remove('hidden');
+          }
+        } finally {
+          testTtsBtn.disabled = false;
+          testTtsBtn.innerHTML = originalBtnHTML;
+        }
+      });
+    }
+
+    // Clear key
+    if (clearTtsBtn) {
+      clearTtsBtn.addEventListener('click', () => {
+        if (!confirm('Are you sure you want to remove your saved ElevenLabs API key from this browser?')) {
+          return;
+        }
+        localStorage.removeItem('phonics-flash-elevenlabs-key');
+        localStorage.removeItem('phonics-flash-elevenlabs-speed');
+        if (keyInput) keyInput.value = '';
+        if (speedInput) speedInput.value = '0.85';
+        updateSpeedUI(0.85);
+
+        if (typeof AudioPlayer !== 'undefined') {
+          AudioPlayer.clearCache();
+        }
+        updateTTSBadge();
+
+        if (feedbackEl) {
+          feedbackEl.className = 'tts-feedback-msg';
+          feedbackEl.textContent = 'API key removed. Audio will now use browser Speech Synthesis fallback.';
+          feedbackEl.classList.remove('hidden');
+          setTimeout(() => {
+            if (feedbackEl) feedbackEl.classList.add('hidden');
+          }, 4000);
+        }
+
+        showToast('API key removed from browser', 'info', 2500);
+      });
+    }
+
+    // Initialize TTS badge on startup
+    updateTTSBadge();
 
     function renderClassesListModal() {
       const container = document.getElementById('classes-list-container');

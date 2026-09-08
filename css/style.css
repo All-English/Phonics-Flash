@@ -2498,3 +2498,261 @@ body {
   justify-content: center;
 }
 
+/* ---------- Tab 0: Voice & TTS Settings ---------- */
+.tts-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.tts-status-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.tts-status-badge.active {
+  background: light-dark(rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.25));
+  color: light-dark(#059669, #34d399);
+  border: 1px solid light-dark(rgba(16, 185, 129, 0.3), rgba(16, 185, 129, 0.4));
+}
+
+.tts-status-badge.fallback {
+  background: light-dark(rgba(107, 114, 128, 0.12), rgba(156, 163, 175, 0.2));
+  color: light-dark(#4b5563, #9ca3af);
+  border: 1px solid light-dark(rgba(107, 114, 128, 0.2), rgba(156, 163, 175, 0.3));
+}
+
+.password-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input-group input {
+  width: 100%;
+  padding-right: 2.75rem !important;
+}
+
+.key-visibility-btn {
+  position: absolute;
+  right: 0.5rem;
+  background: transparent;
+  border: none;
+  padding: 0.35rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-fast);
+}
+
+.key-visibility-btn:hover {
+  color: var(--text-primary);
+}
+
+.key-visibility-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.field-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.35rem;
+  display: block;
+  line-height: 1.4;
+}
+
+.tts-btn-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+#test-elevenlabs-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+#test-elevenlabs-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-clear-key {
+  color: light-dark(#dc2626, #f87171) !important;
+  border-color: light-dark(rgba(220, 38, 38, 0.3), rgba(248, 113, 113, 0.3)) !important;
+}
+
+.btn-clear-key:hover {
+  background: light-dark(rgba(220, 38, 38, 0.1), rgba(248, 113, 113, 0.15)) !important;
+}
+
+.tts-feedback-msg {
+  font-size: 0.85rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+
+.tts-feedback-msg.success {
+  background: light-dark(rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.2));
+  color: light-dark(#065f46, #6ee7b7);
+  border: 1px solid light-dark(rgba(16, 185, 129, 0.3), rgba(16, 185, 129, 0.4));
+}
+
+.tts-feedback-msg.error {
+  background: light-dark(rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.2));
+  color: light-dark(#991b1b, #fca5a5);
+  border: 1px solid light-dark(rgba(239, 68, 68, 0.3), rgba(239, 68, 68, 0.4));
+}
+
+.tts-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.tts-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  background: light-dark(rgba(0, 0, 0, 0.03), rgba(255, 255, 255, 0.04));
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.06));
+  border-radius: var(--radius-md);
+}
+
+.tts-info-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.tts-info-val {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tts-info-val code {
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.1));
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+/* Speed Slider & Badges in TTS Settings */
+.speed-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.speed-val-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  padding: 0.15rem 0.6rem;
+  border-radius: 9999px;
+  background: light-dark(rgba(99, 102, 241, 0.12), rgba(129, 140, 248, 0.22));
+  color: light-dark(#4338ca, #a5b4fc);
+  border: 1px solid light-dark(rgba(99, 102, 241, 0.25), rgba(129, 140, 248, 0.35));
+}
+
+.speed-slider-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.speed-range-slider {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 4px;
+  background: light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.2));
+  outline: none;
+  cursor: pointer;
+  accent-color: light-dark(#4f46e5, #818cf8);
+}
+
+.speed-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: light-dark(#4f46e5, #818cf8);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: transform var(--transition-fast), background var(--transition-fast);
+}
+
+.speed-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.speed-range-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: light-dark(#4f46e5, #818cf8);
+  border: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: transform var(--transition-fast), background var(--transition-fast);
+}
+
+.speed-range-slider::-moz-range-thumb:hover {
+  transform: scale(1.15);
+}
+
+.speed-ticks {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.speed-default-pill {
+  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.08));
+  border: 1px solid light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.16));
+  color: var(--text-secondary);
+  border-radius: 9999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.speed-default-pill:hover {
+  background: light-dark(rgba(99, 102, 241, 0.15), rgba(129, 140, 248, 0.25));
+  color: light-dark(#4338ca, #e0e7ff);
+  border-color: light-dark(rgba(99, 102, 241, 0.35), rgba(129, 140, 248, 0.45));
+}
+
+

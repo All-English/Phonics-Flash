@@ -12,7 +12,25 @@ const AudioPlayer = (() => {
   const cache = new Map(); // ElevenLabs blob cache
   const audioCache = new Map(); // local Audio elements cache
   let currentAudio = null;
-  let isPlaying = false;
+  const STORAGE_KEY = 'phonics-flash-elevenlabs-key';
+  const VOICE_STORAGE_KEY = 'phonics-flash-elevenlabs-voice';
+  const SPEED_STORAGE_KEY = 'phonics-flash-elevenlabs-speed';
+
+  function getApiKey() {
+    return localStorage.getItem(STORAGE_KEY)?.trim() || null;
+  }
+
+  function getSelectedVoiceId() {
+    return localStorage.getItem(VOICE_STORAGE_KEY)?.trim() || '';
+  }
+
+  function getPlaybackSpeed() {
+    const val = parseFloat(localStorage.getItem(SPEED_STORAGE_KEY));
+    if (!isNaN(val) && val >= 0.5 && val <= 2.0) {
+      return val;
+    }
+    return 0.85; // Default to 0.85x
+  }
 
   /**
    * Preload a local MP3 file.
@@ -59,9 +77,9 @@ const AudioPlayer = (() => {
         }
       }
 
-      // 2. Try ElevenLabs TTS
-      const apiKey = typeof ELEVENLABS_CONFIG !== 'undefined' ? ELEVENLABS_CONFIG.apiKey?.trim() : null;
-      if (apiKey && apiKey !== 'your-api-key-here') {
+      // 2. Try ElevenLabs TTS (strictly from localStorage)
+      const apiKey = getApiKey();
+      if (apiKey) {
         const played = await tryPlayElevenLabs(word);
         if (played) {
           setButtonState(btn, 'playing');
@@ -156,18 +174,28 @@ const AudioPlayer = (() => {
    */
   async function tryPlayElevenLabs(word) {
     try {
+      const apiKey = getApiKey();
+      if (!apiKey) return false;
+
       const cacheKey = word.toLowerCase().trim();
 
       let blob = cache.get(cacheKey);
 
       if (!blob) {
-        // Pick a random voice, fallback to a hardcoded default if list is empty
-        const voices = ELEVENLABS_CONFIG.voices || [];
-        const voice = voices.length > 0
-          ? voices[Math.floor(Math.random() * voices.length)]
-          : { voice_id: 'cgSgspJ2msm6clMCkdW9', name: 'Jessica (Default)' };
-        
-        const voiceId = voice.voice_id || 'cgSgspJ2msm6clMCkdW9';
+        const voices = (typeof ELEVENLABS_CONFIG !== 'undefined' && ELEVENLABS_CONFIG.voices) || [];
+        const preferredVoiceId = getSelectedVoiceId();
+        let voiceId = preferredVoiceId;
+
+        if (!voiceId) {
+          const voice = voices.length > 0
+            ? voices[Math.floor(Math.random() * voices.length)]
+            : { voice_id: 'cgSgspJ2msm6clMCkdW9', name: 'Jessica (Default)' };
+          voiceId = voice.voice_id || 'cgSgspJ2msm6clMCkdW9';
+        }
+
+        const modelId = (typeof ELEVENLABS_CONFIG !== 'undefined' && ELEVENLABS_CONFIG.modelId) || 'eleven_flash_v2';
+
+        const currentSpeed = getPlaybackSpeed();
 
         const response = await fetch(
           `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
@@ -175,13 +203,13 @@ const AudioPlayer = (() => {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'xi-api-key': ELEVENLABS_CONFIG.apiKey
+              'xi-api-key': apiKey
             },
             body: JSON.stringify({
               text: word,
-              model_id: ELEVENLABS_CONFIG.modelId || 'eleven_flash_v2',
+              model_id: modelId,
               voice_settings: {
-                speed: 0.85,
+                speed: currentSpeed,
                 stability: 0.85,
                 similarity_boost: 0.80
               }
@@ -232,6 +260,69 @@ const AudioPlayer = (() => {
   }
 
   /**
+   * Test an ElevenLabs API key directly with a sample word.
+   * Plays the result and returns true on success or throws an Error.
+   * @param {string} testKey
+   * @param {string} [voiceId]
+   * @param {string} [word]
+   * @param {number} [customSpeed]
+   * @returns {Promise<boolean>}
+   */
+  async function testElevenLabs(testKey, voiceId, word = 'phonics', customSpeed = null) {
+    const key = (testKey || getApiKey() || '').trim();
+    if (!key) {
+      throw new Error('Please enter an ElevenLabs API key first.');
+    }
+
+    const targetVoiceId = voiceId || getSelectedVoiceId() || 'cgSgspJ2msm6clMCkdW9'; // Jessica default
+    const modelId = (typeof ELEVENLABS_CONFIG !== 'undefined' && ELEVENLABS_CONFIG.modelId) || 'eleven_flash_v2';
+    const testSpeed = typeof customSpeed === 'number' ? customSpeed : getPlaybackSpeed();
+
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${targetVoiceId}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'xi-api-key': key
+        },
+        body: JSON.stringify({
+          text: word,
+          model_id: modelId,
+          voice_settings: {
+            speed: testSpeed,
+            stability: 0.85,
+            similarity_boost: 0.80
+          }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Invalid API Key (401). Please check your key.');
+      } else if (response.status === 429) {
+        throw new Error('Quota Exceeded (429). Your ElevenLabs credits may be depleted.');
+      } else {
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
+    }
+
+    const blob = await response.blob();
+    const audioUrl = URL.createObjectURL(blob);
+    const audio = new Audio(audioUrl);
+    stop();
+    currentAudio = audio;
+    await audio.play();
+    audio.addEventListener('ended', () => {
+      URL.revokeObjectURL(audioUrl);
+      if (currentAudio === audio) currentAudio = null;
+    }, { once: true });
+
+    return true;
+  }
+
+  /**
    * Play using the browser's built-in Web Speech API.
    */
   function playWithSpeechSynthesis(word) {
@@ -239,7 +330,7 @@ const AudioPlayer = (() => {
 
     const utterance = new SpeechSynthesisUtterance(word);
     utterance.lang = 'en-US';
-    utterance.rate = 0.8;  // Slower for ESL learners
+    utterance.rate = getPlaybackSpeed(); // Use user-selected speed (default 0.85)
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
 
@@ -307,6 +398,10 @@ const AudioPlayer = (() => {
     stop,
     preload,
     clearCache,
+    getApiKey,
+    getSelectedVoiceId,
+    getPlaybackSpeed,
+    testElevenLabs,
     get isPlaying() { return isPlaying; }
   };
 })();

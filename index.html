@@ -44,8 +44,13 @@
           </div>
 
           <button id="manage-classes-btn" class="class-action-btn" title="Manage classes and schedules">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span>Classes</span>
+          </button>
+
+          <button id="open-settings-btn" class="class-action-btn" title="Voice & TTS Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>Settings</span>
           </button>
         </div>
       </div>
@@ -185,17 +190,110 @@
   <div id="class-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-card">
       <div class="modal-header">
-        <h2 id="modal-title">Class Manager &amp; Schedule</h2>
+        <h2 id="modal-title">Settings &amp; Classes</h2>
         <button id="modal-close-btn" class="modal-close-btn" aria-label="Close modal">&times;</button>
       </div>
 
       <div class="modal-tabs">
+        <button class="modal-tab-btn" data-tab="tts-tab">🎙️ Voice &amp; TTS</button>
         <button class="modal-tab-btn active" data-tab="classes-tab">My Classes</button>
         <button class="modal-tab-btn" data-tab="schedule-tab">Schedule &amp; Times</button>
         <button class="modal-tab-btn" data-tab="sync-tab">Cloud Sync &amp; Backup</button>
       </div>
 
       <div class="modal-body">
+        <!-- TAB 0: Voice & TTS Settings -->
+        <div id="tts-tab" class="modal-tab-content">
+          <div class="sync-section">
+            <div class="tts-header-row">
+              <h3>ElevenLabs Text-to-Speech</h3>
+              <span id="tts-status-badge" class="tts-status-badge fallback">Browser Speech</span>
+            </div>
+            <p class="sync-desc">
+              Generate natural AI voices for flashcards that don't have local audio recordings. The API key is stored locally on this machine only.
+            </p>
+
+            <div class="form-group">
+              <label for="elevenlabs-key-input">ElevenLabs API Key</label>
+              <div class="password-input-group">
+                <input type="password" id="elevenlabs-key-input" placeholder="sk_... (Paste your API key)" autocomplete="off" spellcheck="false">
+                <button type="button" id="toggle-key-visibility" class="key-visibility-btn" title="Show or hide API key" aria-label="Toggle API key visibility">
+                  <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+              <span class="field-hint">Never shared or sent to Git. Stored strictly in your browser's localStorage.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="elevenlabs-voice-select">Preferred Voice</label>
+              <div class="custom-select-wrapper">
+                <select id="elevenlabs-voice-select" class="class-dropdown" aria-label="Select ElevenLabs Voice">
+                  <option value="">Random Pool (13 voices)</option>
+                  <option value="cgSgspJ2msm6clMCkdW9">Jessica (Female, playful &amp; friendly)</option>
+                  <option value="FGY2WhTYpPnrIDTdsKH5">Laura (Female, enthusiastic)</option>
+                  <option value="EXAVITQu4vr4xnSDxMaL">Sarah (Female, confident)</option>
+                  <option value="hpp4J3VqNfWAUOO0d1Us">Bella (Female, clear &amp; professional)</option>
+                  <option value="XrExE9yKIg1WjnnlVkGX">Matilda (Female, educational)</option>
+                  <option value="SAz9YHcvj6GT2YYXdXww">River (Neutral, relaxed)</option>
+                  <option value="iP95p4xoKVk53GoZ742B">Chris (Male, natural &amp; warm)</option>
+                  <option value="TX3LPaxmHKxFdv7VOQHJ">Liam (Male, young &amp; energetic)</option>
+                  <option value="nPczCjzI2devNBz1zQrb">Brian (Male, deep &amp; resonant)</option>
+                  <option value="pqHfZKP75CvOlQylNhV4">Bill (Male, friendly storyteller)</option>
+                  <option value="bIHbv24MWmeRgasZH58o">Will (Male, conversational)</option>
+                  <option value="pNInz6obpgDQGcFmaJgB">Adam (Male, bright tenor)</option>
+                  <option value="CwhRBWXzGAHq8TQ4Fs17">Roger (Male, casual)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="speed-label-row">
+                <label for="elevenlabs-speed-input">Speaking Speed</label>
+                <span id="elevenlabs-speed-display" class="speed-val-badge">0.85x</span>
+              </div>
+              <div class="speed-slider-wrapper">
+                <input type="range" id="elevenlabs-speed-input" class="speed-range-slider" min="0.70" max="1.20" step="0.05" value="0.85" aria-label="Speaking Speed">
+                <div class="speed-ticks">
+                  <span>0.70x (Slow)</span>
+                  <button type="button" id="speed-reset-default-btn" class="speed-default-pill" title="Reset to default 0.85x">0.85x (Default)</button>
+                  <span>1.20x (Fast)</span>
+                </div>
+              </div>
+              <span class="field-hint">Controls playback speed for both ElevenLabs TTS and browser speech synthesis.</span>
+            </div>
+
+            <div class="tts-btn-row">
+              <button type="button" id="save-elevenlabs-btn" class="btn btn-primary">Save Key</button>
+              <button type="button" id="test-elevenlabs-btn" class="btn btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                <span>Test Voice</span>
+              </button>
+              <button type="button" id="clear-elevenlabs-btn" class="btn btn-secondary btn-clear-key">Clear Key</button>
+            </div>
+            <div id="tts-test-feedback" class="tts-feedback-msg hidden"></div>
+          </div>
+
+          <hr class="modal-divider">
+
+          <div class="sync-section">
+            <h3>ℹ️ Voice Synthesis Specs</h3>
+            <div class="tts-info-grid">
+              <div class="tts-info-item">
+                <span class="tts-info-label">Model</span>
+                <span class="tts-info-val"><code>eleven_flash_v2</code></span>
+              </div>
+              <div class="tts-info-item">
+                <span class="tts-info-label">ESL Speed</span>
+                <span class="tts-info-val"><code id="specs-speed-val">0.85x</code></span>
+              </div>
+              <div class="tts-info-item">
+                <span class="tts-info-label">Audio Fallback</span>
+                <span class="tts-info-val">MP3 &rarr; ElevenLabs &rarr; Browser Web Speech</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- TAB 1: Classes -->
         <div id="classes-tab" class="modal-tab-content active">
           <div class="tab-toolbar">
