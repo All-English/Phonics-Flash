@@ -31,6 +31,13 @@
     syncSlides: localStorage.getItem('phonics-flash-sync') !== 'false'
   };
 
+  // Enforce mode dependencies on initialization (Quiz & Dictation require images and cannot have extras/sight)
+  if (options.quizMode || options.dictationMode) {
+    options.includeExtras = false;
+    options.includeSightWords = false;
+    options.includeImages = true;
+  }
+
   // ── SVG Icons ──────────────────────────────────────────────
   const ICONS = {
     chevron: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`,
@@ -200,6 +207,12 @@
       options.dictationMode = !!cls.options.dictationMode;
       options.quizMode = !!cls.options.quizMode;
 
+      if (options.quizMode || options.dictationMode) {
+        options.includeExtras = false;
+        options.includeSightWords = false;
+        options.includeImages = true;
+      }
+
       localStorage.setItem('phonics-flash-extras', options.includeExtras);
       localStorage.setItem('phonics-flash-sight', options.includeSightWords);
       localStorage.setItem('phonics-flash-images', options.includeImages);
@@ -298,6 +311,58 @@
     }
   }
 
+  // Helper to enforce option constraints when Quiz or Dictation Mode is active
+  function syncModeOptionDependencies() {
+    const isSpecialMode = options.quizMode || options.dictationMode;
+    const modeName = options.quizMode ? 'Quiz Mode' : (options.dictationMode ? 'Dictation Mode' : '');
+
+    const extrasBtn = document.getElementById('toggle-extras');
+    const sightBtn = document.getElementById('toggle-sight');
+    const imagesBtn = document.getElementById('toggle-images');
+
+    if (isSpecialMode) {
+      // Extra words and sight words cannot be enabled (no pictures)
+      options.includeExtras = false;
+      options.includeSightWords = false;
+      // Images are required for Quiz and Dictation modes and cannot be disabled
+      options.includeImages = true;
+
+      localStorage.setItem('phonics-flash-extras', 'false');
+      localStorage.setItem('phonics-flash-sight', 'false');
+      localStorage.setItem('phonics-flash-images', 'true');
+
+      if (extrasBtn) {
+        extrasBtn.disabled = true;
+        extrasBtn.title = `Extra words unavailable in ${modeName} (no pictures)`;
+      }
+      if (sightBtn) {
+        sightBtn.disabled = true;
+        sightBtn.title = `Sight words unavailable in ${modeName} (no pictures)`;
+      }
+      if (imagesBtn) {
+        imagesBtn.disabled = true;
+        imagesBtn.title = `Images are required for ${modeName} and cannot be disabled`;
+      }
+    } else {
+      if (extrasBtn) {
+        extrasBtn.disabled = false;
+        extrasBtn.title = 'Include extra words in the review';
+      }
+      if (sightBtn) {
+        sightBtn.disabled = false;
+        sightBtn.title = 'Include sight words with selected units';
+      }
+      if (imagesBtn) {
+        imagesBtn.disabled = false;
+        imagesBtn.title = 'Show images with words';
+      }
+    }
+
+    syncOptionButton('toggle-extras', options.includeExtras);
+    syncOptionButton('toggle-sight', options.includeSightWords);
+    syncOptionButton('toggle-images', options.includeImages);
+  }
+
   // Helper to sync letter case buttons with state
   function syncCaseButtons(activeCase) {
     const btns = document.querySelectorAll('.case-btn');
@@ -309,6 +374,7 @@
   // Wire up toggles and buttons once on initialization
   function initMenuEvents() {
     document.getElementById('toggle-extras').addEventListener('click', (e) => {
+      if (options.quizMode || options.dictationMode) return;
       options.includeExtras = !options.includeExtras;
       syncOptionButton('toggle-extras', options.includeExtras);
       localStorage.setItem('phonics-flash-extras', options.includeExtras);
@@ -317,6 +383,7 @@
     });
 
     document.getElementById('toggle-sight').addEventListener('click', (e) => {
+      if (options.quizMode || options.dictationMode) return;
       options.includeSightWords = !options.includeSightWords;
       syncOptionButton('toggle-sight', options.includeSightWords);
       localStorage.setItem('phonics-flash-sight', options.includeSightWords);
@@ -325,6 +392,7 @@
     });
 
     document.getElementById('toggle-images').addEventListener('click', (e) => {
+      if (options.quizMode || options.dictationMode) return;
       options.includeImages = !options.includeImages;
       syncOptionButton('toggle-images', options.includeImages);
       localStorage.setItem('phonics-flash-images', options.includeImages);
@@ -348,7 +416,9 @@
       }
       syncOptionButton('toggle-dictation', options.dictationMode);
       localStorage.setItem('phonics-flash-dictation', options.dictationMode);
+      syncModeOptionDependencies();
       saveCurrentOptionsToActiveClass();
+      updateStartButton();
     });
 
     document.getElementById('toggle-quiz').addEventListener('click', (e) => {
@@ -360,7 +430,9 @@
       }
       syncOptionButton('toggle-quiz', options.quizMode);
       localStorage.setItem('phonics-flash-quiz', options.quizMode);
+      syncModeOptionDependencies();
       saveCurrentOptionsToActiveClass();
+      updateStartButton();
     });
 
     // Wire up start button click & Enter key shortcut
@@ -443,6 +515,7 @@
         syncOptionButton('toggle-mix', false);
         syncOptionButton('toggle-dictation', false);
         syncOptionButton('toggle-quiz', false);
+        syncModeOptionDependencies();
 
         localStorage.setItem('phonics-flash-extras', 'false');
         localStorage.setItem('phonics-flash-sight', 'false');
@@ -476,13 +549,11 @@
     });
 
     // Set initial toggle states in UI
-    syncOptionButton('toggle-extras', options.includeExtras);
-    syncOptionButton('toggle-sight', options.includeSightWords);
-    syncOptionButton('toggle-images', options.includeImages);
-    syncCaseButtons(options.letterCase);
     syncOptionButton('toggle-mix', options.mixMode);
     syncOptionButton('toggle-dictation', options.dictationMode);
     syncOptionButton('toggle-quiz', options.quizMode);
+    syncCaseButtons(options.letterCase);
+    syncModeOptionDependencies();
 
     updateStartButton();
   }
@@ -797,6 +868,13 @@
   }
 
   function startSlideshow(unitIds, opts) {
+    // Enforce quiz/dictation mode constraints
+    if (opts.quizMode || opts.dictationMode) {
+      opts.includeExtras = false;
+      opts.includeSightWords = false;
+      opts.includeImages = true;
+    }
+
     // Gather selected unit data with level context
     const selectedUnits = [];
     for (const level of phonicsData.levels) {
