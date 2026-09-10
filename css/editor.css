@@ -140,6 +140,12 @@ html, body {
   color: var(--text-primary);
   border-color: var(--border-strong);
 }
+.btn-icon svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  flex-shrink: 0;
+}
 
 .header-icon {
   width: 16px;
