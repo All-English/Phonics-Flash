@@ -114,3 +114,15 @@ Phonics Flash/
 | **Left Click (Word)** | Replay word audio |
 | **Left Click (Background)** | Advance to the next slide |
 | **Swipe gestures** | Navigation on tablets and smartphones |
+
+### Word & Letter Chart
+| Control | Action |
+| :--- | :--- |
+| **Type letters (e.g. `be`, `bed`)** | Multi-letter type-ahead search jumps directly to matching word |
+| **Type same letter (e.g. `b`, `b`)** | Cycle through all words starting with that letter |
+| **Arrow Keys** | 2D Grid navigation |
+| **Space** or **Enter** | Replay current letter/word audio |
+| **Backspace** | Remove last typed search letter (or exit to menu if buffer is empty) |
+| **Escape (Esc)** | Exit chart and return to main menu |
+| **Click / Tap Tile** | Select tile and play audio |
+

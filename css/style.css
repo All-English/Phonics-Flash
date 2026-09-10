@@ -2072,6 +2072,52 @@ body {
   }
 }
 
+/* ---------- Type-Ahead HUD in Chart Screen ---------- */
+.chart-typeahead-hud {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1.15rem;
+  background: light-dark(rgba(255, 255, 255, 0.92), rgba(22, 27, 34, 0.92));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid light-dark(rgba(41, 168, 224, 0.45), rgba(41, 168, 224, 0.55));
+  border-radius: var(--radius-full);
+  box-shadow: light-dark(0 4px 18px rgba(0, 0, 0, 0.12), 0 4px 24px rgba(0, 0, 0, 0.5));
+  color: var(--text-primary);
+  font-family: var(--font-word);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  z-index: 300;
+  pointer-events: none;
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.chart-typeahead-hud.hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(12px);
+  pointer-events: none;
+}
+
+.chart-typeahead-hud .hud-icon {
+  font-size: 0.95rem;
+  opacity: 0.85;
+}
+
+.chart-typeahead-hud .hud-text {
+  color: light-dark(#0277bd, #29A8E0);
+  font-family: var(--font-word);
+}
+
+.chart-typeahead-hud.not-found .hud-text {
+  color: light-dark(#c62828, #ef5350);
+}
+
 /* ============================================================
    CLASS CONTROL BAR & MODAL
    ============================================================ */

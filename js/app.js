@@ -21,22 +21,15 @@
   }
 
   const options = {
-    includeExtras: localStorage.getItem('phonics-flash-extras') === 'true',
-    includeSightWords: localStorage.getItem('phonics-flash-sight') === 'true',
-    includeImages: localStorage.getItem('phonics-flash-images') === 'true',
-    letterCase: normalizeLetterCase(localStorage.getItem('phonics-flash-letter-case') || 'both'),
-    mixMode: localStorage.getItem('phonics-flash-mix') === 'true',
-    dictationMode: localStorage.getItem('phonics-flash-dictation') === 'true',
-    quizMode: localStorage.getItem('phonics-flash-quiz') === 'true',
-    syncSlides: localStorage.getItem('phonics-flash-sync') !== 'false'
+    includeExtras: false,
+    includeSightWords: false,
+    includeImages: false,
+    letterCase: 'both',
+    mixMode: false,
+    dictationMode: false,
+    quizMode: false,
+    syncSlides: true
   };
-
-  // Enforce mode dependencies on initialization (Quiz & Dictation require images and cannot have extras/sight)
-  if (options.quizMode || options.dictationMode) {
-    options.includeExtras = false;
-    options.includeSightWords = false;
-    options.includeImages = true;
-  }
 
   // ── SVG Icons ──────────────────────────────────────────────
   const ICONS = {
@@ -122,19 +115,26 @@
         ClassesManager.setActiveClassId(scheduledClass.id);
         applyClassProfile(scheduledClass);
       } else {
-        const activeClass = ClassesManager.getActiveClass();
-        if (activeClass) {
-          applyClassProfile(activeClass);
-        }
+        ClassesManager.setActiveClassId(null);
+        resetToDefaultSettings();
       }
       initClassesUI();
 
       // Cloud pull in background if configured
       ClassesManager.syncCloud().then(res => {
         if (res && res.success && res.source === 'remote_loaded') {
+          const scheduled = ClassesManager.findCurrentScheduledClass();
+          if (scheduled) {
+            ClassesManager.setActiveClassId(scheduled.id);
+            applyClassProfile(scheduled);
+          } else {
+            ClassesManager.setActiveClassId(null);
+          }
           initClassesUI();
         }
       }).catch(console.warn);
+    } else {
+      resetToDefaultSettings();
     }
 
     // Log audio engine configuration status to assist in debugging
@@ -191,6 +191,72 @@
       });
     } else {
       renderMenu();
+    }
+  }
+
+  // ── Reset to Default Settings (No Class Selected) ───────────
+  function resetToDefaultSettings() {
+    if (typeof ClassesManager !== 'undefined') {
+      ClassesManager.setActiveClassId(null);
+    }
+
+    // Clear saved units and option keys from localStorage
+    localStorage.removeItem('phonics-flash-selected-units');
+    localStorage.setItem('phonics-flash-extras', 'false');
+    localStorage.setItem('phonics-flash-sight', 'false');
+    localStorage.setItem('phonics-flash-images', 'false');
+    localStorage.setItem('phonics-flash-letter-case', 'both');
+    localStorage.setItem('phonics-flash-mix', 'false');
+    localStorage.setItem('phonics-flash-dictation', 'false');
+    localStorage.setItem('phonics-flash-quiz', 'false');
+
+    // Reset options in memory
+    options.includeExtras = false;
+    options.includeSightWords = false;
+    options.includeImages = false;
+    options.letterCase = 'both';
+    options.mixMode = false;
+    options.dictationMode = false;
+    options.quizMode = false;
+    options.syncSlides = true;
+
+    // Uncheck all checkboxes in UI if already rendered
+    const checkboxes = document.querySelectorAll('#levels-container .unit-checkbox input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+      cb.checked = false;
+      const parent = cb.closest('.unit-checkbox');
+      if (parent) parent.classList.remove('checked');
+    });
+
+    // Reset all level select all buttons
+    const selectAllBtns = document.querySelectorAll('#levels-container .select-all-btn');
+    selectAllBtns.forEach(btn => {
+      btn.textContent = 'Select All';
+    });
+
+    // Collapse all level cards
+    const levelCards = document.querySelectorAll('#levels-container .level-card');
+    levelCards.forEach(card => {
+      card.classList.remove('expanded');
+    });
+
+    // Sync button states in UI
+    syncOptionButton('toggle-extras', false);
+    syncOptionButton('toggle-sight', false);
+    syncOptionButton('toggle-images', false);
+    syncCaseButtons('both');
+    syncOptionButton('toggle-mix', false);
+    syncOptionButton('toggle-dictation', false);
+    syncOptionButton('toggle-quiz', false);
+    syncModeOptionDependencies();
+
+    const classSelect = document.getElementById('class-select');
+    if (classSelect) {
+      classSelect.value = '';
+    }
+
+    if (phonicsData) {
+      updateStartButton();
     }
   }
 
@@ -280,7 +346,7 @@
       extras: params.get('extras') === '1',
       sightWords: params.get('sight') === '1' || params.get('sightwords') === '1',
       images: params.get('images') !== '0', // default true
-      letterCase: caseParam ? normalizeLetterCase(caseParam) : (localStorage.getItem('phonics-flash-letter-case') || 'both'),
+      letterCase: caseParam ? normalizeLetterCase(caseParam) : (options.letterCase || 'both'),
       mix: params.get('mix') === '1',
       dictation: params.get('dictation') === '1',
       quiz: params.get('quiz') === '1'
@@ -492,60 +558,7 @@
     const resetBtn = document.getElementById('reset-btn');
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
-        // Clear saved units from storage
-        localStorage.removeItem('phonics-flash-selected-units');
-
-        // Uncheck all checkboxes in UI
-        const checkboxes = document.querySelectorAll('#levels-container .unit-checkbox input[type="checkbox"]');
-        checkboxes.forEach(cb => {
-          cb.checked = false;
-          cb.closest('.unit-checkbox').classList.remove('checked');
-        });
-
-        // Reset all level select all buttons
-        const selectAllBtns = document.querySelectorAll('#levels-container .select-all-btn');
-        selectAllBtns.forEach(btn => {
-          btn.textContent = 'Select All';
-        });
-
-        // Collapse all level cards accordion
-        const levelCards = document.querySelectorAll('#levels-container .level-card');
-        levelCards.forEach(card => {
-          card.classList.remove('expanded');
-        });
-
-        // Reset and save all option buttons
-        options.includeExtras = false;
-        options.includeSightWords = false;
-        options.includeImages = false;
-        options.letterCase = 'both';
-        options.mixMode = false;
-        options.dictationMode = false;
-        options.quizMode = false;
-
-        syncOptionButton('toggle-extras', false);
-        syncOptionButton('toggle-sight', false);
-        syncOptionButton('toggle-images', false);
-        syncCaseButtons('both');
-        syncOptionButton('toggle-mix', false);
-        syncOptionButton('toggle-dictation', false);
-        syncOptionButton('toggle-quiz', false);
-        syncModeOptionDependencies();
-
-        localStorage.setItem('phonics-flash-extras', 'false');
-        localStorage.setItem('phonics-flash-sight', 'false');
-        localStorage.setItem('phonics-flash-images', 'false');
-        localStorage.setItem('phonics-flash-letter-case', 'both');
-        localStorage.setItem('phonics-flash-mix', 'false');
-        localStorage.setItem('phonics-flash-dictation', 'false');
-        localStorage.setItem('phonics-flash-quiz', 'false');
-
-        saveCurrentOptionsToActiveClass();
-
-        // Update start button
-        updateStartButton();
-
-        // Inform the user
+        resetToDefaultSettings();
         showToast('All selections cleared', 'info', 2000);
       });
     }
@@ -741,17 +754,18 @@
 
   function updateStartButton() {
     const btn = document.getElementById('start-btn');
+    if (!btn) return;
     const selectedIds = getSelectedUnitIds();
-    const count = countWords(selectedIds);
 
     btn.disabled = selectedIds.length === 0;
 
     const countSpan = btn.querySelector('.start-btn-count');
     if (selectedIds.length === 0) {
-      countSpan.textContent = 'Select at least one unit';
+      if (countSpan) countSpan.textContent = 'Select at least one unit';
       btn.title = 'Select at least one unit to start review';
     } else {
-      countSpan.textContent = `${selectedIds.length} unit${selectedIds.length > 1 ? 's' : ''} · ${count} words`;
+      const count = countWords(selectedIds);
+      if (countSpan) countSpan.textContent = `${selectedIds.length} unit${selectedIds.length > 1 ? 's' : ''} · ${count} words`;
       btn.title = 'Start Review (Enter)';
     }
   }
@@ -834,6 +848,9 @@
   }
 
   function countWords(unitIds) {
+    if (!phonicsData || !phonicsData.levels || !unitIds || unitIds.length === 0) {
+      return 0;
+    }
     let count = 0;
     const selectedSightWords = [];
 
@@ -1602,6 +1619,44 @@
   let currentChartIndex = -1;
   let currentChartLevel = null;
   let chartIsRandom = false;
+  let chartTypeAheadBuffer = '';
+  let chartTypeAheadTimer = null;
+  const TYPEAHEAD_TIMEOUT_MS = 1000;
+
+  function clearTypeAhead() {
+    chartTypeAheadBuffer = '';
+    if (chartTypeAheadTimer) {
+      clearTimeout(chartTypeAheadTimer);
+      chartTypeAheadTimer = null;
+    }
+    hideChartSearchHUD();
+  }
+
+  function resetTypeAheadTimer() {
+    if (chartTypeAheadTimer) {
+      clearTimeout(chartTypeAheadTimer);
+    }
+    chartTypeAheadTimer = setTimeout(() => {
+      clearTypeAhead();
+    }, TYPEAHEAD_TIMEOUT_MS);
+  }
+
+  function showChartSearchHUD(text, matched = true) {
+    const hud = document.getElementById('chart-typeahead-hud');
+    if (!hud) return;
+    const textEl = hud.querySelector('.hud-text');
+    if (textEl) {
+      textEl.textContent = text + (matched ? '' : ' (not found)');
+    }
+    hud.classList.toggle('not-found', !matched);
+    hud.classList.remove('hidden');
+  }
+
+  function hideChartSearchHUD() {
+    const hud = document.getElementById('chart-typeahead-hud');
+    if (!hud) return;
+    hud.classList.add('hidden');
+  }
 
   function shuffleArray(arr) {
     const copy = [...arr];
@@ -1632,6 +1687,7 @@
   }
 
   function openChart(levelId = 'L1', customUnitIds = null) {
+    clearTypeAhead();
     const selectedIds = customUnitIds || getSelectedUnitIds();
     const level = phonicsData.levels.find(l => l.id === levelId) || phonicsData.levels[0];
     if (!level) return;
@@ -1675,6 +1731,7 @@
     const randomBtn = document.getElementById('chart-random-btn');
     if (randomBtn) {
       randomBtn.onclick = () => {
+        clearTypeAhead();
         chartIsRandom = true;
         currentChartIndex = -1;
         renderChartGrid(targetUnits, currentChartLevel);
@@ -1684,6 +1741,7 @@
     const resetOrderBtn = document.getElementById('chart-reset-order-btn');
     if (resetOrderBtn) {
       resetOrderBtn.onclick = () => {
+        clearTypeAhead();
         chartIsRandom = false;
         currentChartIndex = -1;
         renderChartGrid(targetUnits, currentChartLevel);
@@ -1698,6 +1756,7 @@
     chartCaseBtns.forEach(btn => {
       btn.onclick = () => {
         if (!currentChartLevel || currentChartLevel.id !== 'L1') return;
+        clearTypeAhead();
         const selectedCase = normalizeLetterCase(btn.dataset.case);
         options.letterCase = selectedCase;
         syncCaseButtons(selectedCase);
@@ -1709,38 +1768,79 @@
       };
     });
 
-    // Wire up keyboard shortcuts (Arrow keys for 2D grid, letters A-Z, Space/Enter, Escape)
+    // Wire up keyboard shortcuts (Arrow keys for 2D grid, multi-letter type-ahead, Space/Enter, Escape/Backspace)
     if (chartKeyboardHandler) {
       window.removeEventListener('keydown', chartKeyboardHandler);
     }
     chartKeyboardHandler = (e) => {
-      if (e.key === 'Escape' || e.key === 'Backspace') {
+      // Ignore modified keys (Ctrl, Alt, Meta)
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
+        return;
+      }
+
+      if (e.key === 'Escape') {
         e.preventDefault();
+        clearTypeAhead();
         closeChart();
         return;
       }
+
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        if (chartTypeAheadBuffer.length > 0) {
+          chartTypeAheadBuffer = chartTypeAheadBuffer.slice(0, -1);
+          if (chartTypeAheadBuffer.length > 0) {
+            const tiles = Array.from(document.querySelectorAll('#chart-grid .letter-tile'));
+            const matchIndex = tiles.findIndex(t => {
+              const text = (t.dataset.text || t.dataset.baseLetter || '').trim().toLowerCase();
+              return text.startsWith(chartTypeAheadBuffer);
+            });
+            if (matchIndex !== -1) {
+              setActiveChartTile(matchIndex, true);
+              showChartSearchHUD(chartTypeAheadBuffer, true);
+            } else {
+              showChartSearchHUD(chartTypeAheadBuffer, false);
+            }
+            resetTypeAheadTimer();
+          } else {
+            clearTypeAhead();
+          }
+          return;
+        }
+        closeChart();
+        return;
+      }
+
       if (e.key === 'ArrowRight') {
         e.preventDefault();
+        clearTypeAhead();
         navigateChart2D('right');
         return;
       }
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
+        clearTypeAhead();
         navigateChart2D('left');
         return;
       }
       if (e.key === 'ArrowDown') {
         e.preventDefault();
+        clearTypeAhead();
         navigateChart2D('down');
         return;
       }
       if (e.key === 'ArrowUp') {
         e.preventDefault();
+        clearTypeAhead();
         navigateChart2D('up');
         return;
       }
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
+        clearTypeAhead();
         if (currentChartIndex >= 0) {
           setActiveChartTile(currentChartIndex, true);
         } else {
@@ -1749,25 +1849,69 @@
         return;
       }
 
-      const char = e.key.toUpperCase();
-      if (/^[A-Z]$/.test(char)) {
+      if (/^[a-zA-Z]$/.test(e.key)) {
+        const keyChar = e.key.toLowerCase();
         const tiles = Array.from(document.querySelectorAll('#chart-grid .letter-tile'));
-        const matchingIndices = [];
-        tiles.forEach((t, idx) => {
-          if (t.dataset.baseLetter === char) {
-            matchingIndices.push(idx);
-          }
-        });
+        if (tiles.length === 0) return;
 
-        if (matchingIndices.length > 0) {
-          const currPos = matchingIndices.indexOf(currentChartIndex);
-          if (currPos >= 0) {
-            const nextIdx = matchingIndices[(currPos + 1) % matchingIndices.length];
+        // 1. If pressing the same single letter repeatedly, cycle through words starting with that letter
+        if (chartTypeAheadBuffer.length === 1 && chartTypeAheadBuffer === keyChar) {
+          const matchingIndices = [];
+          tiles.forEach((t, idx) => {
+            const text = (t.dataset.text || t.dataset.baseLetter || '').trim().toLowerCase();
+            if (text.startsWith(keyChar)) {
+              matchingIndices.push(idx);
+            }
+          });
+
+          if (matchingIndices.length > 0) {
+            e.preventDefault();
+            const currPos = matchingIndices.indexOf(currentChartIndex);
+            const nextPos = currPos >= 0 ? (currPos + 1) % matchingIndices.length : 0;
+            const nextIdx = matchingIndices[nextPos];
             setActiveChartTile(nextIdx, true);
-          } else {
-            setActiveChartTile(matchingIndices[0], true);
+            const countLabel = matchingIndices.length > 1 ? ` (${nextPos + 1}/${matchingIndices.length})` : '';
+            showChartSearchHUD(`${keyChar.toUpperCase()}${countLabel}`, true);
+            resetTypeAheadTimer();
+            return;
           }
         }
+
+        // 2. Try extending current buffer
+        const extendedQuery = chartTypeAheadBuffer + keyChar;
+        const extendedMatchIndex = tiles.findIndex(t => {
+          const text = (t.dataset.text || t.dataset.baseLetter || '').trim().toLowerCase();
+          return text.startsWith(extendedQuery);
+        });
+
+        if (extendedMatchIndex !== -1) {
+          e.preventDefault();
+          chartTypeAheadBuffer = extendedQuery;
+          setActiveChartTile(extendedMatchIndex, true);
+          showChartSearchHUD(chartTypeAheadBuffer, true);
+          resetTypeAheadTimer();
+          return;
+        }
+
+        // 3. If extended query didn't match, try fresh search with keyChar
+        const singleMatchIndex = tiles.findIndex(t => {
+          const text = (t.dataset.text || t.dataset.baseLetter || '').trim().toLowerCase();
+          return text.startsWith(keyChar);
+        });
+
+        if (singleMatchIndex !== -1) {
+          e.preventDefault();
+          chartTypeAheadBuffer = keyChar;
+          setActiveChartTile(singleMatchIndex, true);
+          showChartSearchHUD(chartTypeAheadBuffer, true);
+          resetTypeAheadTimer();
+          return;
+        }
+
+        // 4. No match for extended query or single keyChar
+        e.preventDefault();
+        showChartSearchHUD(extendedQuery, false);
+        resetTypeAheadTimer();
       }
     };
     window.addEventListener('keydown', chartKeyboardHandler);
@@ -1974,6 +2118,7 @@
 
         tile.addEventListener('click', (e) => {
           e.stopPropagation();
+          clearTypeAhead();
           setActiveChartTile(currentIdx, true);
         });
 
@@ -2035,6 +2180,7 @@
 
   function closeChart() {
     AudioPlayer.stop();
+    clearTypeAhead();
     if (chartKeyboardHandler) {
       window.removeEventListener('keydown', chartKeyboardHandler);
       chartKeyboardHandler = null;
@@ -2124,7 +2270,8 @@
       classSelect.addEventListener('change', (e) => {
         const classId = e.target.value;
         if (!classId) {
-          ClassesManager.setActiveClassId(null);
+          resetToDefaultSettings();
+          renderMenu();
         } else {
           const cls = ClassesManager.getClasses().find(c => c.id === classId);
           if (cls) {
