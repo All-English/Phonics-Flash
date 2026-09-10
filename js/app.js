@@ -1538,9 +1538,7 @@
       if (currentSlide.dataset.answered !== 'true') {
         revealQuizAnswer(currentSlide);
       } else {
-        if (revealInstance) {
-          revealInstance.next();
-        }
+        playCurrentSlideAudio();
       }
       return;
     }
