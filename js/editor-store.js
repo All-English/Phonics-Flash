@@ -306,6 +306,21 @@ window.EditorStore = (() => {
     return true;
   }
 
+  function saveCurriculum(updatedBook) {
+    if (!updatedBook || !updatedBook.id) return false;
+    const idx = curricula.findIndex(c => c.id === updatedBook.id);
+    updatedBook.updatedAt = Date.now();
+    if (idx !== -1) {
+      curricula[idx] = updatedBook;
+    } else {
+      curricula.push(updatedBook);
+    }
+    saveToLocalStorage();
+    pushToUpstash();
+    notifyChange();
+    return true;
+  }
+
   function duplicateCurriculum(id, newName) {
     const source = getCurriculum(id);
     if (!source) return null;
@@ -621,6 +636,7 @@ window.EditorStore = (() => {
     setHideBuiltIn,
     isBuiltInHidden,
     createCurriculum,
+    saveCurriculum,
     renameCurriculum,
     duplicateCurriculum,
     deleteCurriculum,

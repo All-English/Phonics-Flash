@@ -23,7 +23,7 @@
        ============================================================ -->
   <header class="editor-header">
     <div class="header-left">
-      <a href="index.html" class="btn btn-secondary btn-back" title="Return to Phonics Flash">
+      <a href="index.html" id="back-to-app-btn" class="btn btn-secondary btn-back" title="Return to Phonics Flash">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-icon"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
         <span>Back to App</span>
       </a>
@@ -54,6 +54,13 @@
     </div>
 
     <div class="header-right">
+      <!-- Save Changes Button (Dirty State) -->
+      <button type="button" id="save-changes-btn" class="btn btn-save" title="Save changes to storage (Cmd+S / Ctrl+S)" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-icon save-check-icon"><polyline points="20 6 9 17 4 12"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-icon save-disk-icon"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <span id="save-btn-label">Saved</span>
+      </button>
+
       <button type="button" id="preview-slideshow-btn" class="btn btn-outline" title="Preview currently selected unit in slideshow">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-icon"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         <span>Preview in App</span>
@@ -70,11 +77,10 @@
         </div>
       </div>
 
-      <label class="btn btn-secondary file-btn" title="Import a book pack (.json)">
+      <button type="button" id="header-import-btn" class="btn btn-secondary" title="Import curriculum book or generate with AI">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <span>Import</span>
-        <input type="file" id="import-json-input" accept=".json" style="display:none">
-      </label>
+      </button>
 
       <!-- Theme Toggle -->
       <button type="button" id="theme-toggle-btn" class="theme-toggle" title="Toggle dark/light mode" aria-label="Toggle theme"></button>
@@ -374,6 +380,102 @@
           <button type="button" class="btn btn-secondary" id="batch-words-cancel-btn">Cancel</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal: Import Curriculum Book & AI Prompt -->
+  <div id="import-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card import-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h2>Import Curriculum Book</h2>
+          <span class="modal-subtitle">Generate custom books with AI or import existing JSON</span>
+        </div>
+        <button type="button" class="modal-close-btn" id="import-modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body import-modal-body">
+        <!-- Section A: AI Prompt Generator -->
+        <div class="ai-prompt-box">
+          <div class="ai-prompt-header">
+            <div class="ai-prompt-title">
+              <span class="ai-badge">🤖 AI Generator</span>
+              <strong>Create with ChatGPT, Claude, or Gemini</strong>
+            </div>
+            <button type="button" id="copy-ai-prompt-btn" class="btn btn-sm btn-primary">
+              <span class="copy-btn-icon">📋</span>
+              <span id="copy-ai-prompt-text">Copy AI Prompt</span>
+            </button>
+          </div>
+          <p class="ai-prompt-desc">
+            Copy our optimized prompt into any AI assistant to generate a tailored phonics curriculum for your textbook. Then paste the JSON or upload the file below!
+          </p>
+          <details class="ai-prompt-details">
+            <summary>Click to Preview Full AI Prompt Template</summary>
+            <pre class="ai-prompt-code" id="ai-prompt-display"></pre>
+          </details>
+        </div>
+
+        <!-- Section B: Import Methods Tabs -->
+        <div class="import-content-box">
+          <div class="import-tabs-bar">
+            <button type="button" class="import-tab-btn active" data-import-tab="upload">📁 Upload .JSON File</button>
+            <button type="button" class="import-tab-btn" data-import-tab="paste">📋 Paste JSON Directly</button>
+          </div>
+
+          <!-- Tab 1: Upload File -->
+          <div class="import-tab-pane active" id="import-pane-upload">
+            <div class="import-dropzone" id="import-dropzone">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="dropzone-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <div class="dropzone-text">
+                <strong>Click to browse</strong> or drag &amp; drop a <code>.json</code> file
+              </div>
+              <span class="dropzone-hint">Compatible with Phonics Flash export files and AI-generated JSON</span>
+              <input type="file" id="modal-import-file-input" accept=".json" class="hidden">
+            </div>
+            <div id="file-selected-badge" class="file-selected-badge hidden">
+              <span class="file-badge-icon">📄</span>
+              <span id="selected-filename" class="file-badge-name">curriculum.json</span>
+              <button type="button" id="clear-selected-file-btn" class="file-badge-clear" title="Remove file">&times;</button>
+            </div>
+          </div>
+
+          <!-- Tab 2: Paste JSON -->
+          <div class="import-tab-pane" id="import-pane-paste">
+            <div class="form-group">
+              <textarea id="import-paste-textarea" class="form-textarea json-textarea" rows="7" placeholder="Paste the JSON from your AI assistant here...&#10;&#10;{&#10;  &quot;name&quot;: &quot;Oxford Phonics World 1&quot;,&#10;  &quot;levels&quot;: [...]&#10;}"></textarea>
+            </div>
+          </div>
+
+          <!-- Status / Error Alert -->
+          <div id="import-status-box" class="import-status-box hidden"></div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="import-submit-btn" class="btn btn-primary">Import Book Series</button>
+          <button type="button" id="import-cancel-btn" class="btn btn-secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Unsaved Changes Warning -->
+  <div id="unsaved-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card modal-sm unsaved-modal-card">
+      <div class="modal-header">
+        <h2>Unsaved Changes</h2>
+        <button type="button" class="modal-close-btn" id="unsaved-modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body unsaved-modal-body">
+        <p class="unsaved-warning-text">
+          You have unsaved changes in <strong id="unsaved-book-name">this book</strong>. What would you like to do before leaving?
+        </p>
+        <div class="unsaved-actions-list">
+          <button type="button" class="btn btn-primary btn-block" id="unsaved-save-btn">💾 Save &amp; Continue</button>
+          <button type="button" class="btn btn-danger btn-block" id="unsaved-discard-btn">Discard Changes</button>
+          <button type="button" class="btn btn-secondary btn-block" id="unsaved-cancel-btn">Stay in Editor</button>
+        </div>
+      </div>
     </div>
   </div>
 

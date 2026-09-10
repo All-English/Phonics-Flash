@@ -5,13 +5,149 @@
  */
 
 (() => {
-  let activeBook = null;
+  let activeBook = null;        // Persisted book from EditorStore
+  let workingBook = null;       // In-memory mutable draft
+  let isDirty = false;          // True when workingBook has unsaved edits
   let selectedLevelId = null;
   let selectedUnitId = null;
   let activeWorkspaceTab = 'core';
   let previewIndex = 0;
   let isInternalStoreChange = false;
   let coreWordsRenderSeq = 0;
+  let stagedImportText = '';
+  let pendingUnsavedAction = null;
+
+  const AI_PROMPT_TEMPLATE = `I need you to generate a curriculum JSON file for my Phonics Flash web application.
+
+Please output ONLY a valid, raw JSON object (with NO markdown backticks, NO markdown formatting, and NO conversational text before or after).
+
+SCHEMA SPECIFICATION:
+{
+  "name": "Series Name (e.g. Oxford Phonics World 1)",
+  "description": "Short description of this phonics curriculum",
+  "levels": [
+    {
+      "name": "Level 1: Short Vowels",
+      "color": "#29A8E0",
+      "units": [
+        {
+          "title": "Unit 1: Short a",
+          "sound": "a",
+          "words": [
+            { "word": "cat", "image": "", "audio": "" },
+            { "word": "bat", "image": "", "audio": "" },
+            { "word": "hat", "image": "", "audio": "" },
+            { "word": "mat", "image": "", "audio": "" }
+          ],
+          "extraWords": [
+            { "word": "rat" },
+            { "word": "sat" }
+          ],
+          "sightWords": [
+            { "word": "the" },
+            { "word": "is" }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+RULES:
+1. "name": The title of your curriculum or book series.
+2. "levels": Array of levels (e.g. Level 1, Level 2). Each level has "name", "color" (hex color code), and "units".
+3. "units": Array of units inside each level. Each unit has "title", "sound" (target phonics sound, e.g. "a", "ch", "ee"), "words", "extraWords", and "sightWords".
+4. "words": Core flashcard words. Each item MUST have "word", "image": "", and "audio": "". Leave image and audio empty strings (""); teachers assign images or use auto-pronunciation in the app.
+5. "extraWords": Additional vocabulary for supplementary practice.
+6. "sightWords": High-frequency sight words for this unit.
+7. Output valid JSON only with no trailing commas.`;
+
+  // ── Dirty State & Save Management ───────────────────────────
+  function setDirty(dirty) {
+    isDirty = !!dirty;
+    updateSaveBtnUI();
+  }
+
+  function updateSaveBtnUI() {
+    const btn = document.getElementById('save-changes-btn');
+    const label = document.getElementById('save-btn-label');
+    if (!btn || !label) return;
+
+    if (isDirty) {
+      btn.classList.add('dirty');
+      btn.removeAttribute('disabled');
+      label.textContent = 'Save Changes';
+      document.title = `* ${workingBook?.name || 'Curriculum'} — Editor`;
+    } else {
+      btn.classList.remove('dirty');
+      btn.setAttribute('disabled', 'true');
+      label.textContent = 'Saved';
+      document.title = `${workingBook?.name || 'Curriculum'} — Editor`;
+    }
+  }
+
+  async function commitChanges() {
+    if (!workingBook) return;
+    isInternalStoreChange = true;
+    try {
+      EditorStore.saveCurriculum(workingBook);
+      activeBook = EditorStore.getCurriculum(workingBook.id);
+      workingBook = JSON.parse(JSON.stringify(activeBook));
+      setDirty(false);
+      showSaveToast('Changes saved successfully');
+    } finally {
+      isInternalStoreChange = false;
+    }
+  }
+
+  function discardChanges() {
+    if (!activeBook) return;
+    workingBook = JSON.parse(JSON.stringify(activeBook));
+    setDirty(false);
+    renderSidebarTree();
+    renderUnitWorkspace();
+  }
+
+  function showSaveToast(message = 'Changes saved successfully') {
+    let toast = document.getElementById('save-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'save-toast';
+      toast.className = 'save-toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = `✓ ${message}`;
+    toast.classList.add('show');
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2200);
+  }
+
+  function loadBook(bookId) {
+    if (bookId) {
+      EditorStore.setActiveCurriculum(bookId);
+    }
+    activeBook = EditorStore.getActiveCurriculum();
+    workingBook = activeBook ? JSON.parse(JSON.stringify(activeBook)) : null;
+    setDirty(false);
+    renderBookDropdown();
+    renderSidebarTree();
+  }
+
+  function promptUnsavedChanges(onConfirm) {
+    if (!isDirty) {
+      onConfirm();
+      return;
+    }
+    pendingUnsavedAction = onConfirm;
+    const modal = document.getElementById('unsaved-modal');
+    const bookNameEl = document.getElementById('unsaved-book-name');
+    if (bookNameEl && workingBook) {
+      bookNameEl.textContent = workingBook.name;
+    }
+    modal.classList.remove('hidden');
+  }
 
   // ── 1. Application Initialization ───────────────────────────
   async function init() {
@@ -22,39 +158,42 @@
 
     // Subscribe to store updates
     EditorStore.subscribe((book, allBooks) => {
+      if (isInternalStoreChange) return;
       activeBook = book;
-      renderBookDropdown();
-      renderSidebarTree();
-      if (!isInternalStoreChange && selectedUnitId) {
-        renderUnitWorkspace();
+      if (!isDirty) {
+        workingBook = activeBook ? JSON.parse(JSON.stringify(activeBook)) : null;
+        renderBookDropdown();
+        renderSidebarTree();
+        if (selectedUnitId) renderUnitWorkspace();
+      } else {
+        renderBookDropdown();
       }
     });
 
-    activeBook = EditorStore.getActiveCurriculum();
-
-    renderBookDropdown();
-    renderSidebarTree();
-    bindHeaderEvents();
-    bindWorkspaceEvents();
-    bindModalEvents();
-
-    // Check URL query parameters for auto-selection (e.g. ?book=...&unit=...)
     const params = new URLSearchParams(window.location.search);
     const bookParam = params.get('book');
     const unitParam = params.get('unit') || params.get('u');
 
     if (bookParam && EditorStore.getCurriculum(bookParam)) {
       EditorStore.setActiveCurriculum(bookParam);
-      activeBook = EditorStore.getActiveCurriculum();
-      renderBookDropdown();
-      renderSidebarTree();
     }
+
+    activeBook = EditorStore.getActiveCurriculum();
+    workingBook = activeBook ? JSON.parse(JSON.stringify(activeBook)) : null;
+    setDirty(false);
+
+    renderBookDropdown();
+    renderSidebarTree();
+    bindHeaderEvents();
+    bindWorkspaceEvents();
+    bindModalEvents();
+    bindImportModalEvents();
+    bindUnsavedModalEvents();
 
     if (unitParam) {
       selectUnitById(unitParam);
-    } else if (activeBook && activeBook.levels && activeBook.levels[0] && activeBook.levels[0].units && activeBook.levels[0].units[0]) {
-      // Auto-select first unit
-      selectUnit(activeBook.levels[0].id, activeBook.levels[0].units[0].id);
+    } else if (workingBook && workingBook.levels && workingBook.levels[0]?.units?.[0]) {
+      selectUnit(workingBook.levels[0].id, workingBook.levels[0].units[0].id);
     }
   }
 
@@ -107,21 +246,33 @@
       const opt = document.createElement('option');
       opt.value = b.id;
       opt.textContent = `${b.name}${b.isCustom ? ' (Custom)' : ' (Built-in)'}`;
-      if (b.id === EditorStore.getActiveCurriculumId()) {
+      if (b.id === (workingBook ? workingBook.id : EditorStore.getActiveCurriculumId())) {
         opt.selected = true;
       }
       select.appendChild(opt);
     });
 
     select.onchange = () => {
-      // Aggressively revoke object URLs before switching books
-      MediaDB.revokeAllUrls();
-      EditorStore.setActiveCurriculum(select.value);
-      activeBook = EditorStore.getActiveCurriculum();
-      selectedLevelId = null;
-      selectedUnitId = null;
-      renderSidebarTree();
-      renderUnitWorkspace();
+      const newBookId = select.value;
+      if (newBookId === (workingBook ? workingBook.id : '')) return;
+
+      const performSwitch = () => {
+        MediaDB.revokeAllUrls();
+        loadBook(newBookId);
+        if (workingBook && workingBook.levels && workingBook.levels[0]?.units?.[0]) {
+          selectUnit(workingBook.levels[0].id, workingBook.levels[0].units[0].id);
+        } else {
+          selectedLevelId = workingBook?.levels?.[0]?.id || null;
+          selectedUnitId = null;
+          renderUnitWorkspace();
+        }
+      };
+
+      if (isDirty) {
+        promptUnsavedChanges(performSwitch);
+      } else {
+        performSwitch();
+      }
     };
   }
 
@@ -131,7 +282,7 @@
     if (!container) return;
     container.innerHTML = '';
 
-    if (!activeBook || !activeBook.levels || activeBook.levels.length === 0) {
+    if (!workingBook || !workingBook.levels || workingBook.levels.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
           No levels in this book yet.<br>
@@ -141,7 +292,7 @@
       return;
     }
 
-    activeBook.levels.forEach((level, lIdx) => {
+    workingBook.levels.forEach((level, lIdx) => {
       const levelEl = document.createElement('div');
       levelEl.className = 'tree-level-item';
       levelEl.dataset.levelId = level.id;
@@ -213,8 +364,8 @@
   }
 
   function selectUnitById(unitId) {
-    if (!activeBook || !activeBook.levels) return;
-    for (const lvl of activeBook.levels) {
+    if (!workingBook || !workingBook.levels) return;
+    for (const lvl of workingBook.levels) {
       if (lvl.units && lvl.units.some(u => u.id === unitId)) {
         selectUnit(lvl.id, unitId);
         return;
@@ -239,11 +390,15 @@
   }
 
   function addNewUnitToLevel(levelId) {
-    const level = activeBook.levels.find(l => l.id === levelId);
+    if (!workingBook) return;
+    const level = (workingBook.levels || []).find(l => l.id === levelId);
     if (!level) return;
 
-    const unitNum = (level.units ? level.units.length : 0) + 1;
+    if (!level.units) level.units = [];
+    const unitNum = level.units.length + 1;
+    const unitId = `${levelId}_U${unitNum}_${Date.now().toString(36)}`;
     const newUnit = {
+      id: unitId,
       name: `Unit ${unitNum}: New Sound`,
       targetSound: '',
       words: [],
@@ -251,15 +406,17 @@
       sightWords: []
     };
 
-    const saved = EditorStore.saveUnit(activeBook.id, levelId, newUnit);
-    selectUnit(levelId, saved.id);
+    level.units.push(newUnit);
+    setDirty(true);
+    renderSidebarTree();
+    selectUnit(levelId, newUnit.id);
   }
 
   // ── 5. Main Unit Workspace ──────────────────────────────────
   function getSelectedUnit() {
-    if (!activeBook || !selectedLevelId || !selectedUnitId) return null;
-    const level = activeBook.levels.find(l => l.id === selectedLevelId);
-    if (!level) return null;
+    if (!workingBook || !selectedLevelId || !selectedUnitId) return null;
+    const level = (workingBook.levels || []).find(l => l.id === selectedLevelId);
+    if (!level || !level.units) return null;
     return level.units.find(u => u.id === selectedUnitId) || null;
   }
 
@@ -287,7 +444,7 @@
 
     // Populate level select
     levelSelect.innerHTML = '';
-    activeBook.levels.forEach(l => {
+    (workingBook.levels || []).forEach(l => {
       const opt = document.createElement('option');
       opt.value = l.id;
       opt.textContent = l.name;
@@ -610,26 +767,50 @@
     levelSelect.addEventListener('change', () => {
       const unit = getSelectedUnit();
       const newLevelId = levelSelect.value;
-      if (unit && newLevelId !== selectedLevelId) {
+      if (unit && newLevelId !== selectedLevelId && workingBook) {
         // Move unit to new level
-        EditorStore.deleteUnit(activeBook.id, selectedLevelId, selectedUnitId);
-        const moved = EditorStore.saveUnit(activeBook.id, newLevelId, unit);
-        selectUnit(newLevelId, moved.id);
+        const oldLevel = (workingBook.levels || []).find(l => l.id === selectedLevelId);
+        if (oldLevel && oldLevel.units) {
+          oldLevel.units = oldLevel.units.filter(u => u.id !== selectedUnitId);
+        }
+        const newLevel = (workingBook.levels || []).find(l => l.id === newLevelId);
+        if (newLevel) {
+          if (!newLevel.units) newLevel.units = [];
+          newLevel.units.push(unit);
+        }
+        selectedLevelId = newLevelId;
+        setDirty(true);
+        renderSidebarTree();
+        selectUnit(newLevelId, unit.id);
       }
     });
 
     // Duplicate & Delete unit
     document.getElementById('duplicate-unit-btn').addEventListener('click', () => {
-      if (selectedUnitId && selectedLevelId) {
-        const copy = EditorStore.duplicateUnit(activeBook.id, selectedLevelId, selectedUnitId);
-        if (copy) selectUnit(selectedLevelId, copy.id);
+      if (selectedUnitId && selectedLevelId && workingBook) {
+        const level = (workingBook.levels || []).find(l => l.id === selectedLevelId);
+        if (!level || !level.units) return;
+        const unit = level.units.find(u => u.id === selectedUnitId);
+        if (!unit) return;
+        const copy = JSON.parse(JSON.stringify(unit));
+        copy.id = `${selectedLevelId}_U${Date.now().toString(36)}`;
+        copy.name = `${unit.name} (Copy)`;
+        const origIdx = level.units.findIndex(u => u.id === selectedUnitId);
+        level.units.splice(origIdx + 1, 0, copy);
+        setDirty(true);
+        renderSidebarTree();
+        selectUnit(selectedLevelId, copy.id);
       }
     });
 
     document.getElementById('delete-unit-btn').addEventListener('click', () => {
       if (confirm('Are you sure you want to delete this unit?')) {
-        EditorStore.deleteUnit(activeBook.id, selectedLevelId, selectedUnitId);
+        const level = (workingBook.levels || []).find(l => l.id === selectedLevelId);
+        if (level && level.units) {
+          level.units = level.units.filter(u => u.id !== selectedUnitId);
+        }
         selectedUnitId = null;
+        setDirty(true);
         renderSidebarTree();
         renderUnitWorkspace();
       }
@@ -727,7 +908,8 @@
       openLevelModal(null);
     });
     document.getElementById('empty-clone-smart-btn').addEventListener('click', () => {
-      EditorStore.createCurriculum('My Smart Phonics', { templateId: 'smart-phonics' });
+      const cloned = EditorStore.createCurriculum('My Smart Phonics', { templateId: 'smart-phonics' });
+      loadBook(cloned.id);
     });
 
     // Sidebar add level button
@@ -737,19 +919,46 @@
   }
 
   function saveCurrentUnit() {
-    const unit = getSelectedUnit();
-    if (unit && activeBook && selectedLevelId) {
-      isInternalStoreChange = true;
-      try {
-        EditorStore.saveUnit(activeBook.id, selectedLevelId, unit);
-      } finally {
-        isInternalStoreChange = false;
-      }
+    setDirty(true);
+    if (activeWorkspaceTab === 'preview') {
+      const unit = getSelectedUnit();
+      if (unit) renderLiveCardPreview(unit);
     }
   }
 
-  // ── 10. Bind Header Events & Modals ─────────────────────────
+  // ── 10. Bind Header Events ──────────────────────────────────
   function bindHeaderEvents() {
+    // Save Changes button
+    document.getElementById('save-changes-btn').addEventListener('click', () => {
+      if (isDirty) commitChanges();
+    });
+
+    // Keyboard shortcut Cmd+S / Ctrl+S
+    window.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (isDirty) commitChanges();
+      }
+    });
+
+    // Back to App with unsaved warning
+    document.getElementById('back-to-app-btn')?.addEventListener('click', (e) => {
+      if (isDirty) {
+        e.preventDefault();
+        promptUnsavedChanges(() => {
+          window.location.href = 'index.html';
+        });
+      }
+    });
+
+    // Before unload warning for browser tab close/reload
+    window.addEventListener('beforeunload', (e) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
+
     // New Book button
     document.getElementById('header-new-book-btn').addEventListener('click', () => {
       document.getElementById('new-book-modal').classList.remove('hidden');
@@ -760,12 +969,15 @@
       openBookOptionsModal();
     });
 
-    // Preview in App
-    document.getElementById('preview-slideshow-btn').addEventListener('click', () => {
-      if (selectedUnitId && activeBook) {
-        window.location.href = `index.html?book=${encodeURIComponent(activeBook.id)}&u=${encodeURIComponent(selectedUnitId)}`;
-      } else if (activeBook) {
-        window.location.href = `index.html?book=${encodeURIComponent(activeBook.id)}`;
+    // Preview in App (automatically saves pending changes before launching)
+    document.getElementById('preview-slideshow-btn').addEventListener('click', async () => {
+      if (isDirty) {
+        await commitChanges();
+      }
+      if (selectedUnitId && workingBook) {
+        window.location.href = `index.html?book=${encodeURIComponent(workingBook.id)}&u=${encodeURIComponent(selectedUnitId)}`;
+      } else if (workingBook) {
+        window.location.href = `index.html?book=${encodeURIComponent(workingBook.id)}`;
       } else {
         window.location.href = 'index.html';
       }
@@ -783,29 +995,44 @@
     });
 
     document.getElementById('export-book-json-btn').addEventListener('click', () => {
-      EditorStore.exportBookJSON(activeBook.id);
-    });
-    document.getElementById('export-words-json-btn').addEventListener('click', () => {
-      EditorStore.exportWordsJsonFormat(activeBook.id);
+      if (workingBook) {
+        const exportObj = {
+          name: workingBook.name,
+          id: workingBook.id,
+          description: workingBook.description || '',
+          exportedAt: new Date().toISOString(),
+          levels: workingBook.levels
+        };
+        const str = JSON.stringify(exportObj, null, 2);
+        const blob = new Blob([str], { type: 'application/json' });
+        const filename = `${workingBook.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-curriculum.json`;
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      }
     });
 
-    // Import JSON input
-    const importInput = document.getElementById('import-json-input');
-    importInput.addEventListener('change', async (e) => {
-      if (e.target.files && e.target.files[0]) {
-        try {
-          const text = await e.target.files[0].text();
-          const parsed = JSON.parse(text);
-          const imported = EditorStore.importBookJSON(parsed);
-          alert(`Successfully imported "${imported.name}"!`);
-        } catch (err) {
-          alert('Failed to import JSON: ' + err.message);
-        }
-        importInput.value = '';
+    document.getElementById('export-words-json-btn').addEventListener('click', () => {
+      if (workingBook) {
+        const exportObj = { levels: workingBook.levels };
+        const str = JSON.stringify(exportObj, null, 2);
+        const blob = new Blob([str], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'words.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
       }
     });
   }
 
+  // ── 11. Modal Bindings ──────────────────────────────────────
   function bindModalEvents() {
     // New Book modal
     const newBookModal = document.getElementById('new-book-modal');
@@ -823,9 +1050,18 @@
       if (template === '5levels') options.autoCreateLevels = true;
       if (template === 'clone-smart') options.templateId = 'smart-phonics';
 
-      EditorStore.createCurriculum(name, options);
+      const newBook = EditorStore.createCurriculum(name, options);
       newBookModal.classList.add('hidden');
       document.getElementById('new-book-form').reset();
+      loadBook(newBook.id);
+      if (workingBook && workingBook.levels && workingBook.levels[0]?.units?.[0]) {
+        selectUnit(workingBook.levels[0].id, workingBook.levels[0].units[0].id);
+      } else {
+        selectedLevelId = workingBook?.levels?.[0]?.id || null;
+        selectedUnitId = null;
+        renderUnitWorkspace();
+      }
+      showSaveToast(`Created "${newBook.name}"`);
     });
 
     // Book Options modal
@@ -834,24 +1070,30 @@
 
     document.getElementById('save-book-name-btn').addEventListener('click', () => {
       const newName = document.getElementById('edit-book-name-input').value.trim();
-      if (newName && activeBook) {
-        EditorStore.renameCurriculum(activeBook.id, newName);
+      if (newName && workingBook) {
+        EditorStore.renameCurriculum(workingBook.id, newName);
+        workingBook.name = newName;
+        renderBookDropdown();
+        updateSaveBtnUI();
         bookOptionsModal.classList.add('hidden');
+        showSaveToast(`Renamed to "${newName}"`);
       }
     });
 
     document.getElementById('reset-smart-phonics-btn').addEventListener('click', async () => {
       if (confirm('Are you sure you want to reset Smart Phonics to factory defaults? All local edits will be replaced with original data/words.json.')) {
         await EditorStore.resetToDefaults('smart-phonics');
+        loadBook('smart-phonics');
         bookOptionsModal.classList.add('hidden');
         alert('Smart Phonics has been restored to factory defaults.');
       }
     });
 
     document.getElementById('delete-book-btn').addEventListener('click', () => {
-      if (confirm(`Are you sure you want to permanently delete "${activeBook.name}"?`)) {
-        EditorStore.deleteCurriculum(activeBook.id);
+      if (confirm(`Are you sure you want to permanently delete "${workingBook.name}"?`)) {
+        EditorStore.deleteCurriculum(workingBook.id);
         bookOptionsModal.classList.add('hidden');
+        loadBook(EditorStore.getActiveCurriculumId());
       }
     });
 
@@ -873,16 +1115,33 @@
       const levelName = document.getElementById('level-modal-name-input').value.trim();
       const levelColor = document.getElementById('level-modal-color-input').value;
 
-      if (!levelName || !activeBook) return;
+      if (!levelName || !workingBook) return;
+      if (!workingBook.levels) workingBook.levels = [];
 
-      const levelData = {
-        name: levelName,
-        color: levelColor
-      };
-      if (levelId) levelData.id = levelId;
+      if (levelId) {
+        // Edit existing level
+        const lvl = workingBook.levels.find(l => l.id === levelId);
+        if (lvl) {
+          lvl.name = levelName;
+          lvl.color = levelColor;
+        }
+      } else {
+        // Create new level
+        const nextNum = workingBook.levels.length + 1;
+        const newLvl = {
+          id: `${workingBook.id}_L${nextNum}_${Date.now().toString(36)}`,
+          name: levelName,
+          color: levelColor,
+          units: []
+        };
+        workingBook.levels.push(newLvl);
+        selectedLevelId = newLvl.id;
+      }
 
-      EditorStore.saveLevel(activeBook.id, levelData);
+      setDirty(true);
       levelModal.classList.add('hidden');
+      renderSidebarTree();
+      if (selectedUnitId) renderUnitWorkspace();
     });
 
     // Batch Words modal
@@ -916,13 +1175,220 @@
     });
   }
 
-  function openBookOptionsModal() {
-    if (!activeBook) return;
-    const modal = document.getElementById('book-options-modal');
-    document.getElementById('book-options-title').textContent = `Options for "${activeBook.name}"`;
-    document.getElementById('edit-book-name-input').value = activeBook.name;
+  // ── 12. Bind Import Modal & AI Prompt Events ─────────────────
+  function bindImportModalEvents() {
+    const importModal = document.getElementById('import-modal');
+    const importBtn = document.getElementById('header-import-btn');
+    const closeBtn = document.getElementById('import-modal-close-btn');
+    const cancelBtn = document.getElementById('import-cancel-btn');
+    const copyPromptBtn = document.getElementById('copy-ai-prompt-btn');
+    const copyPromptText = document.getElementById('copy-ai-prompt-text');
+    const promptDisplay = document.getElementById('ai-prompt-display');
+    const dropzone = document.getElementById('import-dropzone');
+    const fileInput = document.getElementById('modal-import-file-input');
+    const fileBadge = document.getElementById('file-selected-badge');
+    const filenameEl = document.getElementById('selected-filename');
+    const clearFileBtn = document.getElementById('clear-selected-file-btn');
+    const pasteTextarea = document.getElementById('import-paste-textarea');
+    const submitBtn = document.getElementById('import-submit-btn');
+    const statusBox = document.getElementById('import-status-box');
 
-    const isSmart = activeBook.id === 'smart-phonics';
+    if (promptDisplay) promptDisplay.textContent = AI_PROMPT_TEMPLATE;
+
+    let activeImportTab = 'upload';
+
+    function openImportModal() {
+      statusBox.className = 'import-status-box hidden';
+      statusBox.textContent = '';
+      stagedImportText = '';
+      pasteTextarea.value = '';
+      fileBadge.classList.add('hidden');
+      dropzone.classList.remove('hidden');
+      importModal.classList.remove('hidden');
+    }
+
+    importBtn?.addEventListener('click', openImportModal);
+    closeBtn?.addEventListener('click', () => importModal.classList.add('hidden'));
+    cancelBtn?.addEventListener('click', () => importModal.classList.add('hidden'));
+
+    // Copy AI Prompt
+    copyPromptBtn?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(AI_PROMPT_TEMPLATE);
+        copyPromptText.textContent = '✓ Copied!';
+        copyPromptBtn.classList.remove('btn-primary');
+        copyPromptBtn.classList.add('btn-secondary');
+        setTimeout(() => {
+          copyPromptText.textContent = 'Copy AI Prompt';
+          copyPromptBtn.classList.remove('btn-secondary');
+          copyPromptBtn.classList.add('btn-primary');
+        }, 2000);
+      } catch (err) {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = AI_PROMPT_TEMPLATE;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copyPromptText.textContent = '✓ Copied!';
+        setTimeout(() => { copyPromptText.textContent = 'Copy AI Prompt'; }, 2000);
+      }
+    });
+
+    // Import Tabs
+    document.querySelectorAll('.import-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.import-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.import-tab-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        activeImportTab = btn.dataset.importTab;
+        const pane = document.getElementById(`import-pane-${activeImportTab}`);
+        if (pane) pane.classList.add('active');
+      });
+    });
+
+    // Dropzone file handling
+    dropzone?.addEventListener('click', () => fileInput?.click());
+    dropzone?.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+    dropzone?.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone?.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        await handleFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput?.addEventListener('change', async (e) => {
+      if (e.target.files && e.target.files[0]) {
+        await handleFile(e.target.files[0]);
+      }
+    });
+
+    async function handleFile(file) {
+      try {
+        const text = await file.text();
+        stagedImportText = text;
+        filenameEl.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+        fileBadge.classList.remove('hidden');
+        dropzone.classList.add('hidden');
+        statusBox.className = 'import-status-box hidden';
+      } catch (err) {
+        showImportStatus('Could not read file: ' + err.message, 'error');
+      }
+    }
+
+    clearFileBtn?.addEventListener('click', () => {
+      stagedImportText = '';
+      fileInput.value = '';
+      fileBadge.classList.add('hidden');
+      dropzone.classList.remove('hidden');
+    });
+
+    function showImportStatus(msg, type = 'error') {
+      statusBox.textContent = msg;
+      statusBox.className = `import-status-box ${type}`;
+      statusBox.classList.remove('hidden');
+    }
+
+    // Submit Import
+    submitBtn?.addEventListener('click', () => {
+      let rawText = '';
+      if (activeImportTab === 'upload') {
+        rawText = stagedImportText.trim();
+        if (!rawText) {
+          showImportStatus('Please choose or drag & drop a .json file first.', 'error');
+          return;
+        }
+      } else {
+        rawText = pasteTextarea.value.trim();
+        if (!rawText) {
+          showImportStatus('Please paste your curriculum JSON into the text box.', 'error');
+          return;
+        }
+      }
+
+      // Sanitize markdown fences if present (e.g. ```json ... ```)
+      if (rawText.startsWith('```')) {
+        rawText = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+      }
+
+      let parsed = null;
+      try {
+        parsed = JSON.parse(rawText);
+      } catch (err) {
+        showImportStatus(`JSON Parse Error: ${err.message}. Ensure there are no trailing commas or missing brackets.`, 'error');
+        return;
+      }
+
+      try {
+        const imported = EditorStore.importBookJSON(parsed);
+        importModal.classList.add('hidden');
+        loadBook(imported.id);
+        if (workingBook && workingBook.levels && workingBook.levels[0]?.units?.[0]) {
+          selectUnit(workingBook.levels[0].id, workingBook.levels[0].units[0].id);
+        } else {
+          selectedLevelId = workingBook?.levels?.[0]?.id || null;
+          selectedUnitId = null;
+          renderUnitWorkspace();
+        }
+        showSaveToast(`Successfully imported "${imported.name}"!`);
+      } catch (err) {
+        showImportStatus(`Import Failed: ${err.message}`, 'error');
+      }
+    });
+  }
+
+  // ── 13. Bind Unsaved Changes Modal Events ───────────────────
+  function bindUnsavedModalEvents() {
+    const unsavedModal = document.getElementById('unsaved-modal');
+    const saveBtn = document.getElementById('unsaved-save-btn');
+    const discardBtn = document.getElementById('unsaved-discard-btn');
+    const cancelBtn = document.getElementById('unsaved-cancel-btn');
+    const closeBtn = document.getElementById('unsaved-modal-close-btn');
+
+    saveBtn?.addEventListener('click', async () => {
+      await commitChanges();
+      unsavedModal.classList.add('hidden');
+      if (pendingUnsavedAction) {
+        const action = pendingUnsavedAction;
+        pendingUnsavedAction = null;
+        action();
+      }
+    });
+
+    discardBtn?.addEventListener('click', () => {
+      discardChanges();
+      unsavedModal.classList.add('hidden');
+      if (pendingUnsavedAction) {
+        const action = pendingUnsavedAction;
+        pendingUnsavedAction = null;
+        action();
+      }
+    });
+
+    const closeHandler = () => {
+      unsavedModal.classList.add('hidden');
+      pendingUnsavedAction = null;
+      const select = document.getElementById('active-book-select');
+      if (select && workingBook) select.value = workingBook.id;
+    };
+
+    cancelBtn?.addEventListener('click', closeHandler);
+    closeBtn?.addEventListener('click', closeHandler);
+  }
+
+  function openBookOptionsModal() {
+    if (!workingBook) return;
+    const modal = document.getElementById('book-options-modal');
+    document.getElementById('book-options-title').textContent = `Options for "${workingBook.name}"`;
+    document.getElementById('edit-book-name-input').value = workingBook.name;
+
+    const isSmart = workingBook.id === 'smart-phonics';
     document.getElementById('smart-phonics-reset-row').classList.toggle('hidden', !isSmart);
     document.getElementById('custom-book-delete-row').classList.toggle('hidden', isSmart);
 
@@ -944,7 +1410,7 @@
     } else {
       title.textContent = 'Add New Level';
       idInput.value = '';
-      const nextNum = (activeBook.levels ? activeBook.levels.length : 0) + 1;
+      const nextNum = (workingBook && workingBook.levels ? workingBook.levels.length : 0) + 1;
       nameInput.value = `Level ${nextNum}`;
       colorInput.value = '#29A8E0';
     }
