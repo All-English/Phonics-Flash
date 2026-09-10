@@ -68,9 +68,18 @@ const AudioPlayer = (() => {
     try {
       setButtonState(btn, 'loading');
 
-      // 1. Try local MP3 file
-      if (audioPath) {
-        const played = await tryPlayMP3(audioPath);
+      // 1. Try local MP3 file or MediaDB audio recording
+      let effectiveAudio = audioPath;
+      if (typeof MediaDB !== 'undefined' && MediaDB.isMediaId(audioPath)) {
+        try {
+          effectiveAudio = await MediaDB.resolveMediaUrl(audioPath);
+        } catch (e) {
+          console.warn('[AudioPlayer] Could not resolve media audio:', e);
+        }
+      }
+
+      if (effectiveAudio) {
+        const played = await tryPlayMP3(effectiveAudio);
         if (played) {
           setButtonState(btn, 'playing');
           return;

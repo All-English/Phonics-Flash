@@ -84,6 +84,7 @@ window.ClassesManager = (() => {
               id: `shared_${setName.replace(/[^a-zA-Z0-9]/g, '_')}`,
               name: setName,
               schedule: sched,
+              curriculumId: prof.curriculumId || 'smart-phonics',
               selectedUnits: savedUnits,
               options: {
                 includeExtras: false,
@@ -101,6 +102,7 @@ window.ClassesManager = (() => {
           } else {
             // Keep schedule aligned with shared_class_profiles
             if (sched) existing.schedule = sched;
+            if (!existing.curriculumId) existing.curriculumId = prof.curriculumId || 'smart-phonics';
 
             // Adopt units from shared_class_profiles (universal cross-app curriculum state)
             const profTime = prof.updatedAt || 0;
@@ -414,6 +416,7 @@ window.ClassesManager = (() => {
       const newClass = {
         id: `class_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
         name: classObj.name || 'Untitled Class',
+        curriculumId: classObj.curriculumId || 'smart-phonics',
         schedule: {
           days: classObj.schedule?.days || ['Mon', 'Wed', 'Fri'],
           startTime: classObj.schedule?.startTime || '15:00',

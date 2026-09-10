@@ -31,6 +31,20 @@
 
         <!-- Class Control Bar -->
         <div class="class-control-bar">
+          <!-- Book Series Selector -->
+          <div class="class-select-group book-select-group">
+            <label for="book-select" class="class-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              <span>Book:</span>
+            </label>
+            <div class="custom-select-wrapper">
+              <select id="book-select" class="class-dropdown" aria-label="Select active book series">
+                <option value="smart-phonics">Smart Phonics</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Class Selector -->
           <div class="class-select-group">
             <label for="class-select" class="class-label">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
@@ -42,6 +56,11 @@
               </select>
             </div>
           </div>
+
+          <a href="editor.html" id="open-editor-btn" class="class-action-btn" title="Edit or create custom levels &amp; books">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <span>Edit Curriculum</span>
+          </a>
 
           <button id="open-settings-btn" class="class-action-btn" title="Settings &amp; Classes">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -199,6 +218,7 @@
       <div class="modal-tabs">
         <button class="modal-tab-btn active" data-tab="classes-tab">My Classes</button>
         <button class="modal-tab-btn" data-tab="tts-tab">🎙️ Voice &amp; TTS</button>
+        <button class="modal-tab-btn" data-tab="media-tab">🖼️ Media &amp; AI Keys</button>
         <button class="modal-tab-btn" data-tab="sync-tab">Cloud Sync &amp; Backup</button>
       </div>
 
@@ -229,6 +249,16 @@
                 <label for="form-class-name">Class Name</label>
                 <input type="text" id="form-class-name" placeholder="e.g. MWF 9:00 or Level 2 TTh 3:30" required>
                 <span class="field-hint">Tip: Days and times typed here (e.g. "MWF 9:00") auto-fill the schedule below</span>
+              </div>
+
+              <div class="form-group">
+                <label for="form-class-curriculum">Book Series</label>
+                <div class="custom-select-wrapper">
+                  <select id="form-class-curriculum" class="class-dropdown" aria-label="Select book series for this class">
+                    <!-- Populated dynamically -->
+                  </select>
+                </div>
+                <span class="field-hint">Class will automatically switch to this book series when scheduled</span>
               </div>
 
               <div class="form-group">
@@ -355,12 +385,58 @@
           </div>
         </div>
 
-        <!-- TAB 3: Cloud Sync & Backup -->
+        <!-- TAB 3: Media & AI Keys -->
+        <div id="media-tab" class="modal-tab-content">
+          <div class="sync-section">
+            <h3>🖼️ Stock Image &amp; AI APIs</h3>
+            <p class="sync-desc">
+              Configure optional API keys for searching high-resolution photos, vector graphics, and generating flashcard artwork. Clipart search and basic AI generation work 100% free without keys.
+            </p>
+
+            <div class="form-group">
+              <label for="pixabay-key-settings">Pixabay API Key</label>
+              <input type="password" id="pixabay-key-settings" class="class-dropdown" placeholder="Paste free Pixabay API key" autocomplete="off" spellcheck="false">
+              <span class="field-hint">Enables searching millions of royalty-free photos, vectors, and illustrations.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="gemini-key-settings">Google Gemini API Key (Imagen 3)</label>
+              <input type="password" id="gemini-key-settings" class="class-dropdown" placeholder="Paste Gemini API key (AI Studio)" autocomplete="off" spellcheck="false">
+              <span class="field-hint">Enables ultra high-quality flashcard art generation via Google Imagen 3.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="unsplash-key-settings">Unsplash Access Key</label>
+              <input type="password" id="unsplash-key-settings" class="class-dropdown" placeholder="Paste Unsplash Access Key" autocomplete="off" spellcheck="false">
+              <span class="field-hint">Enables high-resolution photography search.</span>
+            </div>
+
+            <div class="sync-btn-row">
+              <button type="button" id="save-media-keys-btn" class="btn btn-primary">Save API Keys</button>
+              <span id="media-keys-status-msg" class="sync-status-msg"></span>
+            </div>
+          </div>
+
+          <hr class="modal-divider">
+
+          <div class="sync-section">
+            <h3>📚 Curriculum Preferences</h3>
+            <div class="form-group">
+              <label class="day-chip" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="hide-smart-phonics-checkbox">
+                <span>Hide built-in Smart Phonics from book selector</span>
+              </label>
+              <span class="field-hint">Check this if your classroom exclusively teaches from another book series (e.g. Oxford Phonics World).</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: Cloud Sync & Backup -->
         <div id="sync-tab" class="modal-tab-content">
           <div class="sync-section">
             <h3>☁️ Upstash Redis Cloud Sync</h3>
             <p class="sync-desc">
-              Synchronize your classes across devices. Uses isolated Redis key <code>phonics_flash:classes</code> safely on your single shared Upstash database.
+              Synchronize your classes and custom curriculum across devices. Uses keys <code>phonics_flash:classes</code> and <code>shared_phonics_curriculum</code> safely on your single shared Upstash database.
             </p>
             <div class="form-group">
               <label for="upstash-url-input">Upstash REST URL</label>
@@ -400,6 +476,9 @@
   <!-- ============================================================
        SCRIPTS
        ============================================================ -->
+  <!-- Dexie.js for IndexedDB Media Storage -->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@4.0.11/dist/dexie.min.js"></script>
+
   <!-- reveal.js -->
   <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
 
@@ -408,6 +487,11 @@
 
   <!-- Shared Class Sync & Universal Schedule Matcher -->
   <script src="js/shared-class-sync.js"></script>
+
+  <!-- Media Storage and Multi-Book Store -->
+  <script src="js/media-db.js"></script>
+  <script src="js/editor-store.js"></script>
+  <script src="js/media-apis.js"></script>
 
   <!-- Classes and Auto-Schedule Management -->
   <script src="js/classes.js"></script>

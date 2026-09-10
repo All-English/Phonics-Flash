@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Curriculum &amp; Content Editor — Phonics Flash</title>
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✏️</text></svg>">
+
+  <!-- Core Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Editor CSS (uses modern light-dark() variables) -->
+  <link rel="stylesheet" href="css/editor.css">
+</head>
+<body>
+
+  <!-- ============================================================
+       EDITOR HEADER
+       ============================================================ -->
+  <header class="editor-header">
+    <div class="header-left">
+      <a href="index.html" class="btn btn-secondary btn-back" title="Return to Phonics Flash">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-icon"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        <span>Back to App</span>
+      </a>
+
+      <div class="editor-title-group">
+        <h1>Content Editor</h1>
+        <span class="editor-tagline">Customize and create curriculum books</span>
+      </div>
+    </div>
+
+    <!-- Active Book Selector -->
+    <div class="header-center">
+      <div class="book-selector-bar">
+        <label for="active-book-select" class="book-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="book-icon"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <span>Book Series:</span>
+        </label>
+        <div class="custom-select-wrapper">
+          <select id="active-book-select" class="book-dropdown" aria-label="Select book series to edit">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+        <button type="button" id="header-new-book-btn" class="btn btn-sm btn-outline" title="Create a new book series">+ New Book</button>
+        <button type="button" id="header-book-options-btn" class="btn btn-sm btn-icon" title="Book options &amp; settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button type="button" id="preview-slideshow-btn" class="btn btn-outline" title="Preview currently selected unit in slideshow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-icon"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span>Preview in App</span>
+      </button>
+
+      <div class="dropdown-wrapper">
+        <button type="button" id="export-menu-btn" class="btn btn-secondary dropdown-trigger" title="Export or backup curriculum">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Export</span>
+        </button>
+        <div class="dropdown-menu hidden" id="export-dropdown">
+          <button type="button" class="dropdown-item" id="export-book-json-btn">⬇️ Export Active Book (.json)</button>
+          <button type="button" class="dropdown-item" id="export-words-json-btn">⬇️ Export as "words.json" (Dev Format)</button>
+        </div>
+      </div>
+
+      <label class="btn btn-secondary file-btn" title="Import a book pack (.json)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span>Import</span>
+        <input type="file" id="import-json-input" accept=".json" style="display:none">
+      </label>
+
+      <!-- Theme Toggle -->
+      <button type="button" id="theme-toggle-btn" class="theme-toggle" title="Toggle dark/light mode" aria-label="Toggle theme"></button>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       MAIN EDITOR WORKSPACE
+       ============================================================ -->
+  <main class="editor-workspace">
+    <!-- LEFT SIDEBAR: Levels & Units Tree -->
+    <aside class="editor-sidebar">
+      <div class="sidebar-header">
+        <h2>Curriculum Structure</h2>
+        <button type="button" id="sidebar-add-level-btn" class="btn btn-sm btn-primary" title="Add a new level to this book">+ Level</button>
+      </div>
+
+      <div class="sidebar-tree-container" id="levels-tree">
+        <!-- Dynamically rendered levels & units tree -->
+      </div>
+    </aside>
+
+    <!-- RIGHT MAIN PANEL: Unit Workspace -->
+    <section class="editor-main-panel" id="editor-main-panel">
+      <!-- Empty State (when no unit is selected) -->
+      <div class="editor-empty-state" id="editor-empty-state">
+        <div class="empty-icon-wrap">📖</div>
+        <h2>Select or Create a Unit</h2>
+        <p>Choose a unit from the left sidebar to edit words, images, and audio, or create a brand new level and unit for this book.</p>
+        <div class="empty-quick-actions">
+          <button type="button" id="empty-add-level-btn" class="btn btn-primary">+ Add New Level</button>
+          <button type="button" id="empty-clone-smart-btn" class="btn btn-secondary">Clone Smart Phonics as Template</button>
+        </div>
+      </div>
+
+      <!-- Active Unit Workspace (shown when a unit is selected) -->
+      <div class="unit-workspace hidden" id="unit-workspace">
+        <!-- Unit Header Details Form -->
+        <div class="unit-meta-bar">
+          <div class="meta-field flex-2">
+            <label for="unit-title-input">Unit Title</label>
+            <input type="text" id="unit-title-input" class="form-input text-lg font-bold" placeholder="e.g. Unit 1: Short a">
+          </div>
+
+          <div class="meta-field flex-2">
+            <label for="unit-target-sound-input">Target Sound(s) / Letters</label>
+            <input type="text" id="unit-target-sound-input" class="form-input" placeholder="e.g. a,b,c or short a">
+          </div>
+
+          <div class="meta-field flex-1">
+            <label for="unit-level-select">Assigned Level</label>
+            <div class="custom-select-wrapper">
+              <select id="unit-level-select" class="form-select">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+          </div>
+
+          <div class="unit-meta-actions">
+            <button type="button" id="duplicate-unit-btn" class="btn btn-secondary btn-sm" title="Duplicate this unit">Duplicate</button>
+            <button type="button" id="delete-unit-btn" class="btn btn-danger btn-sm" title="Delete this unit">Delete</button>
+          </div>
+        </div>
+
+        <!-- Section Tabs: Core Words, Extra Words, Sight Words, Live Preview -->
+        <div class="workspace-tabs-row">
+          <div class="workspace-tabs">
+            <button type="button" class="w-tab-btn active" data-wtab="core">
+              <span>Core Words</span>
+              <span class="count-badge" id="core-words-count">0</span>
+            </button>
+            <button type="button" class="w-tab-btn" data-wtab="extras">
+              <span>Extra Words</span>
+              <span class="count-badge" id="extra-words-count">0</span>
+            </button>
+            <button type="button" class="w-tab-btn" data-wtab="sight">
+              <span>Sight Words</span>
+              <span class="count-badge" id="sight-words-count">0</span>
+            </button>
+            <button type="button" class="w-tab-btn" data-wtab="preview">
+              <span>👁️ Card Preview</span>
+            </button>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="workspace-tab-actions">
+            <button type="button" id="batch-add-words-btn" class="btn btn-secondary btn-sm">📋 Batch Add Words</button>
+            <button type="button" id="add-word-card-btn" class="btn btn-primary btn-sm">+ Add Word Card</button>
+          </div>
+        </div>
+
+        <!-- TAB CONTENT: Core Words List -->
+        <div class="w-tab-content active" id="wtab-core">
+          <div class="word-cards-container" id="word-cards-list">
+            <!-- Dynamically populated word cards -->
+          </div>
+        </div>
+
+        <!-- TAB CONTENT: Extra Words List -->
+        <div class="w-tab-content" id="wtab-extras">
+          <div class="chip-editor-box">
+            <div class="chip-editor-header">
+              <h3>Extra Phonics Words</h3>
+              <p class="field-hint">Words included when "Extra Words" mode is toggled on in the slideshow.</p>
+            </div>
+            <div class="chip-input-row">
+              <input type="text" id="add-extra-word-input" class="form-input" placeholder="Type a word and press Enter...">
+              <button type="button" id="add-extra-word-btn" class="btn btn-primary btn-sm">Add Word</button>
+            </div>
+            <div class="chips-container" id="extra-words-chips"></div>
+          </div>
+        </div>
+
+        <!-- TAB CONTENT: Sight Words List -->
+        <div class="w-tab-content" id="wtab-sight">
+          <div class="chip-editor-box">
+            <div class="chip-editor-header">
+              <h3>Sight Words</h3>
+              <p class="field-hint">High-frequency sight words included when "Sight Words" mode is active.</p>
+            </div>
+            <div class="chip-input-row">
+              <input type="text" id="add-sight-word-input" class="form-input" placeholder="Type a sight word and press Enter...">
+              <button type="button" id="add-sight-word-btn" class="btn btn-primary btn-sm">Add Word</button>
+            </div>
+            <div class="chips-container" id="sight-words-chips"></div>
+          </div>
+        </div>
+
+        <!-- TAB CONTENT: Live Card Preview -->
+        <div class="w-tab-content" id="wtab-preview">
+          <div class="live-preview-box">
+            <div class="preview-card-display" id="live-preview-card">
+              <div class="preview-inner">
+                <img src="" alt="" id="preview-img" class="preview-word-image hidden">
+                <div class="preview-word-text" id="preview-text">Word</div>
+              </div>
+              <button type="button" class="preview-audio-fab" id="preview-fab-audio" title="Play audio">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+              </button>
+            </div>
+            <div class="preview-controls">
+              <button type="button" id="preview-prev-btn" class="btn btn-secondary">◀ Prev</button>
+              <span id="preview-counter">Card 1 / 1</span>
+              <button type="button" id="preview-next-btn" class="btn btn-secondary">Next ▶</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================================================
+       MODALS
+       ============================================================ -->
+
+  <!-- Modal: Create New Book -->
+  <div id="new-book-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Create New Book Series</h2>
+        <button type="button" class="modal-close-btn" id="new-book-close-btn">&times;</button>
+      </div>
+      <form id="new-book-form" class="modal-body">
+        <div class="form-group">
+          <label for="new-book-name-input">Book Series Name</label>
+          <input type="text" id="new-book-name-input" class="form-input" placeholder="e.g. Oxford Phonics World or Jolly Phonics" required>
+        </div>
+        <div class="form-group">
+          <label for="new-book-desc-input">Description (Optional)</label>
+          <input type="text" id="new-book-desc-input" class="form-input" placeholder="e.g. Kindergarten &amp; Grade 1 curriculum">
+        </div>
+        <div class="form-group">
+          <label>Starting Template</label>
+          <div class="template-options-group">
+            <label class="radio-card">
+              <input type="radio" name="book-template" value="blank" checked>
+              <div class="radio-card-content">
+                <strong>Start Blank</strong>
+                <span>Empty book ready for custom levels</span>
+              </div>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="book-template" value="5levels">
+              <div class="radio-card-content">
+                <strong>Standard 5 Levels</strong>
+                <span>Auto-creates Level 1 through Level 5</span>
+              </div>
+            </label>
+            <label class="radio-card">
+              <input type="radio" name="book-template" value="clone-smart">
+              <div class="radio-card-content">
+                <strong>Clone Smart Phonics</strong>
+                <span>Duplicate full built-in deck as editable copy</span>
+              </div>
+            </label>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">Create Book Series</button>
+          <button type="button" class="btn btn-secondary" id="new-book-cancel-btn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Book Settings & Options -->
+  <div id="book-options-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="book-options-title">Book Options</h2>
+        <button type="button" class="modal-close-btn" id="book-options-close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="edit-book-name-input">Rename Book</label>
+          <div class="inline-btn-row">
+            <input type="text" id="edit-book-name-input" class="form-input">
+            <button type="button" id="save-book-name-btn" class="btn btn-primary">Rename</button>
+          </div>
+        </div>
+
+        <hr class="modal-divider">
+
+        <div class="danger-zone-box">
+          <h3>Manage Book</h3>
+          <div class="danger-row" id="smart-phonics-reset-row">
+            <div class="danger-info">
+              <strong>Reset Smart Phonics</strong>
+              <span>Restores original factory units from words.json, discarding local modifications.</span>
+            </div>
+            <button type="button" id="reset-smart-phonics-btn" class="btn btn-danger btn-sm">Reset to Default</button>
+          </div>
+
+          <div class="danger-row" id="custom-book-delete-row">
+            <div class="danger-info">
+              <strong>Delete This Book</strong>
+              <span>Permanently remove this custom book series from your browser.</span>
+            </div>
+            <button type="button" id="delete-book-btn" class="btn btn-danger btn-sm">Delete Book</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Level Edit / Create -->
+  <div id="level-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card modal-sm">
+      <div class="modal-header">
+        <h2 id="level-modal-title">Level Details</h2>
+        <button type="button" class="modal-close-btn" id="level-modal-close-btn">&times;</button>
+      </div>
+      <form id="level-modal-form" class="modal-body">
+        <input type="hidden" id="level-modal-id" value="">
+        <div class="form-group">
+          <label for="level-modal-name-input">Level Name</label>
+          <input type="text" id="level-modal-name-input" class="form-input" placeholder="e.g. Level 1: Alphabet" required>
+        </div>
+        <div class="form-group">
+          <label for="level-modal-color-input">Accent Color</label>
+          <div class="color-picker-row">
+            <input type="color" id="level-modal-color-input" value="#29A8E0" class="color-swatch-input">
+            <div class="preset-colors">
+              <button type="button" class="color-preset-dot" style="background:#29A8E0" data-color="#29A8E0"></button>
+              <button type="button" class="color-preset-dot" style="background:#F5A623" data-color="#F5A623"></button>
+              <button type="button" class="color-preset-dot" style="background:#C0452A" data-color="#C0452A"></button>
+              <button type="button" class="color-preset-dot" style="background:#3DAA5C" data-color="#3DAA5C"></button>
+              <button type="button" class="color-preset-dot" style="background:#9B3FAD" data-color="#9B3FAD"></button>
+              <button type="button" class="color-preset-dot" style="background:#E84393" data-color="#E84393"></button>
+              <button type="button" class="color-preset-dot" style="background:#00CEC9" data-color="#00CEC9"></button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">Save Level</button>
+          <button type="button" class="btn btn-secondary" id="level-modal-cancel-btn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Batch Add Words -->
+  <div id="batch-words-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Batch Add Words</h2>
+        <button type="button" class="modal-close-btn" id="batch-words-close-btn">&times;</button>
+      </div>
+      <form id="batch-words-form" class="modal-body">
+        <div class="form-group">
+          <label for="batch-words-textarea">Enter Words (Comma or Line Separated)</label>
+          <textarea id="batch-words-textarea" class="form-textarea" rows="6" placeholder="cat, bat, hat, mat, rat&#10;or&#10;apple&#10;ant&#10;alligator" required></textarea>
+          <span class="field-hint">Cards will be created immediately with automatic TTS enabled. You can assign images afterward.</span>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">Add Word Cards</button>
+          <button type="button" class="btn btn-secondary" id="batch-words-cancel-btn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCRIPTS
+       ============================================================ -->
+  <!-- Dexie.js for IndexedDB Media Storage -->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@4.0.11/dist/dexie.min.js"></script>
+
+  <!-- Optional API configs (gitignored) -->
+  <script src="js/config.js"></script>
+
+  <!-- Storage and APIs -->
+  <script src="js/media-db.js"></script>
+  <script src="js/editor-store.js"></script>
+  <script src="js/media-apis.js"></script>
+  <script src="js/image-picker.js"></script>
+  <script src="js/audio-picker.js"></script>
+
+  <!-- Audio playback module for testing voices -->
+  <script src="js/audio.js"></script>
+
+  <!-- Main Editor Controller -->
+  <script src="js/editor.js"></script>
+
+</body>
+</html>

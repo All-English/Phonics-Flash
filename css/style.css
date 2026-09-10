@@ -2203,6 +2203,15 @@ body {
   padding: 0.5rem;
 }
 
+.book-select-group .class-label {
+  color: light-dark(#d97706, #fbbf24);
+}
+.book-select-group .class-dropdown:hover,
+.book-select-group .class-dropdown:focus {
+  border-color: light-dark(#d97706, #fbbf24);
+  background-color: light-dark(rgba(217, 119, 6, 0.06), rgba(251, 191, 36, 0.12));
+}
+
 .class-action-btn {
   display: inline-flex;
   align-items: center;
@@ -2219,6 +2228,7 @@ body {
   cursor: pointer;
   transition: all var(--transition-fast);
   user-select: none;
+  text-decoration: none;
 }
 
 .class-action-btn svg {

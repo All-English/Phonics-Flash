@@ -100,7 +100,24 @@
     initTheme();
     initMenuEvents();
 
-    // Check auto-schedule matching for classes
+    // 1. Initialize EditorStore first so books & custom curricula are loaded into memory
+    if (typeof EditorStore !== 'undefined') {
+      try {
+        await EditorStore.init();
+
+        EditorStore.subscribe((activeBook) => {
+          if (activeBook) {
+            phonicsData = activeBook;
+            renderBookDropdown();
+            renderMenu();
+          }
+        });
+      } catch (e) {
+        console.warn('[EditorStore] Init error:', e);
+      }
+    }
+
+    // 2. Check auto-schedule matching for classes (can safely read EditorStore.getCurriculum())
     if (typeof ClassesManager !== 'undefined') {
       if (typeof SharedClassSync !== 'undefined') {
         try {
@@ -137,6 +154,15 @@
       resetToDefaultSettings();
     }
 
+    // 3. Explicit book parameter in URL takes precedence (e.g. from editor "Preview in App" or bookmarks)
+    if (typeof EditorStore !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const bookParam = urlParams.get('book') || urlParams.get('b');
+      if (bookParam && EditorStore.getCurriculum(bookParam)) {
+        EditorStore.setActiveCurriculum(bookParam);
+      }
+    }
+
     // Log audio engine configuration status to assist in debugging
     const effectiveKey = typeof AudioPlayer !== 'undefined' ? AudioPlayer.getApiKey() : null;
     if (effectiveKey) {
@@ -165,6 +191,10 @@
         </div>`;
       return;
     }
+
+    // Initialize Book Selector
+    renderBookDropdown();
+    initBookSelect();
 
     // Check for URL parameters
     const urlConfig = parseURLParams();
@@ -288,8 +318,18 @@
       localStorage.setItem('phonics-flash-quiz', options.quizMode);
     }
 
-    if (Array.isArray(cls.selectedUnits)) {
+    if (cls.selectedUnits && Array.isArray(cls.selectedUnits)) {
       localStorage.setItem('phonics-flash-selected-units', JSON.stringify(cls.selectedUnits));
+    }
+
+    // Auto-switch book series if class has an assigned curriculumId
+    if (cls.curriculumId && typeof EditorStore !== 'undefined') {
+      if (EditorStore.getActiveCurriculumId() !== cls.curriculumId && EditorStore.getCurriculum(cls.curriculumId)) {
+        EditorStore.setActiveCurriculum(cls.curriculumId);
+        phonicsData = EditorStore.getActiveCurriculum();
+        const bookSelect = document.getElementById('book-select');
+        if (bookSelect) bookSelect.value = cls.curriculumId;
+      }
     }
 
     const select = document.getElementById('class-select');
@@ -311,6 +351,13 @@
 
   // ── Data Loading ───────────────────────────────────────────
   async function loadData() {
+    if (typeof EditorStore !== 'undefined') {
+      await EditorStore.init();
+      const activeCurriculum = EditorStore.getActiveCurriculum();
+      if (activeCurriculum && Array.isArray(activeCurriculum.levels) && activeCurriculum.levels.length > 0) {
+        return activeCurriculum;
+      }
+    }
     const response = await fetch('data/words.json');
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
@@ -330,7 +377,21 @@
 
     const caseParam = params.get('case') || params.get('c');
     const levelParam = params.get('level') || params.get('l');
-    const unitIds = units ? units.split(/[,-]/).map(s => s.trim()).filter(Boolean) : [];
+    
+    let unitIds = [];
+    if (units) {
+      const allUnitIds = [];
+      (phonicsData?.levels || []).forEach(l => (l.units || []).forEach(u => allUnitIds.push(u.id)));
+
+      const trimmedUnits = units.trim();
+      if (allUnitIds.includes(trimmedUnits)) {
+        unitIds = [trimmedUnits];
+      } else if (trimmedUnits.includes(',')) {
+        unitIds = trimmedUnits.split(',').map(s => s.trim()).filter(Boolean);
+      } else {
+        unitIds = trimmedUnits.split(/[,-]/).map(s => s.trim()).filter(Boolean);
+      }
+    }
 
     let chartLevel = levelParam ? levelParam.toUpperCase() : null;
     if (!chartLevel && unitIds.length > 0) {
@@ -356,6 +417,12 @@
   // ── Build Bookmarkable URL ─────────────────────────────────
   function updateURLWithParams(unitIds, opts) {
     const params = new URLSearchParams();
+    if (typeof EditorStore !== 'undefined') {
+      const curId = EditorStore.getActiveCurriculumId();
+      if (curId && curId !== 'smart-phonics') {
+        params.set('book', curId);
+      }
+    }
     params.set('units', unitIds.join('-'));
     if (opts.includeExtras) params.set('extras', '1');
     if (opts.includeSightWords) params.set('sight', '1');
@@ -564,10 +631,72 @@
     }
   }
 
+  // ── Book Series Dropdown ───────────────────────────────────
+  let bookSelectInitialized = false;
+
+  function renderBookDropdown() {
+    const bookSelect = document.getElementById('book-select');
+    if (!bookSelect || typeof EditorStore === 'undefined') return;
+
+    const curricula = EditorStore.getCurricula();
+    const activeId = EditorStore.getActiveCurriculumId();
+
+    bookSelect.innerHTML = '';
+    curricula.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name;
+      bookSelect.appendChild(opt);
+    });
+
+    if (activeId && bookSelect.querySelector(`option[value="${CSS.escape(activeId)}"]`)) {
+      bookSelect.value = activeId;
+    } else if (bookSelect.options.length > 0) {
+      bookSelect.selectedIndex = 0;
+    }
+  }
+
+  function initBookSelect() {
+    if (bookSelectInitialized) return;
+    const bookSelect = document.getElementById('book-select');
+    if (!bookSelect || typeof EditorStore === 'undefined') return;
+    bookSelectInitialized = true;
+
+    bookSelect.addEventListener('change', (e) => {
+      const selectedBookId = e.target.value;
+      if (selectedBookId && selectedBookId !== EditorStore.getActiveCurriculumId()) {
+        if (typeof MediaDB !== 'undefined') {
+          MediaDB.revokeAllUrls();
+        }
+        EditorStore.setActiveCurriculum(selectedBookId);
+        phonicsData = EditorStore.getActiveCurriculum();
+        localStorage.removeItem('phonics-flash-selected-units');
+        renderMenu();
+        showToast(`Switched to "${phonicsData?.name || selectedBookId}"`, 'info', 2000);
+      }
+    });
+  }
+
   // ── Menu Rendering ─────────────────────────────────────────
   function renderMenu() {
+    renderBookDropdown();
+
     const container = document.getElementById('levels-container');
     container.innerHTML = '';
+
+    if (!phonicsData || !Array.isArray(phonicsData.levels) || phonicsData.levels.length === 0) {
+      container.innerHTML = `
+        <div style="text-align:center;padding:3rem 1rem;color:var(--text-muted);">
+          <p style="font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;">No levels in this book series yet</p>
+          <p style="font-size:0.9rem;margin-bottom:1.5rem;">Use the curriculum editor to create levels, units, and flashcards.</p>
+          <a href="editor.html" class="btn btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+            ✏️ Open Curriculum Editor
+          </a>
+        </div>
+      `;
+      updateStartButton();
+      return;
+    }
 
     const savedUnits = JSON.parse(localStorage.getItem('phonics-flash-selected-units') || '[]');
 
@@ -591,17 +720,19 @@
     card.className = 'level-card';
     card.dataset.levelId = level.id;
 
+    const units = Array.isArray(level.units) ? level.units : [];
+
     // Check if any units in this level are saved/checked
-    const checkedUnitsInLevel = level.units.filter(u => savedUnits.includes(u.id));
+    const checkedUnitsInLevel = units.filter(u => savedUnits.includes(u.id));
     const hasSelected = checkedUnitsInLevel.length > 0;
-    const allChecked = level.units.length > 0 && checkedUnitsInLevel.length === level.units.length;
+    const allChecked = units.length > 0 && checkedUnitsInLevel.length === units.length;
 
     // Auto-expand if units are selected in this level
     if (hasSelected) {
       card.classList.add('expanded');
     }
 
-    const color = LEVEL_COLORS[level.id] || LEVEL_COLORS.L1;
+    const color = level.color || LEVEL_COLORS[level.id] || LEVEL_COLORS.L1;
 
     card.innerHTML = `
       <div class="level-header">
@@ -648,10 +779,10 @@
           `}
         </div>
         <div class="units-grid">
-          ${level.units.map(unit => {
+          ${units.length > 0 ? units.map(unit => {
             const isChecked = savedUnits.includes(unit.id);
             return createUnitCheckboxHTML(unit, level.id, isChecked);
-          }).join('')}
+          }).join('') : '<p style="padding:1rem;color:var(--text-muted);font-size:0.85rem;">No units in this level yet.</p>'}
         </div>
       </div>
     `;
@@ -854,8 +985,8 @@
     let count = 0;
     const selectedSightWords = [];
 
-    for (const level of phonicsData.levels) {
-      for (const unit of level.units) {
+    for (const level of (phonicsData?.levels || [])) {
+      for (const unit of (level?.units || [])) {
         if (unitIds.includes(unit.id)) {
           const unitWithLevel = { ...unit, levelId: level.id, levelName: level.name };
           const mainWords = prepareUnitWords(unitWithLevel, false, options);
@@ -909,8 +1040,8 @@
 
     // Gather selected unit data with level context
     const selectedUnits = [];
-    for (const level of phonicsData.levels) {
-      for (const unit of level.units) {
+    for (const level of (phonicsData?.levels || [])) {
+      for (const unit of (level?.units || [])) {
         if (unitIds.includes(unit.id)) {
           selectedUnits.push({
             ...unit,
@@ -1264,6 +1395,7 @@
 
     const hasImage = !!wordData.image;
     const isSightWord = !!wordData.isSightWord;
+    const isMediaUri = hasImage && wordData.image.startsWith('media:');
 
     if (opts && opts.quizMode) {
       section.dataset.quizMode = "true";
@@ -1277,8 +1409,8 @@
         <div class="slide-center quiz-mode-layout">
           ${isSightWord ? '<div class="sight-word-badge">Sight Word</div>' : ''}
           ${hasImage
-            ? `<img src="${wordData.image}" alt="Quiz Image" class="word-image quiz-image"
-                 onerror="this.style.display='none'">`
+            ? `<img ${isMediaUri ? `data-media-uri="${wordData.image}"` : `src="${wordData.image}"`} alt="Quiz Image" class="word-image quiz-image"
+                 onerror="if(this.src) this.style.display='none'">`
             : ''}
           <div class="quiz-options-container">
             <button class="quiz-option-btn" data-word="${choices[0]}">${choices[0]}</button>
@@ -1295,12 +1427,23 @@
         <div class="slide-center">
           ${isSightWord ? '<div class="sight-word-badge">Sight Word</div>' : ''}
           ${(showImages || showImageInDictation) && hasImage
-            ? `<img src="${wordData.image}" alt="${wordData.word}" class="word-image"
-                 onerror="this.style.display='none'">`
+            ? `<img ${isMediaUri ? `data-media-uri="${wordData.image}"` : `src="${wordData.image}"`} alt="${wordData.word}" class="word-image"
+                 onerror="if(this.src) this.style.display='none'">`
             : ''}
           <div class="word-text ${(opts && opts.dictationMode) ? 'dictation-hide' : ''}">${wordData.word}</div>
         </div>
       `;
+    }
+
+    if (isMediaUri && typeof MediaDB !== 'undefined') {
+      const imgEl = section.querySelector('.word-image');
+      if (imgEl) {
+        MediaDB.resolveMediaUrl(wordData.image).then(blobUrl => {
+          if (blobUrl) imgEl.src = blobUrl;
+        }).catch(err => {
+          console.warn('[MediaDB] Slide image resolution failed:', wordData.image, err);
+        });
+      }
     }
 
     return section;
@@ -1584,6 +1727,9 @@
   function backToMenu() {
     AudioPlayer.stop();
     AudioPlayer.clearCache();
+    if (typeof MediaDB !== 'undefined') {
+      MediaDB.revokeAllUrls();
+    }
 
     if (revealInstance) {
       const deck = document.querySelector('#slideshow-screen .reveal');
@@ -2314,6 +2460,7 @@
       if (modalTitle) {
         if (tabId === 'classes-tab') modalTitle.textContent = 'My Classes';
         else if (tabId === 'tts-tab') modalTitle.textContent = 'Voice & TTS Settings';
+        else if (tabId === 'media-tab') modalTitle.textContent = 'Media & AI Keys';
         else if (tabId === 'sync-tab') modalTitle.textContent = 'Cloud Sync & Backup';
         else modalTitle.textContent = 'Settings & Classes';
       }
@@ -2323,6 +2470,8 @@
         renderClassesListModal();
       } else if (tabId === 'tts-tab') {
         populateTTSSettings();
+      } else if (tabId === 'media-tab') {
+        populateMediaSettings();
       } else if (tabId === 'sync-tab') {
         populateSyncForm();
       }
@@ -2603,6 +2752,21 @@
         cb.checked = selectedDays.includes(cb.value);
       });
 
+      // Populate curriculum selector for class
+      const curSelect = document.getElementById('form-class-curriculum');
+      if (curSelect && typeof EditorStore !== 'undefined') {
+        const curricula = EditorStore.getCurricula();
+        curSelect.innerHTML = '';
+        curricula.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = c.name;
+          curSelect.appendChild(opt);
+        });
+        const selectedCurId = cls ? (cls.curriculumId || 'smart-phonics') : EditorStore.getActiveCurriculumId();
+        curSelect.value = selectedCurId;
+      }
+
       if (classFormTitle) {
         classFormTitle.textContent = cls ? `Edit Class: ${cls.name}` : 'Create New Class';
       }
@@ -2665,6 +2829,8 @@
         const startTime = document.getElementById('form-start-time').value;
         const endTime = document.getElementById('form-end-time').value;
         const checkedDays = Array.from(document.querySelectorAll('#class-form input[name="days"]:checked')).map(cb => cb.value);
+        const curSelect = document.getElementById('form-class-curriculum');
+        const curriculumId = curSelect ? curSelect.value : 'smart-phonics';
 
         if (!name) return;
 
@@ -2672,6 +2838,7 @@
           // Update existing
           ClassesManager.updateClass(classId, {
             name,
+            curriculumId,
             schedule: { days: checkedDays, startTime, endTime }
           });
           showToast(`Updated class "${name}"`, 'success', 2000);
@@ -2680,6 +2847,7 @@
           const currentUnits = getSelectedUnitIds();
           const newCls = ClassesManager.addClass({
             name,
+            curriculumId,
             schedule: { days: checkedDays, startTime, endTime },
             selectedUnits: currentUnits,
             options: { ...options }
@@ -2690,6 +2858,68 @@
         populateClassDropdown();
         renderClassesListModal();
         hideClassForm();
+      });
+    }
+
+    // ── Media & AI Keys Tab Setup ──────────────────────────────
+    function populateMediaSettings() {
+      const pixabayInput = document.getElementById('pixabay-key-settings');
+      const geminiInput = document.getElementById('gemini-key-settings');
+      const unsplashInput = document.getElementById('unsplash-key-settings');
+      const hideSmartCb = document.getElementById('hide-smart-phonics-checkbox');
+
+      if (pixabayInput && typeof MediaAPIs !== 'undefined') {
+        pixabayInput.value = MediaAPIs.getPixabayKey() || '';
+      }
+      if (geminiInput && typeof MediaAPIs !== 'undefined') {
+        geminiInput.value = MediaAPIs.getGeminiKey() || '';
+      }
+      if (unsplashInput && typeof MediaAPIs !== 'undefined') {
+        unsplashInput.value = MediaAPIs.getUnsplashKey() || '';
+      }
+      if (hideSmartCb && typeof EditorStore !== 'undefined') {
+        hideSmartCb.checked = EditorStore.isBuiltInHidden();
+      }
+    }
+
+    const saveMediaKeysBtn = document.getElementById('save-media-keys-btn');
+    if (saveMediaKeysBtn) {
+      saveMediaKeysBtn.addEventListener('click', () => {
+        const pixabay = document.getElementById('pixabay-key-settings')?.value.trim() || '';
+        const gemini = document.getElementById('gemini-key-settings')?.value.trim() || '';
+        const unsplash = document.getElementById('unsplash-key-settings')?.value.trim() || '';
+        const hideSmart = document.getElementById('hide-smart-phonics-checkbox')?.checked || false;
+
+        if (typeof MediaAPIs !== 'undefined') {
+          MediaAPIs.setPixabayKey(pixabay);
+          MediaAPIs.setGeminiKey(gemini);
+          MediaAPIs.setUnsplashKey(unsplash);
+        }
+
+        if (typeof EditorStore !== 'undefined') {
+          EditorStore.setHideBuiltIn(hideSmart);
+          renderBookDropdown();
+          renderMenu();
+        }
+
+        const msgSpan = document.getElementById('media-keys-status-msg');
+        if (msgSpan) {
+          msgSpan.textContent = '✅ Saved!';
+          msgSpan.style.color = '#3DAA5C';
+          setTimeout(() => { if (msgSpan) msgSpan.textContent = ''; }, 3000);
+        }
+        showToast('Media & AI settings saved', 'success', 2000);
+      });
+    }
+
+    const hideSmartCheckbox = document.getElementById('hide-smart-phonics-checkbox');
+    if (hideSmartCheckbox) {
+      hideSmartCheckbox.addEventListener('change', (e) => {
+        if (typeof EditorStore !== 'undefined') {
+          EditorStore.setHideBuiltIn(e.target.checked);
+          renderBookDropdown();
+          renderMenu();
+        }
       });
     }
 
