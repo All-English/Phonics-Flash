@@ -10,6 +10,23 @@ window.ImagePicker = (() => {
   let currentCallback = null;
   let currentWord = '';
   let activeTab = 'clipart';
+  const activeObjectUrls = new Set();
+
+  function trackObjectUrl(url) {
+    if (url && typeof url === 'string' && url.startsWith('blob:')) {
+      activeObjectUrls.add(url);
+    }
+    return url;
+  }
+
+  function revokeAllObjectUrls() {
+    activeObjectUrls.forEach(url => {
+      try {
+        URL.revokeObjectURL(url);
+      } catch (_) {}
+    });
+    activeObjectUrls.clear();
+  }
 
   function init() {
     if (modalEl) return;
@@ -335,12 +352,11 @@ window.ImagePicker = (() => {
 
       if (engine === 'imagen') {
         blob = await MediaAPIs.generateGoogleImagen(prompt);
-        displayUrl = URL.createObjectURL(blob);
+        displayUrl = trackObjectUrl(URL.createObjectURL(blob));
       } else {
-        // Pollinations
-        displayUrl = MediaAPIs.generatePollinationsUrl(prompt);
-        // Pre-fetch blob for storage
+        // Pollinations (H1: fetch blob once and create preview from same blob)
         blob = await MediaAPIs.fetchPollinationsImage(prompt);
+        displayUrl = trackObjectUrl(URL.createObjectURL(blob));
       }
 
       area.innerHTML = `
@@ -382,7 +398,13 @@ window.ImagePicker = (() => {
     const previewContainer = modalEl.querySelector('#upload-preview-container');
     const previewImg = modalEl.querySelector('#upload-preview-img');
 
-    previewImg.src = URL.createObjectURL(file);
+    // Revoke previous upload preview if any (H2)
+    if (previewImg.src && previewImg.src.startsWith('blob:')) {
+      try { URL.revokeObjectURL(previewImg.src); } catch (_) {}
+      activeObjectUrls.delete(previewImg.src);
+    }
+
+    previewImg.src = trackObjectUrl(URL.createObjectURL(file));
     dropZone.classList.add('hidden');
     previewContainer.classList.remove('hidden');
 
@@ -399,6 +421,11 @@ window.ImagePicker = (() => {
     };
 
     clearBtn.onclick = () => {
+      if (previewImg.src && previewImg.src.startsWith('blob:')) {
+        try { URL.revokeObjectURL(previewImg.src); } catch (_) {}
+        activeObjectUrls.delete(previewImg.src);
+      }
+      previewImg.src = '';
       pendingUploadBlob = null;
       previewContainer.classList.add('hidden');
       dropZone.classList.remove('hidden');
@@ -467,6 +494,9 @@ window.ImagePicker = (() => {
         </div>
       `;
       card.addEventListener('click', () => {
+        if (item.source === 'Unsplash' && item.downloadLocation) {
+          MediaAPIs.trackUnsplashDownload(item.downloadLocation);
+        }
         selectImage(item.full || item.thumb);
       });
       grid.appendChild(card);
@@ -479,6 +509,7 @@ window.ImagePicker = (() => {
     if (currentCallback) {
       currentCallback(imageUriOrUrl);
     }
+    revokeAllObjectUrls();
     close();
   }
 
@@ -516,6 +547,7 @@ window.ImagePicker = (() => {
   }
 
   function close() {
+    revokeAllObjectUrls();
     if (modalEl) modalEl.classList.add('hidden');
     currentCallback = null;
   }

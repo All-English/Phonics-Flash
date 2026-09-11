@@ -1013,40 +1013,25 @@ RULES:
       exportDropdown.classList.add('hidden');
     });
 
-    document.getElementById('export-book-json-btn').addEventListener('click', () => {
+    document.getElementById('export-book-json-btn').addEventListener('click', async () => {
       if (workingBook) {
-        const exportObj = {
-          name: workingBook.name,
-          id: workingBook.id,
-          description: workingBook.description || '',
-          exportedAt: new Date().toISOString(),
-          levels: workingBook.levels
-        };
-        const str = JSON.stringify(exportObj, null, 2);
-        const blob = new Blob([str], { type: 'application/json' });
-        const filename = `${workingBook.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-curriculum.json`;
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        if (isDirty) {
+          EditorStore.saveCurriculum(workingBook);
+          isDirty = false;
+          updateSaveButtonState();
+        }
+        await EditorStore.exportBookJSON(workingBook.id);
       }
     });
 
-    document.getElementById('export-words-json-btn').addEventListener('click', () => {
+    document.getElementById('export-words-json-btn').addEventListener('click', async () => {
       if (workingBook) {
-        const exportObj = { levels: workingBook.levels };
-        const str = JSON.stringify(exportObj, null, 2);
-        const blob = new Blob([str], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'words.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        if (isDirty) {
+          EditorStore.saveCurriculum(workingBook);
+          isDirty = false;
+          updateSaveButtonState();
+        }
+        await EditorStore.exportWordsJsonFormat(workingBook.id);
       }
     });
   }
@@ -1315,7 +1300,7 @@ RULES:
     }
 
     // Submit Import
-    submitBtn?.addEventListener('click', () => {
+    submitBtn?.addEventListener('click', async () => {
       let rawText = '';
       if (activeImportTab === 'upload') {
         rawText = stagedImportText.trim();
@@ -1345,7 +1330,7 @@ RULES:
       }
 
       try {
-        const imported = EditorStore.importBookJSON(parsed);
+        const imported = await EditorStore.importBookJSON(parsed);
         importModal.classList.add('hidden');
         loadBook(imported.id);
         if (workingBook && workingBook.levels && workingBook.levels[0]?.units?.[0]) {

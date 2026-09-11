@@ -431,7 +431,17 @@ window.EditorStore = (() => {
     }
 
     if (activeCurriculumId === id) {
-      activeCurriculumId = curricula[0]?.id || DEFAULT_BOOK_ID;
+      if (hideBuiltIn) {
+        const nextCustom = curricula.find(c => c.id !== DEFAULT_BOOK_ID);
+        if (nextCustom) {
+          activeCurriculumId = nextCustom.id;
+        } else {
+          hideBuiltIn = false;
+          activeCurriculumId = DEFAULT_BOOK_ID;
+        }
+      } else {
+        activeCurriculumId = curricula[0]?.id || DEFAULT_BOOK_ID;
+      }
     }
     saveToStorage();
     debouncedPushToUpstash();
@@ -448,7 +458,7 @@ window.EditorStore = (() => {
         const res = await fetch('data/words.json');
         if (res.ok) {
           const fresh = await res.json();
-          const smart = curricula.find(c => c.id === DEFAULT_BOOK_ID);
+          const smart = getCurriculum(DEFAULT_BOOK_ID);
           if (smart) {
             smart.levels = fresh.levels || [];
             smart.updatedAt = Date.now();
@@ -457,6 +467,7 @@ window.EditorStore = (() => {
               id: DEFAULT_BOOK_ID,
               name: 'Smart Phonics',
               isCustom: false,
+              description: '5-Level EFL/ESL Phonics Curriculum',
               levels: fresh.levels || [],
               updatedAt: Date.now()
             });
@@ -478,6 +489,7 @@ window.EditorStore = (() => {
     const book = getCurriculum(currId);
     if (!book) return null;
 
+    let targetLevel = null;
     if (!levelData.id) {
       // New Level
       const nextNum = book.levels.length + 1;
@@ -485,13 +497,16 @@ window.EditorStore = (() => {
       if (!levelData.name) levelData.name = `Level ${nextNum}`;
       if (!levelData.units) levelData.units = [];
       book.levels.push(levelData);
+      targetLevel = levelData;
     } else {
       // Update existing
       const idx = book.levels.findIndex(l => l.id === levelData.id);
       if (idx !== -1) {
         book.levels[idx] = { ...book.levels[idx], ...levelData };
+        targetLevel = book.levels[idx];
       } else {
         book.levels.push(levelData);
+        targetLevel = levelData;
       }
     }
 
@@ -499,7 +514,7 @@ window.EditorStore = (() => {
     saveToStorage();
     debouncedPushToUpstash();
     notifyChange();
-    return levelData;
+    return targetLevel;
   }
 
   function deleteLevel(currId, levelId) {
@@ -545,6 +560,7 @@ window.EditorStore = (() => {
     const level = book.levels.find(l => l.id === levelId);
     if (!level) return null;
 
+    let targetUnit = null;
     if (!unitData.id) {
       // New Unit
       const nextNum = level.units.length + 1;
@@ -554,12 +570,15 @@ window.EditorStore = (() => {
       if (!unitData.extraWords) unitData.extraWords = [];
       if (!unitData.sightWords) unitData.sightWords = [];
       level.units.push(unitData);
+      targetUnit = unitData;
     } else {
       const idx = level.units.findIndex(u => u.id === unitData.id);
       if (idx !== -1) {
         level.units[idx] = { ...level.units[idx], ...unitData };
+        targetUnit = level.units[idx];
       } else {
         level.units.push(unitData);
+        targetUnit = unitData;
       }
     }
 
@@ -567,7 +586,7 @@ window.EditorStore = (() => {
     saveToStorage();
     debouncedPushToUpstash();
     notifyChange();
-    return unitData;
+    return targetUnit;
   }
 
   function deleteUnit(currId, levelId, unitId) {
@@ -631,18 +650,93 @@ window.EditorStore = (() => {
     return true;
   }
 
-  // ── 8. JSON Export & Import ─────────────────────────────────
-  function exportBookJSON(currId = activeCurriculumId) {
+  // ── 8. JSON Export & Import (Portable base64 MediaDB handling - H10) ────
+  async function _embedBlobsForExport(levels) {
+    const cloned = JSON.parse(JSON.stringify(levels));
+    if (typeof MediaDB === 'undefined' || typeof MediaDB.getMediaBlob !== 'function') {
+      return cloned;
+    }
+
+    for (const lvl of cloned) {
+      if (!Array.isArray(lvl.units)) continue;
+      for (const u of lvl.units) {
+        const wordLists = [u.words, u.extraWords, u.sightWords];
+        for (const list of wordLists) {
+          if (!Array.isArray(list)) continue;
+          for (const item of list) {
+            if (item.image && MediaDB.isMediaId(item.image)) {
+              try {
+                const blob = await MediaDB.getMediaBlob(item.image);
+                if (blob) {
+                  item.image = await MediaDB.blobToBase64(blob);
+                }
+              } catch (e) {
+                console.warn('[EditorStore] Export blob conversion failed for image:', item.image, e);
+              }
+            }
+            if (item.audio && MediaDB.isMediaId(item.audio)) {
+              try {
+                const blob = await MediaDB.getMediaBlob(item.audio);
+                if (blob) {
+                  item.audio = await MediaDB.blobToBase64(blob);
+                }
+              } catch (e) {
+                console.warn('[EditorStore] Export blob conversion failed for audio:', item.audio, e);
+              }
+            }
+          }
+        }
+      }
+    }
+    return cloned;
+  }
+
+  async function _extractBlobsForImport(levels) {
+    if (typeof MediaDB === 'undefined' || typeof MediaDB.saveMediaBlob !== 'function') {
+      return;
+    }
+
+    for (const lvl of levels) {
+      if (!Array.isArray(lvl.units)) continue;
+      for (const u of lvl.units) {
+        const wordLists = [u.words, u.extraWords, u.sightWords];
+        for (const list of wordLists) {
+          if (!Array.isArray(list)) continue;
+          for (const item of list) {
+            if (item.image && typeof item.image === 'string' && item.image.startsWith('data:image/')) {
+              try {
+                const blob = await MediaDB.base64ToBlob(item.image);
+                item.image = await MediaDB.saveMediaBlob(blob, 'img');
+              } catch (e) {
+                console.warn('[EditorStore] Import base64 conversion failed for image:', e);
+              }
+            }
+            if (item.audio && typeof item.audio === 'string' && item.audio.startsWith('data:audio/')) {
+              try {
+                const blob = await MediaDB.base64ToBlob(item.audio);
+                item.audio = await MediaDB.saveMediaBlob(blob, 'audio');
+              } catch (e) {
+                console.warn('[EditorStore] Import base64 conversion failed for audio:', e);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  async function exportBookJSON(currId = activeCurriculumId) {
     const book = getCurriculum(currId);
     if (!book) return;
 
-    // Build clean JSON matching words.json format
+    // Convert local media: URIs to portable base64 Data URLs (H10)
+    const exportLevels = await _embedBlobsForExport(book.levels);
     const exportObj = {
       name: book.name,
       id: book.id,
       description: book.description || '',
       exportedAt: new Date().toISOString(),
-      levels: book.levels
+      levels: exportLevels
     };
 
     const str = JSON.stringify(exportObj, null, 2);
@@ -658,13 +752,14 @@ window.EditorStore = (() => {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
 
-  function exportWordsJsonFormat(currId = activeCurriculumId) {
+  async function exportWordsJsonFormat(currId = activeCurriculumId) {
     const book = getCurriculum(currId);
     if (!book) return;
 
-    // Pure words.json format for direct replacement in VS Code repository
+    // Convert local media: URIs to portable base64 Data URLs (H10)
+    const exportLevels = await _embedBlobsForExport(book.levels);
     const exportObj = {
-      levels: book.levels
+      levels: exportLevels
     };
 
     const str = JSON.stringify(exportObj, null, 2);
@@ -679,7 +774,7 @@ window.EditorStore = (() => {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
 
-  function importBookJSON(parsedJson) {
+  async function importBookJSON(parsedJson) {
     if (!parsedJson || (!parsedJson.levels && !Array.isArray(parsedJson))) {
       throw new Error('Invalid curriculum JSON: Missing "levels" array');
     }
@@ -688,6 +783,9 @@ window.EditorStore = (() => {
     const bookName = parsedJson.name || `Imported Book (${new Date().toLocaleDateString()})`;
     const slug = bookName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'book';
     const id = `custom_${slug}_${Date.now().toString(36)}`;
+
+    // Convert any embedded base64 data URIs into local MediaDB blobs (H10)
+    await _extractBlobsForImport(levels);
 
     // Ensure IDs are unique - always regenerate level and unit IDs scoped to this newly created book id (C6)
     levels.forEach((lvl, lIdx) => {

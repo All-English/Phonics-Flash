@@ -14,6 +14,23 @@ window.AudioPicker = (() => {
   let recordedBlob = null;
   let timerInterval = null;
   let recordSeconds = 0;
+  const activeObjectUrls = new Set();
+
+  function trackObjectUrl(url) {
+    if (url && typeof url === 'string' && url.startsWith('blob:')) {
+      activeObjectUrls.add(url);
+    }
+    return url;
+  }
+
+  function revokeAllObjectUrls() {
+    activeObjectUrls.forEach(url => {
+      try {
+        URL.revokeObjectURL(url);
+      } catch (_) {}
+    });
+    activeObjectUrls.clear();
+  }
 
   function init() {
     if (modalEl) return;
@@ -213,7 +230,11 @@ window.AudioPicker = (() => {
 
         try {
           recordedBlob = await recorder.stop();
-          recordAudioPlayer.src = URL.createObjectURL(recordedBlob);
+          if (recordAudioPlayer.src && recordAudioPlayer.src.startsWith('blob:')) {
+            try { URL.revokeObjectURL(recordAudioPlayer.src); } catch (_) {}
+            activeObjectUrls.delete(recordAudioPlayer.src);
+          }
+          recordAudioPlayer.src = trackObjectUrl(URL.createObjectURL(recordedBlob));
           recordPreviewBox.classList.remove('hidden');
         } catch (err) {
           alert('Failed to process recording: ' + err.message);
@@ -222,6 +243,11 @@ window.AudioPicker = (() => {
     });
 
     retryRecordBtn.addEventListener('click', () => {
+      if (recordAudioPlayer.src && recordAudioPlayer.src.startsWith('blob:')) {
+        try { URL.revokeObjectURL(recordAudioPlayer.src); } catch (_) {}
+        activeObjectUrls.delete(recordAudioPlayer.src);
+      }
+      recordAudioPlayer.src = '';
       recordedBlob = null;
       recordPreviewBox.classList.add('hidden');
       recordTimer.textContent = '0:00';
@@ -257,10 +283,38 @@ window.AudioPicker = (() => {
       }
     });
 
+    // Drag and drop handlers for audio drop zone (H3)
+    audioDropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      audioDropZone.classList.add('drag-over');
+    });
+    audioDropZone.addEventListener('dragleave', () => audioDropZone.classList.remove('drag-over'));
+    audioDropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      audioDropZone.classList.remove('drag-over');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleAudioFile(e.dataTransfer.files[0]);
+      }
+    });
+
     function handleAudioFile(file) {
+      if (!file) return;
+      // Validate audio MIME type or extension (H4)
+      const isAudioType = file.type && file.type.startsWith('audio/');
+      const hasAudioExt = /\.(mp3|wav|ogg|m4a|aac|webm|flac|mp4)$/i.test(file.name || '');
+      if (!isAudioType && !hasAudioExt) {
+        alert('Please select a valid audio file (MP3, WAV, M4A, OGG, WebM, AAC).');
+        return;
+      }
+
+      if (uploadAudioPlayer.src && uploadAudioPlayer.src.startsWith('blob:')) {
+        try { URL.revokeObjectURL(uploadAudioPlayer.src); } catch (_) {}
+        activeObjectUrls.delete(uploadAudioPlayer.src);
+      }
+
       pendingAudioBlob = file;
       audioFilenameDisplay.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-      uploadAudioPlayer.src = URL.createObjectURL(file);
+      uploadAudioPlayer.src = trackObjectUrl(URL.createObjectURL(file));
       audioDropZone.classList.add('hidden');
       audioUploadPreview.classList.remove('hidden');
     }
@@ -276,6 +330,11 @@ window.AudioPicker = (() => {
     });
 
     clearAudioUploadBtn.addEventListener('click', () => {
+      if (uploadAudioPlayer.src && uploadAudioPlayer.src.startsWith('blob:')) {
+        try { URL.revokeObjectURL(uploadAudioPlayer.src); } catch (_) {}
+        activeObjectUrls.delete(uploadAudioPlayer.src);
+      }
+      uploadAudioPlayer.src = '';
       pendingAudioBlob = null;
       audioUploadPreview.classList.add('hidden');
       audioDropZone.classList.remove('hidden');
@@ -325,6 +384,7 @@ window.AudioPicker = (() => {
     if (currentCallback) {
       currentCallback(audioUriOrUrl);
     }
+    revokeAllObjectUrls();
     close();
   }
 
@@ -361,6 +421,11 @@ window.AudioPicker = (() => {
   function close() {
     if (recorder && recorder.isRecording) recorder.cancel();
     if (timerInterval) clearInterval(timerInterval);
+    revokeAllObjectUrls();
+    const recordAudio = modalEl?.querySelector('#record-audio-player');
+    if (recordAudio) recordAudio.src = '';
+    const uploadAudio = modalEl?.querySelector('#upload-audio-player');
+    if (uploadAudio) uploadAudio.src = '';
     if (modalEl) modalEl.classList.add('hidden');
     currentCallback = null;
   }

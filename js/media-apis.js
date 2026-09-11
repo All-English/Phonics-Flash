@@ -50,8 +50,8 @@ window.MediaAPIs = (() => {
   async function searchClipart(query) {
     if (!query || !query.trim()) return [];
     const term = query.trim();
-    // Search Wikimedia Commons with origin=*
-    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(term + ' clipart')}&gsrnamespace=6&format=json&origin=*&prop=imageinfo&iiprop=url|thumburl&iiurlwidth=320&gsrlimit=24`;
+    // Search Wikimedia Commons with origin=* and iiprop including mime
+    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(term + ' clipart')}&gsrnamespace=6&format=json&origin=*&prop=imageinfo&iiprop=url|thumburl|mime&iiurlwidth=320&gsrlimit=24`;
 
     try {
       const res = await fetch(url);
@@ -60,14 +60,18 @@ window.MediaAPIs = (() => {
       if (!data.query || !data.query.pages) return [];
 
       const results = [];
-      for (const pageId of Object.keys(data.query.pages)) {
-        const page = data.query.pages[pageId];
+      const pages = Object.values(data.query.pages);
+      // Sort by search engine relevance index (H6)
+      pages.sort((a, b) => (a.index || 0) - (b.index || 0));
+
+      for (const page of pages) {
         if (page.imageinfo && page.imageinfo[0]) {
           const info = page.imageinfo[0];
-          // Filter out svg files without thumbs or non-image files
+          // Filter out non-images (e.g. audio, video, PDFs) (H6)
+          if (info.mime && !info.mime.startsWith('image/')) continue;
           if (info.thumburl || info.url) {
             results.push({
-              id: pageId,
+              id: page.pageid ? String(page.pageid) : page.title,
               title: page.title.replace(/^File:/i, ''),
               thumb: info.thumburl || info.url,
               full: info.url,
@@ -181,8 +185,21 @@ window.MediaAPIs = (() => {
       title: photo.alt_description || photo.description || 'Photo',
       thumb: photo.urls.small,
       full: photo.urls.regular,
+      downloadLocation: photo.links ? photo.links.download_location : null,
       source: 'Unsplash'
     }));
+  }
+
+  async function trackUnsplashDownload(downloadLocation, customKey = null) {
+    if (!downloadLocation) return;
+    const key = customKey || getUnsplashKey();
+    if (!key) return;
+    try {
+      const sep = downloadLocation.includes('?') ? '&' : '?';
+      await fetch(`${downloadLocation}${sep}client_id=${encodeURIComponent(key)}`);
+    } catch (e) {
+      console.warn('[MediaAPIs] Unsplash download tracking ping failed:', e);
+    }
   }
 
   // ── 7. Microphone Voice Recorder (HTML5 MediaRecorder) ──────
@@ -205,30 +222,39 @@ window.MediaAPIs = (() => {
       this.audioChunks = [];
       this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Probe best supported MIME type dynamically
-      const candidates = [
-        'audio/webm;codecs=opus',
-        'audio/webm',
-        'audio/mp4',
-        'audio/aac',
-        'audio/ogg;codecs=opus',
-        'audio/ogg'
-      ];
-      const supportedType = (typeof MediaRecorder.isTypeSupported === 'function')
-        ? candidates.find(type => MediaRecorder.isTypeSupported(type))
-        : null;
+      try {
+        // Probe best supported MIME type dynamically
+        const candidates = [
+          'audio/webm;codecs=opus',
+          'audio/webm',
+          'audio/mp4',
+          'audio/aac',
+          'audio/ogg;codecs=opus',
+          'audio/ogg'
+        ];
+        const supportedType = (typeof MediaRecorder.isTypeSupported === 'function')
+          ? candidates.find(type => MediaRecorder.isTypeSupported(type))
+          : null;
 
-      this.mimeType = supportedType || 'audio/webm';
-      // If supportedType is null (e.g. Safari iOS), pass empty options so browser uses native container
-      this.mediaRecorder = new MediaRecorder(this.stream, supportedType ? { mimeType: supportedType } : {});
-      this.mediaRecorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          this.audioChunks.push(event.data);
+        this.mimeType = supportedType || 'audio/webm';
+        // If supportedType is null (e.g. Safari iOS), pass empty options so browser uses native container
+        this.mediaRecorder = new MediaRecorder(this.stream, supportedType ? { mimeType: supportedType } : {});
+        this.mediaRecorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            this.audioChunks.push(event.data);
+          }
+        };
+
+        this.mediaRecorder.start(100); // chunk every 100ms
+        this.isRecording = true;
+      } catch (err) {
+        // Stop and release media stream on initialization failure (H5)
+        if (this.stream) {
+          this.stream.getTracks().forEach(track => track.stop());
+          this.stream = null;
         }
-      };
-
-      this.mediaRecorder.start(100); // chunk every 100ms
-      this.isRecording = true;
+        throw err;
+      }
     }
 
     async stop() {
@@ -283,6 +309,7 @@ window.MediaAPIs = (() => {
     generateGoogleImagen,
     searchPixabay,
     searchUnsplash,
+    trackUnsplashDownload,
     MicrophoneRecorder
   };
 })();
