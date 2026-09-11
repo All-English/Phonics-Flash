@@ -100,6 +100,7 @@ window.AudioPicker = (() => {
               <button type="button" class="btn btn-secondary" id="browse-audio-btn">Browse Files</button>
             </div>
 
+            <div class="error-msg hidden" id="audio-upload-error-msg" style="margin-top:8px"></div>
             <div class="upload-preview-area hidden" id="audio-upload-preview">
               <p class="audio-filename" id="audio-filename-display">file.mp3</p>
               <audio id="upload-audio-player" controls class="custom-audio-player"></audio>
@@ -120,6 +121,7 @@ window.AudioPicker = (() => {
               </div>
               <span class="field-hint">Direct link to an audio file hosted online.</span>
             </div>
+            <div class="error-msg hidden" id="url-audio-error-msg" style="margin-top:8px"></div>
 
             <div class="url-audio-preview hidden" id="url-audio-preview">
               <audio id="url-audio-player" controls class="custom-audio-player"></audio>
@@ -173,6 +175,13 @@ window.AudioPicker = (() => {
       if (e.target === modalEl) close();
     });
 
+    // Close on Escape key (M5)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modalEl && !modalEl.classList.contains('hidden')) {
+        close();
+      }
+    });
+
     // Tabs
     const tabBtns = modalEl.querySelectorAll('.modal-tab-btn');
     tabBtns.forEach(btn => {
@@ -200,12 +209,15 @@ window.AudioPicker = (() => {
       if (!recorder) recorder = new MediaAPIs.MicrophoneRecorder();
 
       if (!recorder.isRecording) {
+        startRecordBtn.disabled = true;
+        recordBtnText.textContent = 'Starting...';
         try {
           await recorder.start();
           startRecordBtn.classList.add('recording');
           micIndicator.classList.add('pulse-recording');
           recordBtnText.textContent = 'Stop Recording';
           recordPrompt.textContent = 'Speaking now... click Stop when finished.';
+          recordPrompt.classList.remove('error-msg');
           recordPreviewBox.classList.add('hidden');
 
           recordSeconds = 0;
@@ -218,18 +230,26 @@ window.AudioPicker = (() => {
           }, 1000);
 
         } catch (err) {
-          alert('Microphone access failed: ' + err.message);
+          recordPrompt.textContent = 'Microphone access failed: ' + err.message;
+          recordPrompt.classList.add('error-msg');
+          recordBtnText.textContent = 'Start Recording';
+        } finally {
+          startRecordBtn.disabled = false;
         }
       } else {
         // Stop recording
         clearInterval(timerInterval);
-        startRecordBtn.classList.remove('recording');
-        micIndicator.classList.remove('pulse-recording');
-        recordBtnText.textContent = 'Start Recording';
-        recordPrompt.textContent = 'Recording complete. Listen or save below.';
+        startRecordBtn.disabled = true;
+        recordBtnText.textContent = 'Processing...';
 
         try {
           recordedBlob = await recorder.stop();
+          startRecordBtn.classList.remove('recording');
+          micIndicator.classList.remove('pulse-recording');
+          recordBtnText.textContent = 'Start Recording';
+          recordPrompt.textContent = 'Recording complete. Listen or save below.';
+          recordPrompt.classList.remove('error-msg');
+
           if (recordAudioPlayer.src && recordAudioPlayer.src.startsWith('blob:')) {
             try { URL.revokeObjectURL(recordAudioPlayer.src); } catch (_) {}
             activeObjectUrls.delete(recordAudioPlayer.src);
@@ -237,7 +257,11 @@ window.AudioPicker = (() => {
           recordAudioPlayer.src = trackObjectUrl(URL.createObjectURL(recordedBlob));
           recordPreviewBox.classList.remove('hidden');
         } catch (err) {
-          alert('Failed to process recording: ' + err.message);
+          recordPrompt.textContent = 'Failed to process recording: ' + err.message;
+          recordPrompt.classList.add('error-msg');
+          recordBtnText.textContent = 'Start Recording';
+        } finally {
+          startRecordBtn.disabled = false;
         }
       }
     });
@@ -252,15 +276,20 @@ window.AudioPicker = (() => {
       recordPreviewBox.classList.add('hidden');
       recordTimer.textContent = '0:00';
       recordPrompt.textContent = 'Click "Start Recording" to re-record.';
+      recordPrompt.classList.remove('error-msg');
     });
 
     confirmRecordBtn.addEventListener('click', async () => {
       if (!recordedBlob) return;
+      confirmRecordBtn.disabled = true;
       try {
         const mediaUri = await MediaDB.saveMediaBlob(recordedBlob, 'audio');
         selectAudio(mediaUri);
       } catch (err) {
-        alert('Failed to save audio recording: ' + err.message);
+        recordPrompt.textContent = 'Failed to save audio recording: ' + err.message;
+        recordPrompt.classList.add('error-msg');
+      } finally {
+        confirmRecordBtn.disabled = false;
       }
     });
 
@@ -298,12 +327,18 @@ window.AudioPicker = (() => {
     });
 
     function handleAudioFile(file) {
+      const uploadErr = modalEl.querySelector('#audio-upload-error-msg');
+      if (uploadErr) uploadErr.classList.add('hidden');
+
       if (!file) return;
       // Validate audio MIME type or extension (H4)
       const isAudioType = file.type && file.type.startsWith('audio/');
       const hasAudioExt = /\.(mp3|wav|ogg|m4a|aac|webm|flac|mp4)$/i.test(file.name || '');
       if (!isAudioType && !hasAudioExt) {
-        alert('Please select a valid audio file (MP3, WAV, M4A, OGG, WebM, AAC).');
+        if (uploadErr) {
+          uploadErr.textContent = 'Please select a valid audio file (MP3, WAV, M4A, OGG, WebM, AAC).';
+          uploadErr.classList.remove('hidden');
+        }
         return;
       }
 
@@ -321,11 +356,15 @@ window.AudioPicker = (() => {
 
     confirmAudioUploadBtn.addEventListener('click', async () => {
       if (!pendingAudioBlob) return;
+      const uploadErr = modalEl.querySelector('#audio-upload-error-msg');
       try {
         const mediaUri = await MediaDB.saveMediaBlob(pendingAudioBlob, 'audio');
         selectAudio(mediaUri);
       } catch (err) {
-        alert('Failed to save audio file: ' + err.message);
+        if (uploadErr) {
+          uploadErr.textContent = 'Failed to save audio file: ' + err.message;
+          uploadErr.classList.remove('hidden');
+        }
       }
     });
 
@@ -339,6 +378,8 @@ window.AudioPicker = (() => {
       audioUploadPreview.classList.add('hidden');
       audioDropZone.classList.remove('hidden');
       audioFileInput.value = '';
+      const uploadErr = modalEl.querySelector('#audio-upload-error-msg');
+      if (uploadErr) uploadErr.classList.add('hidden');
     });
 
     // Audio URL
@@ -350,10 +391,17 @@ window.AudioPicker = (() => {
 
     testAudioUrlBtn.addEventListener('click', () => {
       const url = audioUrlInput.value.trim();
+      const urlErr = modalEl.querySelector('#url-audio-error-msg');
+      if (urlErr) urlErr.classList.add('hidden');
       if (!url) return;
       urlAudioPlayer.src = url;
       urlAudioPreview.classList.remove('hidden');
-      urlAudioPlayer.play().catch(e => alert('Audio test error: ' + e.message));
+      urlAudioPlayer.play().catch(e => {
+        if (urlErr) {
+          urlErr.textContent = 'Audio test playback error: ' + e.message;
+          urlErr.classList.remove('hidden');
+        }
+      });
     });
 
     confirmAudioUrlBtn.addEventListener('click', () => {
@@ -394,6 +442,11 @@ window.AudioPicker = (() => {
     currentAudio = options.currentAudio || '';
     currentCallback = options.onSelect || null;
 
+    // Reset active tab to record (M3)
+    const tabBtns = modalEl.querySelectorAll('.modal-tab-btn');
+    tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === 'record'));
+    modalEl.querySelectorAll('.modal-tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-audio-record'));
+
     modalEl.querySelector('#audio-modal-subtitle').textContent = currentWord ? `Word: "${currentWord}"` : 'Audio Settings';
     modalEl.querySelector('#tts-word-label').textContent = currentWord || 'word';
 
@@ -403,9 +456,33 @@ window.AudioPicker = (() => {
     recordedBlob = null;
     modalEl.querySelector('#record-timer-display').textContent = '0:00';
     modalEl.querySelector('#record-preview-box').classList.add('hidden');
-    modalEl.querySelector('#start-record-btn').classList.remove('recording');
+    const startRecordBtn = modalEl.querySelector('#start-record-btn');
+    startRecordBtn.disabled = false;
+    startRecordBtn.classList.remove('recording');
     modalEl.querySelector('#mic-status-icon').classList.remove('pulse-recording');
     modalEl.querySelector('#record-btn-text').textContent = 'Start Recording';
+    const recordPrompt = modalEl.querySelector('#record-prompt-text');
+    recordPrompt.textContent = 'Click "Start Recording" and pronounce the word clearly.';
+    recordPrompt.classList.remove('error-msg');
+
+    // Reset upload area (M3)
+    modalEl.querySelector('#audio-drop-zone').classList.remove('hidden');
+    modalEl.querySelector('#audio-upload-preview').classList.add('hidden');
+    const uploadErr = modalEl.querySelector('#audio-upload-error-msg');
+    if (uploadErr) {
+      uploadErr.textContent = '';
+      uploadErr.classList.add('hidden');
+    }
+    const audioFileInput = modalEl.querySelector('#audio-file-input');
+    if (audioFileInput) audioFileInput.value = '';
+
+    // Reset URL preview area (M3)
+    modalEl.querySelector('#url-audio-preview').classList.add('hidden');
+    const urlErr = modalEl.querySelector('#url-audio-error-msg');
+    if (urlErr) {
+      urlErr.textContent = '';
+      urlErr.classList.add('hidden');
+    }
 
     // Prepopulate URL if current audio is an external URL
     const urlInput = modalEl.querySelector('#direct-audio-url-input');
@@ -422,10 +499,27 @@ window.AudioPicker = (() => {
     if (recorder && recorder.isRecording) recorder.cancel();
     if (timerInterval) clearInterval(timerInterval);
     revokeAllObjectUrls();
+
+    // Pause and reset all audio players (M1)
     const recordAudio = modalEl?.querySelector('#record-audio-player');
-    if (recordAudio) recordAudio.src = '';
+    if (recordAudio) {
+      recordAudio.pause();
+      recordAudio.currentTime = 0;
+      recordAudio.src = '';
+    }
     const uploadAudio = modalEl?.querySelector('#upload-audio-player');
-    if (uploadAudio) uploadAudio.src = '';
+    if (uploadAudio) {
+      uploadAudio.pause();
+      uploadAudio.currentTime = 0;
+      uploadAudio.src = '';
+    }
+    const urlAudio = modalEl?.querySelector('#url-audio-player');
+    if (urlAudio) {
+      urlAudio.pause();
+      urlAudio.currentTime = 0;
+      urlAudio.src = '';
+    }
+
     if (modalEl) modalEl.classList.add('hidden');
     currentCallback = null;
   }

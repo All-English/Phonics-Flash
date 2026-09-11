@@ -110,7 +110,8 @@ window.MediaAPIs = (() => {
     const key = customKey || getGeminiKey();
     if (!key) throw new Error('Google Gemini API Key is required for Imagen 3.');
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${encodeURIComponent(key)}`;
+    // Pass API key via x-goog-api-key header instead of query param (M7)
+    const endpoint = 'https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict';
 
     const payload = {
       instances: [
@@ -124,7 +125,10 @@ window.MediaAPIs = (() => {
 
     const res = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': key
+      },
       body: JSON.stringify(payload)
     });
 
@@ -154,7 +158,14 @@ window.MediaAPIs = (() => {
     const url = `https://pixabay.com/api/?key=${encodeURIComponent(key)}&q=${encodeURIComponent(query.trim())}&image_type=all&safesearch=true&per_page=24`;
 
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`Pixabay error (${res.status})`);
+    if (!res.ok) {
+      if (res.status === 429) {
+        throw new Error('Pixabay rate limit reached (too many searches). Please wait a moment and try again.');
+      } else if (res.status === 400 || res.status === 403) {
+        throw new Error('Invalid Pixabay API Key. Please verify your key.');
+      }
+      throw new Error(`Pixabay error (${res.status})`);
+    }
     const data = await res.json();
     if (!data.hits) return [];
 
@@ -207,8 +218,10 @@ window.MediaAPIs = (() => {
     constructor() {
       this.mediaRecorder = null;
       this.audioChunks = [];
+      this.mimeType = 'audio/webm';
       this.stream = null;
       this.isRecording = false;
+      this.isStarting = false;
     }
 
     static isSupported() {
@@ -216,13 +229,18 @@ window.MediaAPIs = (() => {
     }
 
     async start() {
+      if (this.isRecording || this.isStarting) {
+        return; // Guard against concurrent start calls (M2)
+      }
       if (!MicrophoneRecorder.isSupported()) {
         throw new Error('Microphone recording is not supported in this browser.');
       }
+      this.isStarting = true;
       this.audioChunks = [];
-      this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
       try {
+        this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
         // Probe best supported MIME type dynamically
         const candidates = [
           'audio/webm;codecs=opus',
@@ -254,6 +272,8 @@ window.MediaAPIs = (() => {
           this.stream = null;
         }
         throw err;
+      } finally {
+        this.isStarting = false;
       }
     }
 

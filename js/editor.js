@@ -1089,7 +1089,7 @@ RULES:
         await EditorStore.resetToDefaults('smart-phonics');
         loadBook('smart-phonics');
         bookOptionsModal.classList.add('hidden');
-        alert('Smart Phonics has been restored to factory defaults.');
+        showSaveToast('Smart Phonics has been restored to factory defaults.');
       }
     });
 
@@ -1384,6 +1384,46 @@ RULES:
 
     cancelBtn?.addEventListener('click', closeHandler);
     closeBtn?.addEventListener('click', closeHandler);
+
+    // Close open modals on Escape key (M5)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (typeof ImagePicker !== 'undefined' && ImagePicker.close) {
+          const imgModal = document.getElementById('image-picker-modal');
+          if (imgModal && !imgModal.classList.contains('hidden')) {
+            ImagePicker.close();
+            return;
+          }
+        }
+        if (typeof AudioPicker !== 'undefined' && AudioPicker.close) {
+          const audModal = document.getElementById('audio-picker-modal');
+          if (audModal && !audModal.classList.contains('hidden')) {
+            AudioPicker.close();
+            return;
+          }
+        }
+        const modalIds = [
+          'unsaved-modal',
+          'import-modal',
+          'batch-words-modal',
+          'unit-modal',
+          'level-modal',
+          'book-options-modal',
+          'new-book-modal'
+        ];
+        for (const id of modalIds) {
+          const m = document.getElementById(id);
+          if (m && !m.classList.contains('hidden')) {
+            if (id === 'unsaved-modal') {
+              closeHandler();
+            } else {
+              m.classList.add('hidden');
+            }
+            return;
+          }
+        }
+      }
+    });
   }
 
   function openBookOptionsModal() {

@@ -141,6 +141,7 @@ window.ImagePicker = (() => {
               <input type="file" id="image-file-input" accept="image/*" style="display:none">
               <button type="button" class="btn btn-secondary" id="browse-image-btn">Browse Device</button>
             </div>
+            <div class="error-msg hidden" id="upload-error-msg" style="margin-top:8px"></div>
             <div class="upload-preview-area hidden" id="upload-preview-container">
               <img id="upload-preview-img" src="" alt="Upload preview">
               <div class="upload-preview-actions">
@@ -181,6 +182,13 @@ window.ImagePicker = (() => {
       if (e.target === modalEl) close();
     });
 
+    // Close on Escape key (M5)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modalEl && !modalEl.classList.contains('hidden')) {
+        close();
+      }
+    });
+
     // Tab switching
     const tabBtns = modalEl.querySelectorAll('.modal-tab-btn');
     tabBtns.forEach(btn => {
@@ -212,12 +220,14 @@ window.ImagePicker = (() => {
     });
     aiBtn.addEventListener('click', runAIGeneration);
 
-    // Pixabay search & key
+    // Pixabay search & key (non-blocking visual confirmation - M4)
     const pixabayKeyInput = modalEl.querySelector('#pixabay-key-input');
     const savePixabayBtn = modalEl.querySelector('#save-pixabay-key-btn');
     savePixabayBtn.addEventListener('click', () => {
       MediaAPIs.setPixabayKey(pixabayKeyInput.value);
-      alert('Pixabay key saved!');
+      const orig = savePixabayBtn.textContent;
+      savePixabayBtn.textContent = '✓ Saved!';
+      setTimeout(() => { savePixabayBtn.textContent = orig; }, 2000);
     });
     const pixabayBtn = modalEl.querySelector('#pixabay-search-btn');
     const pixabayInput = modalEl.querySelector('#pixabay-search-input');
@@ -226,12 +236,14 @@ window.ImagePicker = (() => {
       if (e.key === 'Enter') runPixabaySearch(pixabayInput.value);
     });
 
-    // Unsplash search & key
+    // Unsplash search & key (non-blocking visual confirmation - M4)
     const unsplashKeyInput = modalEl.querySelector('#unsplash-key-input');
     const saveUnsplashBtn = modalEl.querySelector('#save-unsplash-key-btn');
     saveUnsplashBtn.addEventListener('click', () => {
       MediaAPIs.setUnsplashKey(unsplashKeyInput.value);
-      alert('Unsplash key saved!');
+      const orig = saveUnsplashBtn.textContent;
+      saveUnsplashBtn.textContent = '✓ Saved!';
+      setTimeout(() => { saveUnsplashBtn.textContent = orig; }, 2000);
     });
     const unsplashBtn = modalEl.querySelector('#unsplash-search-btn');
     const unsplashInput = modalEl.querySelector('#unsplash-search-input');
@@ -388,8 +400,14 @@ window.ImagePicker = (() => {
 
   let pendingUploadBlob = null;
   function handleImageFile(file) {
+    const uploadErr = modalEl.querySelector('#upload-error-msg');
+    if (uploadErr) uploadErr.classList.add('hidden');
+
     if (!file || !file.type.startsWith('image/')) {
-      alert('Please select an image file (PNG, JPG, WebP, GIF).');
+      if (uploadErr) {
+        uploadErr.textContent = 'Please select an image file (PNG, JPG, WebP, GIF).';
+        uploadErr.classList.remove('hidden');
+      }
       return;
     }
 
@@ -416,7 +434,10 @@ window.ImagePicker = (() => {
         const mediaUri = await MediaDB.saveMediaBlob(pendingUploadBlob, 'img');
         selectImage(mediaUri);
       } catch (err) {
-        alert('Failed to save image: ' + err.message);
+        if (uploadErr) {
+          uploadErr.textContent = 'Failed to save image: ' + err.message;
+          uploadErr.classList.remove('hidden');
+        }
       }
     };
 
@@ -430,6 +451,7 @@ window.ImagePicker = (() => {
       previewContainer.classList.add('hidden');
       dropZone.classList.remove('hidden');
       modalEl.querySelector('#image-file-input').value = '';
+      if (uploadErr) uploadErr.classList.add('hidden');
     };
   }
 
@@ -518,6 +540,28 @@ window.ImagePicker = (() => {
     currentWord = options.word || '';
     currentCallback = options.onSelect || null;
 
+    // Reset active tab to clipart (M3)
+    activeTab = 'clipart';
+    const tabBtns = modalEl.querySelectorAll('.modal-tab-btn');
+    tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === 'clipart'));
+    modalEl.querySelectorAll('.modal-tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-clipart'));
+
+    // Reset AI preview area (M3)
+    const aiPreview = modalEl.querySelector('#ai-preview-area');
+    if (aiPreview) {
+      aiPreview.innerHTML = '<div class="empty-state">Click "Generate Image" to create custom cartoon flashcard artwork.</div>';
+    }
+
+    // Reset URL preview area (M3)
+    const urlPreview = modalEl.querySelector('#url-preview-area');
+    if (urlPreview) {
+      urlPreview.innerHTML = '<div class="empty-state">Paste a URL above and click "Preview".</div>';
+    }
+    const urlActions = modalEl.querySelector('#url-actions-row');
+    if (urlActions) urlActions.classList.add('hidden');
+    const urlInput = modalEl.querySelector('#direct-url-input');
+    if (urlInput) urlInput.value = '';
+
     modalEl.querySelector('#image-modal-subtitle').textContent = currentWord ? `Word: "${currentWord}"` : 'Select an image';
 
     // Populate search inputs
@@ -534,9 +578,16 @@ window.ImagePicker = (() => {
     modalEl.querySelector('#pixabay-key-input').value = MediaAPIs.getPixabayKey();
     modalEl.querySelector('#unsplash-key-input').value = MediaAPIs.getUnsplashKey();
 
-    // Reset upload preview
+    // Reset upload preview (M3)
     modalEl.querySelector('#image-drop-zone').classList.remove('hidden');
     modalEl.querySelector('#upload-preview-container').classList.add('hidden');
+    const uploadErr = modalEl.querySelector('#upload-error-msg');
+    if (uploadErr) {
+      uploadErr.textContent = '';
+      uploadErr.classList.add('hidden');
+    }
+    const fileInput = modalEl.querySelector('#image-file-input');
+    if (fileInput) fileInput.value = '';
 
     modalEl.classList.remove('hidden');
 

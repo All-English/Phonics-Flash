@@ -749,7 +749,8 @@ window.EditorStore = (() => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    // Allow ample time (60s) for user's Save As dialog on slow storage (M9)
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
   }
 
   async function exportWordsJsonFormat(currId = activeCurriculumId) {
@@ -771,7 +772,8 @@ window.EditorStore = (() => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    // Allow ample time (60s) for user's Save As dialog on slow storage (M9)
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
   }
 
   async function importBookJSON(parsedJson) {
