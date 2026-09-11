@@ -12,6 +12,7 @@ const AudioPlayer = (() => {
   const cache = new Map(); // ElevenLabs blob cache
   const audioCache = new Map(); // local Audio elements cache
   let currentAudio = null;
+  let isPlaying = false; // Declared module-scoped variable (High #1)
   const STORAGE_KEY = 'phonics-flash-elevenlabs-key';
   const VOICE_STORAGE_KEY = 'phonics-flash-elevenlabs-voice';
   const SPEED_STORAGE_KEY = 'phonics-flash-elevenlabs-speed';
@@ -33,15 +34,25 @@ const AudioPlayer = (() => {
   }
 
   /**
-   * Preload a local MP3 file.
-   * @param {string} audioPath - Path to the MP3 file
+   * Preload a local MP3 or MediaDB audio file.
+   * @param {string} audioPath - Path or media URI
    */
-  function preload(audioPath) {
+  async function preload(audioPath) {
     if (!audioPath) return;
     const pathKey = audioPath.trim();
     if (audioCache.has(pathKey)) return;
 
-    const audio = new Audio(pathKey);
+    let effectiveUrl = pathKey;
+    if (typeof MediaDB !== 'undefined' && MediaDB.isMediaId(pathKey)) {
+      try {
+        effectiveUrl = await MediaDB.resolveMediaUrl(pathKey);
+        if (!effectiveUrl) return;
+      } catch (e) {
+        return;
+      }
+    }
+
+    const audio = new Audio(effectiveUrl);
     audio.addEventListener('ended', () => {
       if (currentAudio === audio) {
         setButtonState(document.getElementById('chrome-audio'), 'idle');

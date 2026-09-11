@@ -492,7 +492,7 @@ window.ClassesManager = (() => {
       debouncedPushToUpstash(store);
 
       if (typeof SharedClassSync !== 'undefined') {
-        SharedClassSync.saveClassUnits(cls.name, selectedUnits);
+        SharedClassSync.saveClassUnits(cls.name, selectedUnits, cls.curriculumId);
       }
       return cls;
     },

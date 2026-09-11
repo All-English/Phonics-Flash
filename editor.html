@@ -67,13 +67,13 @@
       </button>
 
       <div class="dropdown-wrapper">
-        <button type="button" id="export-menu-btn" class="btn btn-secondary dropdown-trigger" title="Export or backup curriculum">
+        <button type="button" id="export-menu-btn" class="btn btn-secondary dropdown-trigger" title="Export or backup curriculum" aria-haspopup="true" aria-expanded="false" aria-controls="export-dropdown">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           <span>Export</span>
         </button>
-        <div class="dropdown-menu hidden" id="export-dropdown">
-          <button type="button" class="dropdown-item" id="export-book-json-btn">⬇️ Export Active Book (.json)</button>
-          <button type="button" class="dropdown-item" id="export-words-json-btn">⬇️ Export as "words.json" (Dev Format)</button>
+        <div class="dropdown-menu hidden" id="export-dropdown" role="menu">
+          <button type="button" class="dropdown-item" id="export-book-json-btn" role="menuitem">⬇️ Export Active Book (.json)</button>
+          <button type="button" class="dropdown-item" id="export-words-json-btn" role="menuitem">⬇️ Export as "words.json" (Dev Format)</button>
         </div>
       </div>
 
@@ -147,20 +147,20 @@
 
         <!-- Section Tabs: Core Words, Extra Words, Sight Words, Live Preview -->
         <div class="workspace-tabs-row">
-          <div class="workspace-tabs">
-            <button type="button" class="w-tab-btn active" data-wtab="core">
+          <div class="workspace-tabs" role="tablist" aria-label="Unit Content Tabs">
+            <button type="button" class="w-tab-btn active" data-wtab="core" role="tab" aria-selected="true" aria-controls="wtab-core">
               <span>Core Words</span>
               <span class="count-badge" id="core-words-count">0</span>
             </button>
-            <button type="button" class="w-tab-btn" data-wtab="extras">
+            <button type="button" class="w-tab-btn" data-wtab="extras" role="tab" aria-selected="false" aria-controls="wtab-extras">
               <span>Extra Words</span>
               <span class="count-badge" id="extra-words-count">0</span>
             </button>
-            <button type="button" class="w-tab-btn" data-wtab="sight">
+            <button type="button" class="w-tab-btn" data-wtab="sight" role="tab" aria-selected="false" aria-controls="wtab-sight">
               <span>Sight Words</span>
               <span class="count-badge" id="sight-words-count">0</span>
             </button>
-            <button type="button" class="w-tab-btn" data-wtab="preview">
+            <button type="button" class="w-tab-btn" data-wtab="preview" role="tab" aria-selected="false" aria-controls="wtab-preview">
               <span>👁️ Card Preview</span>
             </button>
           </div>
@@ -173,14 +173,14 @@
         </div>
 
         <!-- TAB CONTENT: Core Words List -->
-        <div class="w-tab-content active" id="wtab-core">
+        <div class="w-tab-content active" id="wtab-core" role="tabpanel" aria-label="Core Words">
           <div class="word-cards-container" id="word-cards-list">
             <!-- Dynamically populated word cards -->
           </div>
         </div>
 
         <!-- TAB CONTENT: Extra Words List -->
-        <div class="w-tab-content" id="wtab-extras">
+        <div class="w-tab-content" id="wtab-extras" role="tabpanel" aria-label="Extra Words">
           <div class="chip-editor-box">
             <div class="chip-editor-header">
               <h3>Extra Phonics Words</h3>
@@ -195,7 +195,7 @@
         </div>
 
         <!-- TAB CONTENT: Sight Words List -->
-        <div class="w-tab-content" id="wtab-sight">
+        <div class="w-tab-content" id="wtab-sight" role="tabpanel" aria-label="Sight Words">
           <div class="chip-editor-box">
             <div class="chip-editor-header">
               <h3>Sight Words</h3>
@@ -210,11 +210,11 @@
         </div>
 
         <!-- TAB CONTENT: Live Card Preview -->
-        <div class="w-tab-content" id="wtab-preview">
+        <div class="w-tab-content" id="wtab-preview" role="tabpanel" aria-label="Card Preview">
           <div class="live-preview-box">
             <div class="preview-card-display" id="live-preview-card">
               <div class="preview-inner">
-                <img src="" alt="" id="preview-img" class="preview-word-image hidden">
+                <img id="preview-img" class="preview-word-image hidden" alt="Card preview">
                 <div class="preview-word-text" id="preview-text">Word</div>
               </div>
               <button type="button" class="preview-audio-fab" id="preview-fab-audio" title="Play audio">
@@ -237,11 +237,11 @@
        ============================================================ -->
 
   <!-- Modal: Create New Book -->
-  <div id="new-book-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div id="new-book-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="new-book-title">
     <div class="modal-card">
       <div class="modal-header">
-        <h2>Create New Book Series</h2>
-        <button type="button" class="modal-close-btn" id="new-book-close-btn">&times;</button>
+        <h2 id="new-book-title">Create New Book Series</h2>
+        <button type="button" class="modal-close-btn" id="new-book-close-btn" aria-label="Close dialog">&times;</button>
       </div>
       <form id="new-book-form" class="modal-body">
         <div class="form-group">
@@ -287,11 +287,11 @@
   </div>
 
   <!-- Modal: Book Settings & Options -->
-  <div id="book-options-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div id="book-options-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="book-options-title">
     <div class="modal-card">
       <div class="modal-header">
         <h2 id="book-options-title">Book Options</h2>
-        <button type="button" class="modal-close-btn" id="book-options-close-btn">&times;</button>
+        <button type="button" class="modal-close-btn" id="book-options-close-btn" aria-label="Close dialog">&times;</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -327,11 +327,11 @@
   </div>
 
   <!-- Modal: Level Edit / Create -->
-  <div id="level-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div id="level-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="level-modal-title">
     <div class="modal-card modal-sm">
       <div class="modal-header">
         <h2 id="level-modal-title">Level Details</h2>
-        <button type="button" class="modal-close-btn" id="level-modal-close-btn">&times;</button>
+        <button type="button" class="modal-close-btn" id="level-modal-close-btn" aria-label="Close dialog">&times;</button>
       </div>
       <form id="level-modal-form" class="modal-body">
         <input type="hidden" id="level-modal-id" value="">
@@ -363,11 +363,11 @@
   </div>
 
   <!-- Modal: Batch Add Words -->
-  <div id="batch-words-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div id="batch-words-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="batch-words-title">
     <div class="modal-card">
       <div class="modal-header">
-        <h2>Batch Add Words</h2>
-        <button type="button" class="modal-close-btn" id="batch-words-close-btn">&times;</button>
+        <h2 id="batch-words-title">Batch Add Words</h2>
+        <button type="button" class="modal-close-btn" id="batch-words-close-btn" aria-label="Close dialog">&times;</button>
       </div>
       <form id="batch-words-form" class="modal-body">
         <div class="form-group">
@@ -384,14 +384,14 @@
   </div>
 
   <!-- Modal: Import Curriculum Book & AI Prompt -->
-  <div id="import-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div id="import-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
     <div class="modal-card import-modal-card">
       <div class="modal-header">
         <div class="modal-title-group">
-          <h2>Import Curriculum Book</h2>
+          <h2 id="import-modal-title">Import Curriculum Book</h2>
           <span class="modal-subtitle">Generate custom books with AI or import existing JSON</span>
         </div>
-        <button type="button" class="modal-close-btn" id="import-modal-close-btn">&times;</button>
+        <button type="button" class="modal-close-btn" id="import-modal-close-btn" aria-label="Close dialog">&times;</button>
       </div>
 
       <div class="modal-body import-modal-body">
@@ -460,11 +460,11 @@
   </div>
 
   <!-- Modal: Unsaved Changes Warning -->
-  <div id="unsaved-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div id="unsaved-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="unsaved-modal-title">
     <div class="modal-card modal-sm unsaved-modal-card">
       <div class="modal-header">
-        <h2>Unsaved Changes</h2>
-        <button type="button" class="modal-close-btn" id="unsaved-modal-close-btn">&times;</button>
+        <h2 id="unsaved-modal-title">Unsaved Changes</h2>
+        <button type="button" class="modal-close-btn" id="unsaved-modal-close-btn" aria-label="Close dialog">&times;</button>
       </div>
       <div class="modal-body unsaved-modal-body">
         <p class="unsaved-warning-text">
@@ -488,15 +488,16 @@
   <!-- Optional API configs (gitignored) -->
   <script src="js/config.js"></script>
 
-  <!-- Storage and APIs -->
+  <!-- Storage, Sync and APIs -->
+  <script src="js/shared-class-sync.js?v=1.1"></script>
   <script src="js/media-db.js?v=1.1"></script>
   <script src="js/editor-store.js?v=1.1"></script>
   <script src="js/media-apis.js?v=1.1"></script>
   <script src="js/image-picker.js?v=1.1"></script>
-  <script src="js/audio-picker.js?v=1.1"></script>
 
-  <!-- Audio playback module for testing voices -->
+  <!-- Audio playback module for testing voices (loaded before audio-picker) -->
   <script src="js/audio.js?v=1.1"></script>
+  <script src="js/audio-picker.js?v=1.1"></script>
 
   <!-- Main Editor Controller -->
   <script src="js/editor.js?v=1.1"></script>

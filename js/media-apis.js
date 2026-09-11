@@ -304,7 +304,10 @@ window.MediaAPIs = (() => {
 
     cancel() {
       if (this.mediaRecorder && this.isRecording) {
-        this.mediaRecorder.stop();
+        this.mediaRecorder.onstop = null;
+        try {
+          this.mediaRecorder.stop();
+        } catch (_) {}
       }
       if (this.stream) {
         this.stream.getTracks().forEach(track => track.stop());

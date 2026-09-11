@@ -366,7 +366,7 @@
   /**
    * Save units for a specific class and push to Upstash
    */
-  async function saveClassUnits(className, canonicalUnitsArray) {
+  async function saveClassUnits(className, canonicalUnitsArray, curriculumId) {
     if (!className) return false;
     let profiles = {};
     if (typeof localStorage !== 'undefined') {
@@ -379,11 +379,15 @@
       profiles[className] = {
         schedule: parseScheduleFromName(className),
         units: [],
+        curriculumId: curriculumId || 'smart-phonics',
         updatedAt: Date.now()
       };
     }
 
     profiles[className].units = canonicalUnitsArray;
+    if (curriculumId) {
+      profiles[className].curriculumId = curriculumId;
+    }
     profiles[className].updatedAt = Date.now();
 
     if (typeof localStorage !== 'undefined') {

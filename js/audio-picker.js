@@ -389,11 +389,30 @@ window.AudioPicker = (() => {
     const urlAudioPlayer = modalEl.querySelector('#url-audio-player');
     const confirmAudioUrlBtn = modalEl.querySelector('#confirm-audio-url-btn');
 
+    function isValidAudioUrl(urlStr) {
+      if (!urlStr || typeof urlStr !== 'string') return false;
+      const trimmed = urlStr.trim();
+      if (trimmed.startsWith('data:audio/')) return true;
+      try {
+        const parsed = new URL(trimmed, window.location.origin);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch (_) {
+        return false;
+      }
+    }
+
     testAudioUrlBtn.addEventListener('click', () => {
       const url = audioUrlInput.value.trim();
       const urlErr = modalEl.querySelector('#url-audio-error-msg');
       if (urlErr) urlErr.classList.add('hidden');
       if (!url) return;
+      if (!isValidAudioUrl(url)) {
+        if (urlErr) {
+          urlErr.textContent = 'Invalid audio URL. Must start with http://, https://, or data:audio/.';
+          urlErr.classList.remove('hidden');
+        }
+        return;
+      }
       urlAudioPlayer.src = url;
       urlAudioPreview.classList.remove('hidden');
       urlAudioPlayer.play().catch(e => {
@@ -406,7 +425,17 @@ window.AudioPicker = (() => {
 
     confirmAudioUrlBtn.addEventListener('click', () => {
       const url = audioUrlInput.value.trim();
-      if (url) selectAudio(url);
+      const urlErr = modalEl.querySelector('#url-audio-error-msg');
+      if (urlErr) urlErr.classList.add('hidden');
+      if (!url) return;
+      if (!isValidAudioUrl(url)) {
+        if (urlErr) {
+          urlErr.textContent = 'Invalid audio URL. Must start with http://, https://, or data:audio/.';
+          urlErr.classList.remove('hidden');
+        }
+        return;
+      }
+      selectAudio(url);
     });
 
     // Auto TTS

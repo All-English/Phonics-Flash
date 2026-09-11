@@ -245,7 +245,7 @@ window.EditorStore = (() => {
             isCustom: false,
             description: '5-Level EFL/ESL Phonics Curriculum',
             levels: rawData.levels || [],
-            updatedAt: Date.now()
+            updatedAt: 0 // Default factory book starts at 0 so cloud pulls are newer (N2)
           };
           // Double-check no duplicate was inserted during the async fetch
           if (!curricula.some(c => c.id === DEFAULT_BOOK_ID)) {
@@ -265,17 +265,24 @@ window.EditorStore = (() => {
 
     isInitialized = true;
 
-    // Background cloud sync pull & orphan media pruning
-    pullFromUpstash().catch(() => {});
-    if (typeof MediaDB !== 'undefined' && typeof MediaDB.pruneOrphanedMedia === 'function') {
-      MediaDB.pruneOrphanedMedia(curricula).catch(() => {});
-    }
+    // Background cloud sync pull & sequential orphan media pruning (N9)
+    pullFromUpstash()
+      .catch(() => {})
+      .finally(() => {
+        if (typeof MediaDB !== 'undefined' && typeof MediaDB.pruneOrphanedMedia === 'function') {
+          MediaDB.pruneOrphanedMedia(curricula).catch(() => {});
+        }
+      });
   }
 
   // ── 5. Curriculum / Book Series CRUD ─────────────────────────
   function getCurricula() {
     if (hideBuiltIn) {
-      return curricula.filter(c => c.id !== DEFAULT_BOOK_ID);
+      const customOnly = curricula.filter(c => c.id !== DEFAULT_BOOK_ID);
+      if (customOnly.length > 0) return customOnly;
+      // If no custom books exist, auto-revert hideBuiltIn so UI is never empty (N22)
+      hideBuiltIn = false;
+      localStorage.setItem(HIDE_BUILTIN_KEY, 'false');
     }
     return curricula;
   }
@@ -328,7 +335,7 @@ window.EditorStore = (() => {
   /**
    * Create a new book series.
    */
-  function createCurriculum(name, options = {}) {
+  async function createCurriculum(name, options = {}) {
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '') || 'book';
     const id = `custom_${slug}_${Date.now().toString(36)}`;
 
@@ -346,6 +353,8 @@ window.EditorStore = (() => {
             });
           }
         });
+        // Clone media blobs so duplicated curriculum has independent media records (N4)
+        await _cloneMediaForLevels(levels);
       }
     } else if (options.autoCreateLevels) {
       // Auto-generate 5 empty levels
@@ -404,11 +413,11 @@ window.EditorStore = (() => {
     return true;
   }
 
-  function duplicateCurriculum(id, newName) {
+  async function duplicateCurriculum(id, newName) {
     const source = getCurriculum(id);
     if (!source) return null;
     const name = newName || `${source.name} (Copy)`;
-    return createCurriculum(name, { templateId: id });
+    return await createCurriculum(name, { templateId: id });
   }
 
   function deleteCurriculum(id) {
@@ -517,15 +526,20 @@ window.EditorStore = (() => {
     return targetLevel;
   }
 
-  function deleteLevel(currId, levelId) {
+  async function deleteLevel(currId, levelId) {
     const book = getCurriculum(currId);
     if (!book) return false;
     const idx = book.levels.findIndex(l => l.id === levelId);
     if (idx === -1) return false;
 
-    book.levels.splice(idx, 1);
+    const [deletedLevel] = book.levels.splice(idx, 1);
+    if (deletedLevel && Array.isArray(deletedLevel.units) && typeof MediaDB !== 'undefined' && typeof MediaDB.deleteUnitMedia === 'function') {
+      for (const u of deletedLevel.units) {
+        await MediaDB.deleteUnitMedia(u).catch(() => {});
+      }
+    }
     book.updatedAt = Date.now();
-    saveToStorage();
+    await saveToStorage();
     debouncedPushToUpstash();
     notifyChange();
     return true;
@@ -606,7 +620,7 @@ window.EditorStore = (() => {
     return true;
   }
 
-  function duplicateUnit(currId, levelId, unitId) {
+  async function duplicateUnit(currId, levelId, unitId) {
     const book = getCurriculum(currId);
     if (!book) return null;
     const level = book.levels.find(l => l.id === levelId);
@@ -618,10 +632,14 @@ window.EditorStore = (() => {
     const copy = JSON.parse(JSON.stringify(source));
     copy.id = `${level.id}_U${Date.now()}`;
     copy.name = `${source.name} (Copy)`;
+
+    // Clone media blobs so duplicated unit has independent media (N4)
+    await _cloneMediaForLevels([{ units: [copy] }]);
+
     level.units.push(copy);
 
     book.updatedAt = Date.now();
-    saveToStorage();
+    await saveToStorage();
     debouncedPushToUpstash();
     notifyChange();
     return copy;
@@ -689,6 +707,43 @@ window.EditorStore = (() => {
       }
     }
     return cloned;
+  }
+
+  async function _cloneMediaForLevels(levels) {
+    if (typeof MediaDB === 'undefined' || typeof MediaDB.getMediaBlob !== 'function' || typeof MediaDB.saveMediaBlob !== 'function') {
+      return;
+    }
+    for (const lvl of levels) {
+      if (!Array.isArray(lvl.units)) continue;
+      for (const u of lvl.units) {
+        const wordLists = [u.words, u.extraWords, u.sightWords];
+        for (const list of wordLists) {
+          if (!Array.isArray(list)) continue;
+          for (const item of list) {
+            if (item.image && MediaDB.isMediaId(item.image)) {
+              try {
+                const blob = await MediaDB.getMediaBlob(item.image);
+                if (blob) {
+                  item.image = await MediaDB.saveMediaBlob(blob, 'img');
+                }
+              } catch (e) {
+                console.warn('[EditorStore] Failed to clone media image:', e);
+              }
+            }
+            if (item.audio && MediaDB.isMediaId(item.audio)) {
+              try {
+                const blob = await MediaDB.getMediaBlob(item.audio);
+                if (blob) {
+                  item.audio = await MediaDB.saveMediaBlob(blob, 'audio');
+                }
+              } catch (e) {
+                console.warn('[EditorStore] Failed to clone media audio:', e);
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   async function _extractBlobsForImport(levels) {
@@ -790,11 +845,18 @@ window.EditorStore = (() => {
     await _extractBlobsForImport(levels);
 
     // Ensure IDs are unique - always regenerate level and unit IDs scoped to this newly created book id (C6)
+    // Also normalize AI schema properties: title -> name, sound -> targetSound (High #12)
     levels.forEach((lvl, lIdx) => {
       lvl.id = `${id}_L${lIdx + 1}`;
+      lvl.name = lvl.name || lvl.title || `Level ${lIdx + 1}`;
       if (Array.isArray(lvl.units)) {
         lvl.units.forEach((u, uIdx) => {
           u.id = `${lvl.id}_U${uIdx + 1}`;
+          u.name = u.name || u.title || `Unit ${uIdx + 1}`;
+          u.targetSound = u.targetSound || u.sound || '';
+          if (!Array.isArray(u.words)) u.words = [];
+          if (!Array.isArray(u.extraWords)) u.extraWords = [];
+          if (!Array.isArray(u.sightWords)) u.sightWords = [];
         });
       }
     });

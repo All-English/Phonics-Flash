@@ -16,6 +16,8 @@
   let coreWordsRenderSeq = 0;
   let stagedImportText = '';
   let pendingUnsavedAction = null;
+  const expandedLevelIds = new Set();
+  let previewRenderSeq = 0;
 
   const AI_PROMPT_TEMPLATE = `I need you to generate a curriculum JSON file for my Phonics Flash web application.
 
@@ -95,6 +97,9 @@ RULES:
       workingBook = JSON.parse(JSON.stringify(activeBook));
       setDirty(false);
       showSaveToast('Changes saved successfully');
+      if (typeof MediaDB !== 'undefined' && typeof MediaDB.pruneOrphanedMedia === 'function') {
+        MediaDB.pruneOrphanedMedia(EditorStore.getAllCurriculaRaw()).catch(() => {});
+      }
     } finally {
       isInternalStoreChange = false;
     }
@@ -132,7 +137,18 @@ RULES:
     workingBook = activeBook ? JSON.parse(JSON.stringify(activeBook)) : null;
     setDirty(false);
     renderBookDropdown();
+
+    // Auto-select first unit of new book to avoid stale/empty workspace (N12, N13)
+    if (workingBook && workingBook.levels && workingBook.levels[0]?.units?.[0]) {
+      selectedLevelId = workingBook.levels[0].id;
+      selectedUnitId = workingBook.levels[0].units[0].id;
+    } else {
+      selectedLevelId = workingBook?.levels?.[0]?.id || null;
+      selectedUnitId = null;
+    }
+
     renderSidebarTree();
+    renderUnitWorkspace();
   }
 
   function promptUnsavedChanges(onConfirm) {
@@ -301,7 +317,13 @@ RULES:
       const isLevelActive = level.id === selectedLevelId ||
         (level.units && level.units.some(u => u.id === selectedUnitId));
 
-      if (isLevelActive || lIdx === 0) {
+      if (isLevelActive) {
+        expandedLevelIds.add(level.id);
+      } else if (expandedLevelIds.size === 0 && lIdx === 0) {
+        expandedLevelIds.add(level.id);
+      }
+
+      if (expandedLevelIds.has(level.id)) {
         levelEl.classList.add('open');
       }
 
@@ -338,6 +360,11 @@ RULES:
       levelEl.querySelector('.tree-level-header').addEventListener('click', (e) => {
         if (e.target.closest('.tree-level-edit-btn')) return;
         levelEl.classList.toggle('open');
+        if (levelEl.classList.contains('open')) {
+          expandedLevelIds.add(level.id);
+        } else {
+          expandedLevelIds.delete(level.id);
+        }
       });
 
       // Edit level button
@@ -562,8 +589,12 @@ RULES:
         </div>
       `;
 
-      // Word spelling change
+      // Word spelling change (High #15)
       const wordInput = card.querySelector('.card-word-input');
+      wordInput.addEventListener('input', () => {
+        wordItem.word = wordInput.value;
+        saveCurrentUnit();
+      });
       wordInput.addEventListener('change', () => {
         wordItem.word = wordInput.value.trim();
         saveCurrentUnit();
@@ -574,10 +605,6 @@ RULES:
       imgBox.addEventListener('click', (e) => {
         if (e.target.closest('.remove-img-btn')) {
           e.stopPropagation();
-          const oldUri = wordItem.image;
-          if (oldUri && typeof MediaDB !== 'undefined' && typeof MediaDB.isMediaId === 'function' && MediaDB.isMediaId(oldUri)) {
-            MediaDB.deleteMedia(oldUri).catch(() => {});
-          }
           wordItem.image = '';
           saveCurrentUnit();
           renderCoreWordsList(unit);
@@ -587,10 +614,6 @@ RULES:
           word: wordItem.word || '',
           currentImage: wordItem.image || '',
           onSelect: (newUri) => {
-            const oldUri = wordItem.image;
-            if (oldUri && oldUri !== newUri && typeof MediaDB !== 'undefined' && typeof MediaDB.isMediaId === 'function' && MediaDB.isMediaId(oldUri)) {
-              MediaDB.deleteMedia(oldUri).catch(() => {});
-            }
             wordItem.image = newUri;
             saveCurrentUnit();
             renderCoreWordsList(unit);
@@ -604,10 +627,6 @@ RULES:
           word: wordItem.word || '',
           currentAudio: wordItem.audio || '',
           onSelect: (newUri) => {
-            const oldUri = wordItem.audio;
-            if (oldUri && oldUri !== newUri && typeof MediaDB !== 'undefined' && typeof MediaDB.isMediaId === 'function' && MediaDB.isMediaId(oldUri)) {
-              MediaDB.deleteMedia(oldUri).catch(() => {});
-            }
             wordItem.audio = newUri;
             saveCurrentUnit();
             renderCoreWordsList(unit);
@@ -651,10 +670,7 @@ RULES:
 
       // Delete card
       card.querySelector('.delete-card-btn').addEventListener('click', () => {
-        const [deletedWord] = words.splice(idx, 1);
-        if (deletedWord && typeof MediaDB !== 'undefined' && typeof MediaDB.deleteCardMedia === 'function') {
-          MediaDB.deleteCardMedia(deletedWord).catch(() => {});
-        }
+        words.splice(idx, 1);
         saveCurrentUnit();
         renderCoreWordsList(unit);
         document.getElementById('core-words-count').textContent = words.length;
@@ -731,6 +747,7 @@ RULES:
       counterEl.textContent = '0 / 0';
       imgEl.classList.add('hidden');
       textEl.textContent = 'No words in unit';
+      fabAudio.onclick = null; // Clear stale audio handler (N14)
       return;
     }
 
@@ -741,10 +758,14 @@ RULES:
     counterEl.textContent = `Card ${previewIndex + 1} / ${words.length}`;
     textEl.textContent = currentCard.word || 'Word';
 
+    const renderSeq = ++previewRenderSeq; // Sequence token against race condition (N15)
     if (currentCard.image) {
-      const resolved = await MediaDB.resolveMediaUrl(currentCard.image);
-      imgEl.src = resolved;
-      imgEl.classList.remove('hidden');
+      MediaDB.resolveMediaUrl(currentCard.image).then(resolved => {
+        if (renderSeq === previewRenderSeq) {
+          imgEl.src = resolved;
+          imgEl.classList.remove('hidden');
+        }
+      }).catch(() => {});
     } else {
       imgEl.classList.add('hidden');
     }
@@ -756,11 +777,19 @@ RULES:
 
   // ── 9. Bind Workspace Events ────────────────────────────────
   function bindWorkspaceEvents() {
-    // Unit title & target sound auto-save
+    // Unit title & target sound auto-save (High #15)
     const titleInput = document.getElementById('unit-title-input');
     const soundInput = document.getElementById('unit-target-sound-input');
     const levelSelect = document.getElementById('unit-level-select');
 
+    titleInput.addEventListener('input', () => {
+      const unit = getSelectedUnit();
+      if (unit) {
+        unit.name = titleInput.value || 'Untitled Unit';
+        saveCurrentUnit();
+        renderSidebarTree();
+      }
+    });
     titleInput.addEventListener('change', () => {
       const unit = getSelectedUnit();
       if (unit) {
@@ -770,6 +799,14 @@ RULES:
       }
     });
 
+    soundInput.addEventListener('input', () => {
+      const unit = getSelectedUnit();
+      if (unit) {
+        unit.targetSound = soundInput.value;
+        saveCurrentUnit();
+        renderSidebarTree();
+      }
+    });
     soundInput.addEventListener('change', () => {
       const unit = getSelectedUnit();
       if (unit) {
@@ -822,10 +859,6 @@ RULES:
       if (confirm('Are you sure you want to delete this unit?')) {
         const level = (workingBook.levels || []).find(l => l.id === selectedLevelId);
         if (level && level.units) {
-          const unitToDelete = level.units.find(u => u.id === selectedUnitId);
-          if (unitToDelete && typeof MediaDB !== 'undefined' && typeof MediaDB.deleteUnitMedia === 'function') {
-            MediaDB.deleteUnitMedia(unitToDelete).catch(() => {});
-          }
           level.units = level.units.filter(u => u.id !== selectedUnitId);
         }
         selectedUnitId = null;
@@ -835,23 +868,72 @@ RULES:
       }
     });
 
+    function updateAddWordBtnLabel() {
+      const addBtn = document.getElementById('add-word-card-btn');
+      if (!addBtn) return;
+      if (activeWorkspaceTab === 'extras') {
+        addBtn.textContent = '+ Add Extra Word';
+      } else if (activeWorkspaceTab === 'sight') {
+        addBtn.textContent = '+ Add Sight Word';
+      } else {
+        addBtn.textContent = '+ Add Word Card';
+      }
+    }
+
     // Workspace tabs
     document.querySelectorAll('.w-tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.w-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.w-tab-btn').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-selected', 'false');
+        });
         document.querySelectorAll('.w-tab-content').forEach(c => c.classList.remove('active'));
         btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
         activeWorkspaceTab = btn.dataset.wtab;
         const target = document.getElementById(`wtab-${activeWorkspaceTab}`);
         if (target) target.classList.add('active');
+        updateAddWordBtnLabel();
         renderWorkspaceTabContent();
       });
     });
 
-    // Add word card
+    // Add word card (Contextual based on active tab - N16)
     document.getElementById('add-word-card-btn').addEventListener('click', async () => {
       const unit = getSelectedUnit();
       if (!unit) return;
+
+      if (activeWorkspaceTab === 'extras') {
+        const input = document.getElementById('add-extra-word-input');
+        if (input) {
+          input.focus();
+          input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        return;
+      }
+
+      if (activeWorkspaceTab === 'sight') {
+        const input = document.getElementById('add-sight-word-input');
+        if (input) {
+          input.focus();
+          input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        return;
+      }
+
+      if (activeWorkspaceTab === 'preview') {
+        activeWorkspaceTab = 'core';
+        document.querySelectorAll('.w-tab-btn').forEach(b => {
+          const isCore = b.dataset.wtab === 'core';
+          b.classList.toggle('active', isCore);
+          b.setAttribute('aria-selected', isCore ? 'true' : 'false');
+        });
+        document.querySelectorAll('.w-tab-content').forEach(c => {
+          c.classList.toggle('active', c.id === 'wtab-core');
+        });
+        updateAddWordBtnLabel();
+      }
+
       if (!unit.words) unit.words = [];
       unit.words.push({ word: '', image: '', audio: '' });
       saveCurrentUnit();
@@ -1005,20 +1087,21 @@ RULES:
     // Export dropdown toggle
     const exportBtn = document.getElementById('export-menu-btn');
     const exportDropdown = document.getElementById('export-dropdown');
-    exportBtn.addEventListener('click', (e) => {
+    exportBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
-      exportDropdown.classList.toggle('hidden');
+      const isNowHidden = exportDropdown.classList.toggle('hidden');
+      exportBtn.setAttribute('aria-expanded', isNowHidden ? 'false' : 'true');
     });
     document.addEventListener('click', () => {
-      exportDropdown.classList.add('hidden');
+      exportDropdown?.classList.add('hidden');
+      exportBtn?.setAttribute('aria-expanded', 'false');
     });
 
     document.getElementById('export-book-json-btn').addEventListener('click', async () => {
       if (workingBook) {
         if (isDirty) {
           EditorStore.saveCurriculum(workingBook);
-          isDirty = false;
-          updateSaveButtonState();
+          setDirty(false);
         }
         await EditorStore.exportBookJSON(workingBook.id);
       }
@@ -1028,8 +1111,7 @@ RULES:
       if (workingBook) {
         if (isDirty) {
           EditorStore.saveCurriculum(workingBook);
-          isDirty = false;
-          updateSaveButtonState();
+          setDirty(false);
         }
         await EditorStore.exportWordsJsonFormat(workingBook.id);
       }
@@ -1140,12 +1222,21 @@ RULES:
         };
         workingBook.levels.push(newLvl);
         selectedLevelId = newLvl.id;
+        selectedUnitId = null;
+        expandedLevelIds.add(newLvl.id);
       }
 
       setDirty(true);
       levelModal.classList.add('hidden');
       renderSidebarTree();
-      if (selectedUnitId) renderUnitWorkspace();
+      if (selectedUnitId) {
+        renderUnitWorkspace();
+      } else {
+        const uWs = document.getElementById('unit-workspace');
+        const eWs = document.getElementById('empty-workspace');
+        if (uWs) uWs.classList.add('hidden');
+        if (eWs) eWs.classList.remove('hidden');
+      }
     });
 
     // Batch Words modal
@@ -1206,14 +1297,21 @@ RULES:
       statusBox.textContent = '';
       stagedImportText = '';
       pasteTextarea.value = '';
+      if (fileInput) fileInput.value = '';
       fileBadge.classList.add('hidden');
       dropzone.classList.remove('hidden');
       importModal.classList.remove('hidden');
     }
 
     importBtn?.addEventListener('click', openImportModal);
-    closeBtn?.addEventListener('click', () => importModal.classList.add('hidden'));
-    cancelBtn?.addEventListener('click', () => importModal.classList.add('hidden'));
+    closeBtn?.addEventListener('click', () => {
+      importModal.classList.add('hidden');
+      if (fileInput) fileInput.value = '';
+    });
+    cancelBtn?.addEventListener('click', () => {
+      importModal.classList.add('hidden');
+      if (fileInput) fileInput.value = '';
+    });
 
     // Copy AI Prompt
     copyPromptBtn?.addEventListener('click', async () => {
@@ -1316,9 +1414,16 @@ RULES:
         }
       }
 
-      // Sanitize markdown fences if present (e.g. ```json ... ```)
-      if (rawText.startsWith('```')) {
-        rawText = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+      // Sanitize markdown fences or extract JSON block if AI preamble/postamble exists (N18)
+      const fenceMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+      if (fenceMatch) {
+        rawText = fenceMatch[1].trim();
+      } else {
+        const firstBrace = rawText.indexOf('{');
+        const lastBrace = rawText.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+          rawText = rawText.substring(firstBrace, lastBrace + 1).trim();
+        }
       }
 
       let parsed = null;
@@ -1331,6 +1436,9 @@ RULES:
 
       try {
         const imported = await EditorStore.importBookJSON(parsed);
+        if (fileInput) fileInput.value = '';
+        stagedImportText = '';
+        pasteTextarea.value = '';
         importModal.classList.add('hidden');
         loadBook(imported.id);
         if (workingBook && workingBook.levels && workingBook.levels[0]?.units?.[0]) {
@@ -1385,9 +1493,15 @@ RULES:
     cancelBtn?.addEventListener('click', closeHandler);
     closeBtn?.addEventListener('click', closeHandler);
 
-    // Close open modals on Escape key (M5)
+    // Close open modals on Escape key (M5, N24)
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
+        const exportDropdown = document.getElementById('export-dropdown');
+        if (exportDropdown && !exportDropdown.classList.contains('hidden')) {
+          exportDropdown.classList.add('hidden');
+          document.getElementById('export-menu-btn')?.setAttribute('aria-expanded', 'false');
+          return;
+        }
         if (typeof ImagePicker !== 'undefined' && ImagePicker.close) {
           const imgModal = document.getElementById('image-picker-modal');
           if (imgModal && !imgModal.classList.contains('hidden')) {
@@ -1406,7 +1520,6 @@ RULES:
           'unsaved-modal',
           'import-modal',
           'batch-words-modal',
-          'unit-modal',
           'level-modal',
           'book-options-modal',
           'new-book-modal'

@@ -101,7 +101,7 @@ window.MediaDB = (() => {
     const record = {
       id: id,
       blob: fileOrBlob,
-      mimeType: fileOrBlob.type || (prefix === 'img' ? 'image/jpeg' : 'audio/mp3'),
+      mimeType: fileOrBlob.type || (prefix === 'img' ? 'image/jpeg' : 'audio/mpeg'),
       size: fileOrBlob.size,
       createdAt: Date.now()
     };
@@ -174,7 +174,17 @@ window.MediaDB = (() => {
   }
 
   async function base64ToBlob(base64Data, defaultMime = 'image/png') {
-    const res = await fetch(base64Data);
+    if (!base64Data || typeof base64Data !== 'string') {
+      throw new Error('Invalid base64 data');
+    }
+    // If it is a full data URI, use fetch directly
+    if (base64Data.startsWith('data:')) {
+      const res = await fetch(base64Data);
+      return res.blob();
+    }
+    // Otherwise construct standard data URI with specified defaultMime
+    const dataUri = `data:${defaultMime};base64,${base64Data.trim()}`;
+    const res = await fetch(dataUri);
     return res.blob();
   }
 
@@ -197,7 +207,19 @@ window.MediaDB = (() => {
       updatedAt: book.updatedAt || Date.now(),
       data: JSON.parse(JSON.stringify(book))
     }));
-    await database.curriculum.bulkPut(records);
+    const newKeys = new Set(records.map(r => r.id));
+
+    // Synchronize keys: delete removed curricula records so deleted books do not resurrect (N5)
+    await database.transaction('rw', database.curriculum, async () => {
+      const existingKeys = await database.curriculum.toCollection().primaryKeys();
+      const toDelete = existingKeys.filter(k => !newKeys.has(k));
+      if (toDelete.length > 0) {
+        await database.curriculum.bulkDelete(toDelete);
+      }
+      if (records.length > 0) {
+        await database.curriculum.bulkPut(records);
+      }
+    });
   }
 
   async function getAllCurriculaRecords() {
@@ -230,8 +252,9 @@ window.MediaDB = (() => {
   }
 
   async function deleteUnitMedia(unit) {
-    if (!unit || !Array.isArray(unit.words)) return;
-    for (const card of unit.words) {
+    if (!unit) return;
+    const cards = [...(unit.words || []), ...(unit.extraWords || []), ...(unit.sightWords || [])];
+    for (const card of cards) {
       await deleteCardMedia(card);
     }
   }
@@ -255,7 +278,8 @@ window.MediaDB = (() => {
       curriculaList.forEach(book => {
         (book.levels || []).forEach(lvl => {
           (lvl.units || []).forEach(u => {
-            (u.words || []).forEach(w => {
+            const allCards = [...(u.words || []), ...(u.extraWords || []), ...(u.sightWords || [])];
+            allCards.forEach(w => {
               if (isMediaId(w.image)) referenced.add(parseMediaId(w.image));
               if (isMediaId(w.audio)) referenced.add(parseMediaId(w.audio));
             });

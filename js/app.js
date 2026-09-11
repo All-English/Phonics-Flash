@@ -133,25 +133,30 @@
         applyClassProfile(scheduledClass);
       } else {
         ClassesManager.setActiveClassId(null);
-        resetToDefaultSettings();
+        // Do not wipe saved units on startup (High #3)
       }
       initClassesUI();
 
       // Cloud pull in background if configured
       ClassesManager.syncCloud().then(res => {
         if (res && res.success && res.source === 'remote_loaded') {
-          const scheduled = ClassesManager.findCurrentScheduledClass();
-          if (scheduled) {
-            ClassesManager.setActiveClassId(scheduled.id);
-            applyClassProfile(scheduled);
-          } else {
-            ClassesManager.setActiveClassId(null);
+          // Only auto-apply scheduled class if user has not explicitly navigated via URL or selected a book (High #5)
+          const urlParams = new URLSearchParams(window.location.search);
+          const hasExplicitParam = urlParams.has('book') || urlParams.has('b') || urlParams.has('units') || urlParams.has('q');
+          const isMenuVisible = !document.getElementById('menu-screen')?.classList.contains('hidden');
+
+          if (!hasExplicitParam && isMenuVisible && !ClassesManager.getActiveClassId()) {
+            const scheduled = ClassesManager.findCurrentScheduledClass();
+            if (scheduled) {
+              ClassesManager.setActiveClassId(scheduled.id);
+              applyClassProfile(scheduled);
+            }
           }
-          initClassesUI();
+          if (typeof populateClassDropdown === 'function') {
+            populateClassDropdown();
+          }
         }
       }).catch(console.warn);
-    } else {
-      resetToDefaultSettings();
     }
 
     // 3. Explicit book parameter in URL takes precedence (e.g. from editor "Preview in App" or bookmarks)
@@ -322,13 +327,14 @@
       localStorage.setItem('phonics-flash-selected-units', JSON.stringify(cls.selectedUnits));
     }
 
-    // Auto-switch book series if class has an assigned curriculumId
-    if (cls.curriculumId && typeof EditorStore !== 'undefined') {
-      if (EditorStore.getActiveCurriculumId() !== cls.curriculumId && EditorStore.getCurriculum(cls.curriculumId)) {
-        EditorStore.setActiveCurriculum(cls.curriculumId);
+    // Auto-switch book series if class has an assigned curriculumId (fallback to smart-phonics for legacy classes - High #7)
+    const targetCurId = cls.curriculumId || 'smart-phonics';
+    if (typeof EditorStore !== 'undefined') {
+      if (EditorStore.getActiveCurriculumId() !== targetCurId && EditorStore.getCurriculum(targetCurId)) {
+        EditorStore.setActiveCurriculum(targetCurId);
         phonicsData = EditorStore.getActiveCurriculum();
         const bookSelect = document.getElementById('book-select');
-        if (bookSelect) bookSelect.value = cls.curriculumId;
+        if (bookSelect) bookSelect.value = targetCurId;
       }
     }
 
@@ -388,14 +394,22 @@
         unitIds = [trimmedUnits];
       } else if (trimmedUnits.includes(',')) {
         unitIds = trimmedUnits.split(',').map(s => s.trim()).filter(Boolean);
+      } else if (trimmedUnits.includes('-')) {
+        // Only split on hyphen if all parts match known unit IDs (preserves custom_oxford-1_L1_U1)
+        const parts = trimmedUnits.split('-').map(s => s.trim()).filter(Boolean);
+        if (parts.length > 1 && parts.every(p => allUnitIds.includes(p))) {
+          unitIds = parts;
+        } else {
+          unitIds = [trimmedUnits];
+        }
       } else {
-        unitIds = trimmedUnits.split(/[,-]/).map(s => s.trim()).filter(Boolean);
+        unitIds = [trimmedUnits];
       }
     }
 
     let chartLevel = levelParam ? levelParam.toUpperCase() : null;
     if (!chartLevel && unitIds.length > 0) {
-      const match = unitIds[0].match(/^(L\d+)/i);
+      const match = unitIds[0].match(/^(?:.*_)?(L\d+)/i);
       if (match) chartLevel = match[1].toUpperCase();
     }
     if (!chartLevel) chartLevel = 'L1';
@@ -423,7 +437,7 @@
         params.set('book', curId);
       }
     }
-    params.set('units', unitIds.join('-'));
+    params.set('units', unitIds.join(','));
     if (opts.includeExtras) params.set('extras', '1');
     if (opts.includeSightWords) params.set('sight', '1');
     if (!opts.includeImages) params.set('images', '0');
@@ -671,6 +685,17 @@
         EditorStore.setActiveCurriculum(selectedBookId);
         phonicsData = EditorStore.getActiveCurriculum();
         localStorage.removeItem('phonics-flash-selected-units');
+
+        // Deselect active class if class's curriculum does not match selected book (High #8)
+        if (typeof ClassesManager !== 'undefined') {
+          const activeClass = ClassesManager.getActiveClass();
+          if (activeClass && (activeClass.curriculumId || 'smart-phonics') !== selectedBookId) {
+            ClassesManager.setActiveClassId(null);
+            const classSelect = document.getElementById('class-select');
+            if (classSelect) classSelect.value = '';
+          }
+        }
+
         renderMenu();
         showToast(`Switched to "${phonicsData?.name || selectedBookId}"`, 'info', 2000);
       }
@@ -1039,7 +1064,7 @@
     }
 
     // Gather selected unit data with level context
-    const selectedUnits = [];
+    let selectedUnits = [];
     for (const level of (phonicsData?.levels || [])) {
       for (const unit of (level?.units || [])) {
         if (unitIds.includes(unit.id)) {
@@ -1052,7 +1077,34 @@
       }
     }
 
-    if (selectedUnits.length === 0) return;
+    // If no units found in active book, check other available books (High #4)
+    if (selectedUnits.length === 0 && typeof EditorStore !== 'undefined') {
+      const allBooks = EditorStore.getAllCurriculaRaw();
+      for (const b of allBooks) {
+        if (b.id === EditorStore.getActiveCurriculumId()) continue;
+        const matchingUnits = [];
+        for (const lvl of (b.levels || [])) {
+          for (const u of (lvl.units || [])) {
+            if (unitIds.includes(u.id)) {
+              matchingUnits.push({ ...u, levelId: lvl.id, levelName: lvl.name });
+            }
+          }
+        }
+        if (matchingUnits.length > 0) {
+          EditorStore.setActiveCurriculum(b.id);
+          phonicsData = EditorStore.getActiveCurriculum();
+          const bookSelect = document.getElementById('book-select');
+          if (bookSelect) bookSelect.value = b.id;
+          selectedUnits = matchingUnits;
+          break;
+        }
+      }
+    }
+
+    if (selectedUnits.length === 0) {
+      showToast('No matching units found for slideshow', 'error', 3000);
+      return;
+    }
 
     // Build slides — only word content (no chrome inside slides)
     const slidesContainer = document.querySelector('#slideshow-screen .slides');
@@ -1409,7 +1461,7 @@
         <div class="slide-center quiz-mode-layout">
           ${isSightWord ? '<div class="sight-word-badge">Sight Word</div>' : ''}
           ${hasImage
-            ? `<img ${isMediaUri ? `data-media-uri="${wordData.image}"` : `src="${wordData.image}"`} alt="Quiz Image" class="word-image quiz-image"
+            ? `<img ${isMediaUri ? `data-media-uri="${wordData.image}" style="display:none;"` : `src="${wordData.image}"`} alt="Quiz Image" class="word-image quiz-image"
                  onerror="if(this.src) this.style.display='none'">`
             : ''}
           <div class="quiz-options-container">
@@ -1427,7 +1479,7 @@
         <div class="slide-center">
           ${isSightWord ? '<div class="sight-word-badge">Sight Word</div>' : ''}
           ${(showImages || showImageInDictation) && hasImage
-            ? `<img ${isMediaUri ? `data-media-uri="${wordData.image}"` : `src="${wordData.image}"`} alt="${wordData.word}" class="word-image"
+            ? `<img ${isMediaUri ? `data-media-uri="${wordData.image}" style="display:none;"` : `src="${wordData.image}"`} alt="${wordData.word}" class="word-image"
                  onerror="if(this.src) this.style.display='none'">`
             : ''}
           <div class="word-text ${(opts && opts.dictationMode) ? 'dictation-hide' : ''}">${wordData.word}</div>
@@ -1439,7 +1491,10 @@
       const imgEl = section.querySelector('.word-image');
       if (imgEl) {
         MediaDB.resolveMediaUrl(wordData.image).then(blobUrl => {
-          if (blobUrl) imgEl.src = blobUrl;
+          if (blobUrl) {
+            imgEl.src = blobUrl;
+            imgEl.style.display = '';
+          }
         }).catch(err => {
           console.warn('[MediaDB] Slide image resolution failed:', wordData.image, err);
         });
@@ -1816,13 +1871,19 @@
   function updateChartURL(targetUnits, level) {
     const params = new URLSearchParams();
     params.set('q', 'chart');
+    if (typeof EditorStore !== 'undefined') {
+      const curId = EditorStore.getActiveCurriculumId();
+      if (curId && curId !== 'smart-phonics') {
+        params.set('book', curId);
+      }
+    }
     if (level && level.id !== 'L1') {
       params.set('level', level.id);
     }
     if (targetUnits && targetUnits.length > 0) {
       const allCount = level?.units?.length || 8;
       if (targetUnits.length < allCount) {
-        params.set('units', targetUnits.map(u => u.id).join('-'));
+        params.set('units', targetUnits.map(u => u.id).join(','));
       }
     }
     if (level && level.id === 'L1' && options.letterCase && options.letterCase !== 'both') {
@@ -2142,7 +2203,7 @@
       // Collect all unique base letters from target units in order
       const letterMap = new Map();
       targetUnits.forEach(unit => {
-        unit.words.forEach(w => {
+        (unit.words || []).forEach(w => {
           const baseLetter = w.word ? w.word.charAt(0).toUpperCase() : '';
           if (baseLetter && !letterMap.has(baseLetter)) {
             // Use dedicated single-sound audio files for letter chart
@@ -2326,6 +2387,9 @@
 
   function closeChart() {
     AudioPlayer.stop();
+    if (typeof MediaDB !== 'undefined') {
+      MediaDB.revokeAllUrls();
+    }
     clearTypeAhead();
     if (chartKeyboardHandler) {
       window.removeEventListener('keydown', chartKeyboardHandler);
@@ -2347,7 +2411,36 @@
   const closeLetterChart = closeChart;
 
   // ── Classes & Schedule UI Management ──────────────────────
+  let classesUIInitialized = false;
+
+  function populateClassDropdown() {
+    const classSelect = document.getElementById('class-select');
+    if (!classSelect || typeof ClassesManager === 'undefined') return;
+    const classes = ClassesManager.getClasses();
+    const activeClass = ClassesManager.getActiveClass();
+
+    const sortedClasses = [...classes].sort((a, b) => a.name.localeCompare(b.name));
+
+    classSelect.innerHTML = `<option value="">General (No Class)</option>`;
+    sortedClasses.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name;
+      classSelect.appendChild(opt);
+    });
+
+    if (activeClass) {
+      classSelect.value = activeClass.id;
+    } else {
+      classSelect.value = "";
+    }
+  }
+
   function initClassesUI() {
+    populateClassDropdown();
+    if (classesUIInitialized) return;
+    classesUIInitialized = true;
+
     const classSelect = document.getElementById('class-select');
     const settingsBtn = document.getElementById('open-settings-btn');
     const modal = document.getElementById('class-modal');
@@ -2385,31 +2478,6 @@
       if (speedDisplay) speedDisplay.textContent = formatted;
       if (specsSpeedVal) specsSpeedVal.textContent = formatted;
     }
-
-    function populateClassDropdown() {
-      if (!classSelect || typeof ClassesManager === 'undefined') return;
-      const classes = ClassesManager.getClasses();
-      const activeClass = ClassesManager.getActiveClass();
-
-      const sortedClasses = [...classes].sort((a, b) => a.name.localeCompare(b.name));
-
-      classSelect.innerHTML = `<option value="">General (No Class)</option>`;
-      sortedClasses.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.id;
-        opt.textContent = c.name;
-        classSelect.appendChild(opt);
-      });
-
-      if (activeClass) {
-        classSelect.value = activeClass.id;
-      } else {
-        classSelect.value = "";
-      }
-    }
-
-    // Populate dropdown initially
-    populateClassDropdown();
 
     // Dropdown change
     if (classSelect) {
@@ -2755,7 +2823,10 @@
       // Populate curriculum selector for class
       const curSelect = document.getElementById('form-class-curriculum');
       if (curSelect && typeof EditorStore !== 'undefined') {
-        const curricula = EditorStore.getCurricula();
+        let curricula = EditorStore.getCurricula();
+        if (!curricula || curricula.length === 0) {
+          curricula = EditorStore.getAllCurriculaRaw();
+        }
         curSelect.innerHTML = '';
         curricula.forEach(c => {
           const opt = document.createElement('option');
@@ -2765,6 +2836,9 @@
         });
         const selectedCurId = cls ? (cls.curriculumId || 'smart-phonics') : EditorStore.getActiveCurriculumId();
         curSelect.value = selectedCurId;
+        if (!curSelect.value && curSelect.options.length > 0) {
+          curSelect.selectedIndex = 0;
+        }
       }
 
       if (classFormTitle) {
