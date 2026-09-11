@@ -178,6 +178,102 @@ window.MediaDB = (() => {
     return res.blob();
   }
 
+  // ── 10. IndexedDB Curriculum Table Persistence ───────────────
+  async function saveCurriculumRecord(book) {
+    const database = getDb();
+    if (!database || !book || !book.id) return;
+    await database.curriculum.put({
+      id: book.id,
+      updatedAt: book.updatedAt || Date.now(),
+      data: JSON.parse(JSON.stringify(book))
+    });
+  }
+
+  async function saveAllCurriculaRecords(curriculaList) {
+    const database = getDb();
+    if (!database || !Array.isArray(curriculaList)) return;
+    const records = curriculaList.map(book => ({
+      id: book.id,
+      updatedAt: book.updatedAt || Date.now(),
+      data: JSON.parse(JSON.stringify(book))
+    }));
+    await database.curriculum.bulkPut(records);
+  }
+
+  async function getAllCurriculaRecords() {
+    const database = getDb();
+    if (!database) return [];
+    try {
+      const records = await database.curriculum.toArray();
+      return records.map(r => r.data).filter(Boolean);
+    } catch (e) {
+      console.warn('[MediaDB] Failed to load curricula from IndexedDB:', e);
+      return [];
+    }
+  }
+
+  async function deleteCurriculumRecord(bookId) {
+    const database = getDb();
+    if (!database || !bookId) return;
+    await database.curriculum.delete(bookId);
+  }
+
+  // ── 11. Cascading Media Deletion & Orphan Pruning ─────────────
+  async function deleteCardMedia(card) {
+    if (!card) return;
+    if (card.image && isMediaId(card.image)) {
+      await deleteMedia(card.image);
+    }
+    if (card.audio && isMediaId(card.audio)) {
+      await deleteMedia(card.audio);
+    }
+  }
+
+  async function deleteUnitMedia(unit) {
+    if (!unit || !Array.isArray(unit.words)) return;
+    for (const card of unit.words) {
+      await deleteCardMedia(card);
+    }
+  }
+
+  async function deleteCurriculumMedia(book) {
+    if (!book || !Array.isArray(book.levels)) return;
+    for (const lvl of book.levels) {
+      if (Array.isArray(lvl.units)) {
+        for (const u of lvl.units) {
+          await deleteUnitMedia(u);
+        }
+      }
+    }
+  }
+
+  async function pruneOrphanedMedia(curriculaList) {
+    const database = getDb();
+    if (!database || !Array.isArray(curriculaList)) return;
+    try {
+      const referenced = new Set();
+      curriculaList.forEach(book => {
+        (book.levels || []).forEach(lvl => {
+          (lvl.units || []).forEach(u => {
+            (u.words || []).forEach(w => {
+              if (isMediaId(w.image)) referenced.add(parseMediaId(w.image));
+              if (isMediaId(w.audio)) referenced.add(parseMediaId(w.audio));
+            });
+          });
+        });
+      });
+
+      const allKeys = await database.media.toCollection().primaryKeys();
+      for (const key of allKeys) {
+        if (!referenced.has(key)) {
+          await deleteMedia(key);
+        }
+      }
+    } catch (e) {
+      console.warn('[MediaDB] Orphan media pruning failed:', e);
+    }
+  }
+
   return {
     getDb,
     isMediaId,
@@ -189,6 +285,14 @@ window.MediaDB = (() => {
     revokeMediaUrl,
     revokeAllUrls,
     blobToBase64,
-    base64ToBlob
+    base64ToBlob,
+    saveCurriculumRecord,
+    saveAllCurriculaRecords,
+    getAllCurriculaRecords,
+    deleteCurriculumRecord,
+    deleteCardMedia,
+    deleteUnitMedia,
+    deleteCurriculumMedia,
+    pruneOrphanedMedia
   };
 })();

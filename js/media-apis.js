@@ -205,17 +205,22 @@ window.MediaAPIs = (() => {
       this.audioChunks = [];
       this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Pick best supported MIME type
-      let mimeType = 'audio/webm';
-      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-        mimeType = 'audio/webm;codecs=opus';
-      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-        mimeType = 'audio/mp4';
-      } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
-        mimeType = 'audio/ogg';
-      }
+      // Probe best supported MIME type dynamically
+      const candidates = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/mp4',
+        'audio/aac',
+        'audio/ogg;codecs=opus',
+        'audio/ogg'
+      ];
+      const supportedType = (typeof MediaRecorder.isTypeSupported === 'function')
+        ? candidates.find(type => MediaRecorder.isTypeSupported(type))
+        : null;
 
-      this.mediaRecorder = new MediaRecorder(this.stream, { mimeType });
+      this.mimeType = supportedType || 'audio/webm';
+      // If supportedType is null (e.g. Safari iOS), pass empty options so browser uses native container
+      this.mediaRecorder = new MediaRecorder(this.stream, supportedType ? { mimeType: supportedType } : {});
       this.mediaRecorder.ondataavailable = (event) => {
         if (event.data && event.data.size > 0) {
           this.audioChunks.push(event.data);
@@ -233,7 +238,8 @@ window.MediaAPIs = (() => {
         }
 
         this.mediaRecorder.onstop = () => {
-          const mimeType = this.mediaRecorder.mimeType || 'audio/webm';
+          const rawMime = this.mediaRecorder.mimeType || this.mimeType || 'audio/webm';
+          const mimeType = rawMime.split(';')[0];
           const audioBlob = new Blob(this.audioChunks, { type: mimeType });
           this.isRecording = false;
 

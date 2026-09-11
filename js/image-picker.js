@@ -416,11 +416,39 @@ window.ImagePicker = (() => {
       return;
     }
 
-    area.innerHTML = `
-      <div class="direct-url-preview">
-        <img src="${url.trim()}" alt="URL preview" onerror="this.parentElement.innerHTML='<div class=\\'error-msg\\'>Could not load image from this URL. Please verify the link.</div>'">
-      </div>
-    `;
+    const trimmed = url.trim();
+    // Validate protocol: allow http:, https:, or data:image/
+    let isValid = false;
+    if (trimmed.startsWith('data:image/')) {
+      isValid = true;
+    } else {
+      try {
+        const parsed = new URL(trimmed, window.location.origin);
+        isValid = parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch (_) {
+        isValid = false;
+      }
+    }
+
+    if (!isValid) {
+      area.innerHTML = '<div class="error-msg">Invalid image URL. Must start with http://, https://, or data:image/.</div>';
+      actions.classList.add('hidden');
+      return;
+    }
+
+    area.innerHTML = '';
+    const container = document.createElement('div');
+    container.className = 'direct-url-preview';
+
+    const img = document.createElement('img');
+    img.alt = 'URL preview';
+    img.onerror = () => {
+      container.innerHTML = '<div class="error-msg">Could not load image from this URL. Please verify the link.</div>';
+    };
+    img.src = trimmed;
+
+    container.appendChild(img);
+    area.appendChild(container);
     actions.classList.remove('hidden');
   }
 

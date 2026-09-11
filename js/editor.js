@@ -574,6 +574,10 @@ RULES:
       imgBox.addEventListener('click', (e) => {
         if (e.target.closest('.remove-img-btn')) {
           e.stopPropagation();
+          const oldUri = wordItem.image;
+          if (oldUri && typeof MediaDB !== 'undefined' && typeof MediaDB.isMediaId === 'function' && MediaDB.isMediaId(oldUri)) {
+            MediaDB.deleteMedia(oldUri).catch(() => {});
+          }
           wordItem.image = '';
           saveCurrentUnit();
           renderCoreWordsList(unit);
@@ -583,6 +587,10 @@ RULES:
           word: wordItem.word || '',
           currentImage: wordItem.image || '',
           onSelect: (newUri) => {
+            const oldUri = wordItem.image;
+            if (oldUri && oldUri !== newUri && typeof MediaDB !== 'undefined' && typeof MediaDB.isMediaId === 'function' && MediaDB.isMediaId(oldUri)) {
+              MediaDB.deleteMedia(oldUri).catch(() => {});
+            }
             wordItem.image = newUri;
             saveCurrentUnit();
             renderCoreWordsList(unit);
@@ -596,6 +604,10 @@ RULES:
           word: wordItem.word || '',
           currentAudio: wordItem.audio || '',
           onSelect: (newUri) => {
+            const oldUri = wordItem.audio;
+            if (oldUri && oldUri !== newUri && typeof MediaDB !== 'undefined' && typeof MediaDB.isMediaId === 'function' && MediaDB.isMediaId(oldUri)) {
+              MediaDB.deleteMedia(oldUri).catch(() => {});
+            }
             wordItem.audio = newUri;
             saveCurrentUnit();
             renderCoreWordsList(unit);
@@ -639,7 +651,10 @@ RULES:
 
       // Delete card
       card.querySelector('.delete-card-btn').addEventListener('click', () => {
-        words.splice(idx, 1);
+        const [deletedWord] = words.splice(idx, 1);
+        if (deletedWord && typeof MediaDB !== 'undefined' && typeof MediaDB.deleteCardMedia === 'function') {
+          MediaDB.deleteCardMedia(deletedWord).catch(() => {});
+        }
         saveCurrentUnit();
         renderCoreWordsList(unit);
         document.getElementById('core-words-count').textContent = words.length;
@@ -807,6 +822,10 @@ RULES:
       if (confirm('Are you sure you want to delete this unit?')) {
         const level = (workingBook.levels || []).find(l => l.id === selectedLevelId);
         if (level && level.units) {
+          const unitToDelete = level.units.find(u => u.id === selectedUnitId);
+          if (unitToDelete && typeof MediaDB !== 'undefined' && typeof MediaDB.deleteUnitMedia === 'function') {
+            MediaDB.deleteUnitMedia(unitToDelete).catch(() => {});
+          }
           level.units = level.units.filter(u => u.id !== selectedUnitId);
         }
         selectedUnitId = null;

@@ -19,6 +19,8 @@ window.EditorStore = (() => {
   let activeCurriculumId = DEFAULT_BOOK_ID;
   let hideBuiltIn = false;
   let isInitialized = false;
+  let initPromise = null;
+  let pushDebounceTimer = null;
   const changeListeners = new Set();
 
   // ── 1. Event Subscriptions ──────────────────────────────────
@@ -37,7 +39,7 @@ window.EditorStore = (() => {
     }
   }
 
-  // ── 2. Local Storage Load & Save ─────────────────────────────
+  // ── 2. Storage Persistence (IndexedDB + localStorage preferences) ──
   function loadFromLocalStorage() {
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -54,14 +56,33 @@ window.EditorStore = (() => {
     }
   }
 
-  function saveToLocalStorage() {
+  async function saveToStorage() {
+    // 1. Primary persistence: Dexie IndexedDB (curriculum table)
+    if (typeof MediaDB !== 'undefined' && typeof MediaDB.saveAllCurriculaRecords === 'function') {
+      try {
+        await MediaDB.saveAllCurriculaRecords(curricula);
+      } catch (e) {
+        console.warn('[EditorStore] Error writing to IndexedDB:', e);
+      }
+    }
+
+    // 2. Preferences & lightweight fallback in localStorage
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(curricula));
       localStorage.setItem(ACTIVE_BOOK_KEY, activeCurriculumId);
       localStorage.setItem(HIDE_BUILTIN_KEY, hideBuiltIn ? 'true' : 'false');
+      const serialized = JSON.stringify(curricula);
+      // Only cache in localStorage if payload is under 2.5MB to avoid QuotaExceededError
+      if (serialized.length < 2.5 * 1024 * 1024) {
+        localStorage.setItem(LOCAL_STORAGE_KEY, serialized);
+      }
     } catch (e) {
-      console.warn('[EditorStore] Error writing to local storage:', e);
+      console.warn('[EditorStore] localStorage write error (safe with IndexedDB):', e);
     }
+  }
+
+  // Backward compatibility alias
+  function saveToLocalStorage() {
+    saveToStorage();
   }
 
   // ── 3. Upstash Cloud Sync ────────────────────────────────────
@@ -84,13 +105,22 @@ window.EditorStore = (() => {
     return null;
   }
 
+  function debouncedPushToUpstash() {
+    if (pushDebounceTimer) clearTimeout(pushDebounceTimer);
+    pushDebounceTimer = setTimeout(() => {
+      pushToUpstash();
+    }, 1500);
+  }
+
   async function pushToUpstash() {
     const creds = getUpstashCredentials();
     if (!creds) return false;
 
+    const maxLocalUpdate = curricula.reduce((max, c) => Math.max(max, c.updatedAt || 0), Date.now());
+
     const payload = {
       version: 1,
-      updatedAt: Date.now(),
+      updatedAt: maxLocalUpdate,
       activeCurriculumId,
       hideBuiltIn,
       curricula
@@ -99,22 +129,26 @@ window.EditorStore = (() => {
     try {
       const cleanUrl = creds.url.replace(/\/$/, '');
       const bodyStr = JSON.stringify(payload);
+      const headers = {
+        'Authorization': `Bearer ${creds.token}`,
+        'Content-Type': 'application/json'
+      };
 
       // Save to shared key for Word-Tac-Toe / MatchMaker / Treasure Hunt
-      await fetch(`${cleanUrl}/set/${encodeURIComponent(UPSTASH_SHARED_KEY)}`, {
+      const res1 = await fetch(`${cleanUrl}/set/${encodeURIComponent(UPSTASH_SHARED_KEY)}`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${creds.token}` },
+        headers,
         body: bodyStr
       });
 
       // Also mirror to app-specific key
-      await fetch(`${cleanUrl}/set/${encodeURIComponent(UPSTASH_APP_KEY)}`, {
+      const res2 = await fetch(`${cleanUrl}/set/${encodeURIComponent(UPSTASH_APP_KEY)}`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${creds.token}` },
+        headers,
         body: bodyStr
       });
 
-      return true;
+      return (res1.ok && res2.ok);
     } catch (e) {
       console.warn('[EditorStore] Upstash push failed:', e);
       return false;
@@ -142,11 +176,17 @@ window.EditorStore = (() => {
       }
 
       if (remote && Array.isArray(remote.curricula) && remote.curricula.length > 0) {
-        // Merge or replace
+        // Timestamp check: only replace if remote is genuinely newer than local data
+        const localMaxUpdate = curricula.reduce((max, c) => Math.max(max, c.updatedAt || 0), 0);
+        if (remote.updatedAt && remote.updatedAt <= localMaxUpdate) {
+          // Local edits are newer or matching; do not overwrite!
+          return false;
+        }
+
         curricula = remote.curricula;
         if (remote.activeCurriculumId) activeCurriculumId = remote.activeCurriculumId;
         if (typeof remote.hideBuiltIn === 'boolean') hideBuiltIn = remote.hideBuiltIn;
-        saveToLocalStorage();
+        await saveToStorage();
         notifyChange();
         return true;
       }
@@ -156,17 +196,45 @@ window.EditorStore = (() => {
     return false;
   }
 
-  // ── 4. Initialization & Default Base Load ───────────────────
-  async function init() {
-    if (isInitialized) return;
+  // ── 4. Initialization & Default Base Load (Mutex Protected) ──
+  function init() {
+    if (isInitialized) return Promise.resolve();
+    if (!initPromise) {
+      initPromise = _doInit();
+    }
+    return initPromise;
+  }
 
-    loadFromLocalStorage();
+  async function _doInit() {
+    // 1. Attempt to load from IndexedDB first
+    let loadedFromDb = false;
+    if (typeof MediaDB !== 'undefined' && typeof MediaDB.getAllCurriculaRecords === 'function') {
+      try {
+        const idbCurricula = await MediaDB.getAllCurriculaRecords();
+        if (Array.isArray(idbCurricula) && idbCurricula.length > 0) {
+          curricula = idbCurricula;
+          loadedFromDb = true;
+        }
+      } catch (err) {
+        console.warn('[EditorStore] IndexedDB load failed, falling back:', err);
+      }
+    }
 
-    // Check if smart-phonics exists in curricula
+    // 2. Fall back to localStorage and migrate into IndexedDB
+    if (!loadedFromDb) {
+      loadFromLocalStorage();
+      if (curricula.length > 0 && typeof MediaDB !== 'undefined' && typeof MediaDB.saveAllCurriculaRecords === 'function') {
+        MediaDB.saveAllCurriculaRecords(curricula).catch(() => {});
+      }
+    }
+
+    activeCurriculumId = localStorage.getItem(ACTIVE_BOOK_KEY) || DEFAULT_BOOK_ID;
+    hideBuiltIn = localStorage.getItem(HIDE_BUILTIN_KEY) === 'true';
+
+    // 3. Check if smart-phonics exists in curricula
     let smartPhonics = curricula.find(c => c.id === DEFAULT_BOOK_ID);
 
     if (!smartPhonics) {
-      // Fetch pristine data/words.json
       try {
         const response = await fetch('data/words.json');
         if (response.ok) {
@@ -179,8 +247,11 @@ window.EditorStore = (() => {
             levels: rawData.levels || [],
             updatedAt: Date.now()
           };
-          curricula.unshift(smartPhonics);
-          saveToLocalStorage();
+          // Double-check no duplicate was inserted during the async fetch
+          if (!curricula.some(c => c.id === DEFAULT_BOOK_ID)) {
+            curricula.unshift(smartPhonics);
+            await saveToStorage();
+          }
         }
       } catch (e) {
         console.warn('[EditorStore] Could not load data/words.json:', e);
@@ -194,8 +265,11 @@ window.EditorStore = (() => {
 
     isInitialized = true;
 
-    // Background cloud sync pull
+    // Background cloud sync pull & orphan media pruning
     pullFromUpstash().catch(() => {});
+    if (typeof MediaDB !== 'undefined' && typeof MediaDB.pruneOrphanedMedia === 'function') {
+      MediaDB.pruneOrphanedMedia(curricula).catch(() => {});
+    }
   }
 
   // ── 5. Curriculum / Book Series CRUD ─────────────────────────
@@ -263,6 +337,15 @@ window.EditorStore = (() => {
       const template = getCurriculum(options.templateId);
       if (template) {
         levels = JSON.parse(JSON.stringify(template.levels));
+        // Regenerate unique level & unit IDs scoped to new book ID (C6)
+        levels.forEach((lvl, lIdx) => {
+          lvl.id = `${id}_L${lIdx + 1}`;
+          if (Array.isArray(lvl.units)) {
+            lvl.units.forEach((u, uIdx) => {
+              u.id = `${lvl.id}_U${uIdx + 1}`;
+            });
+          }
+        });
       }
     } else if (options.autoCreateLevels) {
       // Auto-generate 5 empty levels
@@ -289,8 +372,8 @@ window.EditorStore = (() => {
 
     curricula.push(newBook);
     activeCurriculumId = id;
-    saveToLocalStorage();
-    pushToUpstash();
+    saveToStorage();
+    debouncedPushToUpstash();
     notifyChange();
     return newBook;
   }
@@ -300,8 +383,8 @@ window.EditorStore = (() => {
     if (!book) return false;
     book.name = newName.trim();
     book.updatedAt = Date.now();
-    saveToLocalStorage();
-    pushToUpstash();
+    saveToStorage();
+    debouncedPushToUpstash();
     notifyChange();
     return true;
   }
@@ -315,8 +398,8 @@ window.EditorStore = (() => {
     } else {
       curricula.push(updatedBook);
     }
-    saveToLocalStorage();
-    pushToUpstash();
+    saveToStorage();
+    debouncedPushToUpstash();
     notifyChange();
     return true;
   }
@@ -335,13 +418,23 @@ window.EditorStore = (() => {
     }
     const idx = curricula.findIndex(c => c.id === id);
     if (idx === -1) return false;
-    curricula.splice(idx, 1);
+    const [deletedBook] = curricula.splice(idx, 1);
+
+    // Cascading media and DB record cleanup (C4)
+    if (typeof MediaDB !== 'undefined') {
+      if (typeof MediaDB.deleteCurriculumMedia === 'function') {
+        MediaDB.deleteCurriculumMedia(deletedBook).catch(() => {});
+      }
+      if (typeof MediaDB.deleteCurriculumRecord === 'function') {
+        MediaDB.deleteCurriculumRecord(id).catch(() => {});
+      }
+    }
 
     if (activeCurriculumId === id) {
       activeCurriculumId = curricula[0]?.id || DEFAULT_BOOK_ID;
     }
-    saveToLocalStorage();
-    pushToUpstash();
+    saveToStorage();
+    debouncedPushToUpstash();
     notifyChange();
     return true;
   }
@@ -368,8 +461,8 @@ window.EditorStore = (() => {
               updatedAt: Date.now()
             });
           }
-          saveToLocalStorage();
-          pushToUpstash();
+          saveToStorage();
+          debouncedPushToUpstash();
           notifyChange();
           return true;
         }
@@ -403,8 +496,8 @@ window.EditorStore = (() => {
     }
 
     book.updatedAt = Date.now();
-    saveToLocalStorage();
-    pushToUpstash();
+    saveToStorage();
+    debouncedPushToUpstash();
     notifyChange();
     return levelData;
   }
@@ -417,8 +510,8 @@ window.EditorStore = (() => {
 
     book.levels.splice(idx, 1);
     book.updatedAt = Date.now();
-    saveToLocalStorage();
-    pushToUpstash();
+    saveToStorage();
+    debouncedPushToUpstash();
     notifyChange();
     return true;
   }
@@ -439,8 +532,8 @@ window.EditorStore = (() => {
 
     book.levels = newLevels;
     book.updatedAt = Date.now();
-    saveToLocalStorage();
-    pushToUpstash();
+    saveToStorage();
+    debouncedPushToUpstash();
     notifyChange();
     return true;
   }
@@ -471,8 +564,8 @@ window.EditorStore = (() => {
     }
 
     book.updatedAt = Date.now();
-    saveToLocalStorage();
-    pushToUpstash();
+    saveToStorage();
+    debouncedPushToUpstash();
     notifyChange();
     return unitData;
   }
@@ -488,8 +581,8 @@ window.EditorStore = (() => {
 
     level.units.splice(idx, 1);
     book.updatedAt = Date.now();
-    saveToLocalStorage();
-    pushToUpstash();
+    saveToStorage();
+    debouncedPushToUpstash();
     notifyChange();
     return true;
   }
@@ -509,8 +602,8 @@ window.EditorStore = (() => {
     level.units.push(copy);
 
     book.updatedAt = Date.now();
-    saveToLocalStorage();
-    pushToUpstash();
+    saveToStorage();
+    debouncedPushToUpstash();
     notifyChange();
     return copy;
   }
@@ -532,8 +625,8 @@ window.EditorStore = (() => {
 
     level.units = newUnits;
     book.updatedAt = Date.now();
-    saveToLocalStorage();
-    pushToUpstash();
+    saveToStorage();
+    debouncedPushToUpstash();
     notifyChange();
     return true;
   }
@@ -596,12 +689,12 @@ window.EditorStore = (() => {
     const slug = bookName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'book';
     const id = `custom_${slug}_${Date.now().toString(36)}`;
 
-    // Ensure IDs are unique
+    // Ensure IDs are unique - always regenerate level and unit IDs scoped to this newly created book id (C6)
     levels.forEach((lvl, lIdx) => {
-      if (!lvl.id) lvl.id = `${id}_L${lIdx + 1}`;
+      lvl.id = `${id}_L${lIdx + 1}`;
       if (Array.isArray(lvl.units)) {
         lvl.units.forEach((u, uIdx) => {
-          if (!u.id) u.id = `${lvl.id}_U${uIdx + 1}`;
+          u.id = `${lvl.id}_U${uIdx + 1}`;
         });
       }
     });
@@ -618,8 +711,8 @@ window.EditorStore = (() => {
 
     curricula.push(newBook);
     activeCurriculumId = id;
-    saveToLocalStorage();
-    pushToUpstash();
+    saveToStorage();
+    debouncedPushToUpstash();
     notifyChange();
     return newBook;
   }
@@ -651,6 +744,8 @@ window.EditorStore = (() => {
     exportBookJSON,
     exportWordsJsonFormat,
     importBookJSON,
+    saveToStorage,
+    debouncedPushToUpstash,
     pushToUpstash,
     pullFromUpstash
   };
