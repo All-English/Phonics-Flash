@@ -230,8 +230,8 @@ const AudioPlayer = (() => {
               model_id: modelId,
               voice_settings: {
                 speed: currentSpeed,
-                stability: 0.85,
-                similarity_boost: 0.80
+                stability: 0.5,
+                similarity_boost: 0.75
               }
             })
           }
@@ -311,8 +311,8 @@ const AudioPlayer = (() => {
           model_id: modelId,
           voice_settings: {
             speed: testSpeed,
-            stability: 0.85,
-            similarity_boost: 0.80
+            stability: 0.5,
+            similarity_boost: 0.75
           }
         })
       }
