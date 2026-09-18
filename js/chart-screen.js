@@ -648,6 +648,15 @@
         if (item.levelId) {
           tile.classList.add(`tile-level-${item.levelId}`);
           tile.dataset.level = item.levelId;
+          const level = (phonicsData && phonicsData.levels)
+            ? phonicsData.levels.find(l => l.id === item.levelId)
+            : null;
+          if (level) {
+            const targetColor = level.targetSoundColor || (level.color && window.PhonicsEngine && window.PhonicsEngine.getContrastingTargetSoundColor ? window.PhonicsEngine.getContrastingTargetSoundColor(level.color) : null);
+            if (targetColor && !['L1', 'L2', 'L3', 'L4', 'L5'].includes(item.levelId)) {
+              tile.style.setProperty('--target-sound-color', targetColor);
+            }
+          }
         }
         tile.dataset.baseLetter = item.baseLetter;
         tile.dataset.audio = item.audio || '';

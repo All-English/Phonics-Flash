@@ -1204,12 +1204,19 @@ RULES:
       if (!levelName || !workingBook) return;
       if (!workingBook.levels) workingBook.levels = [];
 
+      const autoTargetSoundColor = (typeof PhonicsEngine !== 'undefined' && PhonicsEngine.getContrastingTargetSoundColor)
+        ? PhonicsEngine.getContrastingTargetSoundColor(levelColor)
+        : null;
+
       if (levelId) {
         // Edit existing level
         const lvl = workingBook.levels.find(l => l.id === levelId);
         if (lvl) {
           lvl.name = levelName;
           lvl.color = levelColor;
+          if (autoTargetSoundColor) {
+            lvl.targetSoundColor = autoTargetSoundColor;
+          }
         }
       } else {
         // Create new level
@@ -1218,6 +1225,7 @@ RULES:
           id: `${workingBook.id}_L${nextNum}_${Date.now().toString(36)}`,
           name: levelName,
           color: levelColor,
+          targetSoundColor: autoTargetSoundColor,
           units: []
         };
         workingBook.levels.push(newLvl);

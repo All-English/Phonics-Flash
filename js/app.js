@@ -1537,6 +1537,15 @@
     section.classList.add('word-slide');
     if (unit.levelId) {
       section.classList.add(`slide-bg-${unit.levelId}`);
+      const level = (phonicsData && phonicsData.levels)
+        ? phonicsData.levels.find(l => l.id === unit.levelId)
+        : null;
+      if (level) {
+        const targetColor = level.targetSoundColor || (level.color && typeof PhonicsEngine !== 'undefined' && PhonicsEngine.getContrastingTargetSoundColor ? PhonicsEngine.getContrastingTargetSoundColor(level.color) : null);
+        if (targetColor && !['L1', 'L2', 'L3', 'L4', 'L5'].includes(unit.levelId)) {
+          section.style.setProperty('--target-sound-color', targetColor);
+        }
+      }
     }
 
     // Store all metadata as data attributes for the chrome overlay

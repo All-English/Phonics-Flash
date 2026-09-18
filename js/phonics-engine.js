@@ -374,6 +374,57 @@
     return null;
   }
 
+  // ── Automatic Smart Contrast for Target Sounds ─────────────
+  function hexToHsl(hex) {
+    if (!hex) return { h: 0, s: 0, l: 0 };
+    hex = String(hex).replace(/^#/, '');
+    if (hex.length === 3) {
+      hex = hex.split('').map(c => c + c).join('');
+    }
+    const num = parseInt(hex, 16);
+    if (isNaN(num)) return { h: 0, s: 0, l: 0 };
+    const r = ((num >> 16) & 255) / 255;
+    const g = ((num >> 8) & 255) / 255;
+    const b = (num & 255) / 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h *= 60;
+    }
+    return { h: Math.round(h), s: Math.round(s * 100), l: Math.round(l * 100) };
+  }
+
+  function getContrastingTargetSoundColor(hexColor) {
+    const { h } = hexToHsl(hexColor);
+    // Smart complementary mapping optimized for WCAG readability on pastel/light & dark backgrounds
+    if (h >= 170 && h < 240) {
+      // Blue / Cyan family -> Vivid Rose / Magenta
+      return 'light-dark(#ad1457, #ff80ab)';
+    } else if (h >= 240 && h < 310) {
+      // Purple / Violet family -> Golden Amber
+      return 'light-dark(#e65100, #ffd54f)';
+    } else if (h >= 310 || h < 25) {
+      // Red / Coral / Pink family -> Electric Cyan / Deep Sky Blue
+      return 'light-dark(#01579b, #40c4ff)';
+    } else if (h >= 25 && h < 75) {
+      // Orange / Amber / Yellow family -> Deep Crimson
+      return 'light-dark(#b71c1c, #ff5252)';
+    } else {
+      // Green / Mint / Lime family (75 to 170) -> Bright Ruby / Coral
+      return 'light-dark(#b71c1c, #ff8a80)';
+    }
+  }
+
   // ── Public Export ──────────────────────────────────────────
   window.PhonicsEngine = {
     setPhonicsData,
@@ -384,7 +435,9 @@
     prepareUnitWords,
     prepareUnitSightWords,
     getDistractorWord,
-    getDistractorPictureCandidate
+    getDistractorPictureCandidate,
+    hexToHsl,
+    getContrastingTargetSoundColor
   };
 
 })(window);
