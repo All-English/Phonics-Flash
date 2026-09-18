@@ -1717,6 +1717,7 @@ body {
 
 .reveal .picture-option-card.answered:not(.correct) .picture-card-word {
   color: var(--text-primary) !important;
+  font-size: clamp(2.5rem, 5.5vw, 4.1rem) !important;
   text-decoration: none !important;
   opacity: 1 !important;
 }
