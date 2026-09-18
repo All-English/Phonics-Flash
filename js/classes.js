@@ -93,7 +93,11 @@ window.ClassesManager = (() => {
                 letterCase: 'both',
                 mixMode: false,
                 dictationMode: false,
-                quizMode: false
+                quizMode: false,
+                soundQuizMode: false,
+                pictureQuizMode: false,
+                wordChart: false,
+                highlightSounds: true
               },
               players: Array.isArray(playerList) ? playerList : [],
               updatedAt: prof.updatedAt || Date.now()
@@ -430,7 +434,11 @@ window.ClassesManager = (() => {
           letterCase: classObj.options?.letterCase || 'both',
           mixMode: !!classObj.options?.mixMode,
           dictationMode: !!classObj.options?.dictationMode,
-          quizMode: !!classObj.options?.quizMode
+          quizMode: !!classObj.options?.quizMode,
+          soundQuizMode: !!classObj.options?.soundQuizMode,
+          pictureQuizMode: !!classObj.options?.pictureQuizMode,
+          wordChart: !!classObj.options?.wordChart,
+          highlightSounds: !!classObj.options?.highlightSounds
         },
         updatedAt: Date.now()
       };
@@ -484,7 +492,11 @@ window.ClassesManager = (() => {
         letterCase: currentOptions.letterCase || 'both',
         mixMode: !!currentOptions.mixMode,
         dictationMode: !!currentOptions.dictationMode,
-        quizMode: !!currentOptions.quizMode
+        quizMode: !!currentOptions.quizMode,
+        soundQuizMode: !!currentOptions.soundQuizMode,
+        pictureQuizMode: !!currentOptions.pictureQuizMode,
+        wordChart: !!currentOptions.wordChart,
+        highlightSounds: !!currentOptions.highlightSounds
       };
       cls.updatedAt = Date.now();
 

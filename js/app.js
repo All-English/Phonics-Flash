@@ -8,6 +8,7 @@
   // ── State ──────────────────────────────────────────────────
   let phonicsData = null;
   let revealInstance = null;
+  let slideshowKeydownHandler = null;
 
   function normalizeLetterCase(val) {
     if (!val) return 'both';
@@ -23,13 +24,39 @@
   const options = {
     includeExtras: false,
     includeSightWords: false,
+    highlightSounds: true,
     includeImages: false,
     letterCase: 'both',
     mixMode: false,
     dictationMode: false,
     quizMode: false,
+    soundQuizMode: false,
+    pictureQuizMode: false,
+    wordChart: false,
     syncSlides: true
   };
+
+  // ── Phonics Engine Delegates ────────────────────────────────
+  function highlightTargetSound(word, targetSoundStr, levelId) {
+    if (window.PhonicsEngine) {
+      return PhonicsEngine.highlightTargetSound(word, targetSoundStr, levelId);
+    }
+    return word;
+  }
+
+  function getBlankedWord(word, targetSoundStr, levelId) {
+    if (window.PhonicsEngine) {
+      return PhonicsEngine.getBlankedWord(word, targetSoundStr, levelId);
+    }
+    return word;
+  }
+
+  function getTargetSoundInfo(word, unit, opts = {}) {
+    if (window.PhonicsEngine) {
+      return PhonicsEngine.getTargetSoundInfo(word, unit, opts, phonicsData);
+    }
+    return null;
+  }
 
   // ── SVG Icons ──────────────────────────────────────────────
   const ICONS = {
@@ -108,6 +135,9 @@
         EditorStore.subscribe((activeBook) => {
           if (activeBook) {
             phonicsData = activeBook;
+            if (window.PhonicsEngine) {
+              PhonicsEngine.setPhonicsData(activeBook);
+            }
             renderBookDropdown();
             renderMenu();
           }
@@ -187,6 +217,24 @@
 
     try {
       phonicsData = await loadData();
+      if (window.PhonicsEngine) {
+        PhonicsEngine.setPhonicsData(phonicsData);
+      }
+      if (window.ChartScreen) {
+        ChartScreen.init({
+          getSelectedUnitIds: () => getSelectedUnitIds(),
+          getOptions: () => options,
+          getPhonicsData: () => phonicsData,
+          onClose: () => {
+            renderMenu();
+          },
+          onCaseChange: (selectedCase) => {
+            options.letterCase = selectedCase;
+            localStorage.setItem('phonics-flash-letter-case', selectedCase);
+            syncCaseButtons(selectedCase);
+          }
+        });
+      }
     } catch (err) {
       console.error('Failed to load phonics data:', err);
       document.getElementById('menu-screen').innerHTML =
@@ -206,23 +254,36 @@
     if (urlConfig) {
       if (urlConfig.isChart) {
         options.letterCase = urlConfig.letterCase;
+        if (urlConfig.highlightSounds) options.highlightSounds = true;
         openChart(urlConfig.chartLevel || 'L1', urlConfig.unitIds.length > 0 ? urlConfig.unitIds : null);
         return;
       }
 
       let qm = urlConfig.quiz;
       let dm = urlConfig.dictation;
-      if (qm && dm) {
-        dm = false; // Quiz Mode takes priority
+      let sqm = urlConfig.soundQuiz;
+      let pqm = urlConfig.pictureQuiz;
+      if (pqm) {
+        qm = false;
+        dm = false;
+        sqm = false;
+      } else if (sqm && (qm || dm)) {
+        qm = false;
+        dm = false;
+      } else if (qm && dm) {
+        dm = false; // Word Quiz takes priority
       }
       startSlideshow(urlConfig.unitIds, {
         includeExtras: urlConfig.extras,
         includeSightWords: urlConfig.sightWords,
+        highlightSounds: urlConfig.highlightSounds,
         includeImages: urlConfig.images,
         letterCase: urlConfig.letterCase,
         mixMode: urlConfig.mix,
         dictationMode: dm,
-        quizMode: qm
+        quizMode: qm,
+        soundQuizMode: sqm,
+        pictureQuizMode: pqm
       });
     } else {
       renderMenu();
@@ -239,20 +300,28 @@
     localStorage.removeItem('phonics-flash-selected-units');
     localStorage.setItem('phonics-flash-extras', 'false');
     localStorage.setItem('phonics-flash-sight', 'false');
+    localStorage.setItem('phonics-flash-highlight-sounds', 'true');
     localStorage.setItem('phonics-flash-images', 'false');
     localStorage.setItem('phonics-flash-letter-case', 'both');
     localStorage.setItem('phonics-flash-mix', 'false');
     localStorage.setItem('phonics-flash-dictation', 'false');
     localStorage.setItem('phonics-flash-quiz', 'false');
+    localStorage.setItem('phonics-flash-sound-quiz', 'false');
+    localStorage.setItem('phonics-flash-picture-quiz', 'false');
+    localStorage.setItem('phonics-flash-word-chart', 'false');
 
     // Reset options in memory
     options.includeExtras = false;
     options.includeSightWords = false;
+    options.highlightSounds = true;
     options.includeImages = false;
     options.letterCase = 'both';
     options.mixMode = false;
     options.dictationMode = false;
     options.quizMode = false;
+    options.soundQuizMode = false;
+    options.pictureQuizMode = false;
+    options.wordChart = false;
     options.syncSlides = true;
 
     // Uncheck all checkboxes in UI if already rendered
@@ -281,8 +350,7 @@
     syncOptionButton('toggle-images', false);
     syncCaseButtons('both');
     syncOptionButton('toggle-mix', false);
-    syncOptionButton('toggle-dictation', false);
-    syncOptionButton('toggle-quiz', false);
+    syncActivityTabs();
     syncModeOptionDependencies();
 
     const classSelect = document.getElementById('class-select');
@@ -302,25 +370,40 @@
     if (cls.options) {
       options.includeExtras = !!cls.options.includeExtras;
       options.includeSightWords = !!cls.options.includeSightWords;
+      options.highlightSounds = true;
       options.includeImages = cls.options.includeImages !== false;
       options.letterCase = normalizeLetterCase(cls.options.letterCase || 'both');
       options.mixMode = !!cls.options.mixMode;
       options.dictationMode = !!cls.options.dictationMode;
       options.quizMode = !!cls.options.quizMode;
+      options.soundQuizMode = !!cls.options.soundQuizMode;
+      options.pictureQuizMode = !!cls.options.pictureQuizMode;
+      options.wordChart = !!cls.options.wordChart;
 
-      if (options.quizMode || options.dictationMode) {
+      if (options.quizMode || options.dictationMode || options.pictureQuizMode) {
         options.includeExtras = false;
         options.includeSightWords = false;
         options.includeImages = true;
+      } else if (options.soundQuizMode) {
+        options.includeExtras = false;
+        options.includeSightWords = false;
+        options.includeImages = cls.options?.includeImages !== false;
+      } else if (options.wordChart) {
+        options.includeImages = false;
+        options.mixMode = false;
       }
 
       localStorage.setItem('phonics-flash-extras', options.includeExtras);
       localStorage.setItem('phonics-flash-sight', options.includeSightWords);
+      localStorage.setItem('phonics-flash-highlight-sounds', 'true');
       localStorage.setItem('phonics-flash-images', options.includeImages);
       localStorage.setItem('phonics-flash-letter-case', options.letterCase);
       localStorage.setItem('phonics-flash-mix', options.mixMode);
       localStorage.setItem('phonics-flash-dictation', options.dictationMode);
       localStorage.setItem('phonics-flash-quiz', options.quizMode);
+      localStorage.setItem('phonics-flash-sound-quiz', options.soundQuizMode);
+      localStorage.setItem('phonics-flash-picture-quiz', options.pictureQuizMode);
+      localStorage.setItem('phonics-flash-word-chart', options.wordChart);
     }
 
     if (cls.selectedUnits && Array.isArray(cls.selectedUnits)) {
@@ -420,11 +503,14 @@
       unitIds: unitIds,
       extras: params.get('extras') === '1',
       sightWords: params.get('sight') === '1' || params.get('sightwords') === '1',
+      highlightSounds: true,
       images: params.get('images') !== '0', // default true
       letterCase: caseParam ? normalizeLetterCase(caseParam) : (options.letterCase || 'both'),
       mix: params.get('mix') === '1',
       dictation: params.get('dictation') === '1',
-      quiz: params.get('quiz') === '1'
+      quiz: params.get('quiz') === '1',
+      soundQuiz: params.get('soundquiz') === '1' || params.get('sq') === '1' || chartParam === 'soundquiz',
+      pictureQuiz: params.get('picturequiz') === '1' || params.get('picquiz') === '1' || params.get('pq') === '1' || chartParam === 'picturequiz'
     };
   }
 
@@ -440,11 +526,14 @@
     params.set('units', unitIds.join(','));
     if (opts.includeExtras) params.set('extras', '1');
     if (opts.includeSightWords) params.set('sight', '1');
+    if (opts.highlightSounds) params.set('highlight', '1');
     if (!opts.includeImages) params.set('images', '0');
     if (opts.letterCase && opts.letterCase !== 'both') params.set('case', opts.letterCase);
     if (opts.mixMode) params.set('mix', '1');
     if (opts.dictationMode) params.set('dictation', '1');
     if (opts.quizMode) params.set('quiz', '1');
+    if (opts.soundQuizMode) params.set('soundquiz', '1');
+    if (opts.pictureQuizMode) params.set('picturequiz', '1');
 
     const newURL = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState({}, '', newURL);
@@ -458,20 +547,100 @@
     }
   }
 
-  // Helper to enforce option constraints when Quiz or Dictation Mode is active
-  function syncModeOptionDependencies() {
-    const isSpecialMode = options.quizMode || options.dictationMode;
-    const modeName = options.quizMode ? 'Quiz Mode' : (options.dictationMode ? 'Dictation Mode' : '');
+  // Helper to sync segmented activity tabs with current active mode
+  function syncActivityTabs() {
+    let currentActivity = 'flashcards';
+    if (options.pictureQuizMode) currentActivity = 'picture-quiz';
+    else if (options.soundQuizMode) currentActivity = 'sound-quiz';
+    else if (options.quizMode) currentActivity = 'word-quiz';
+    else if (options.dictationMode) currentActivity = 'dictation';
+    else if (options.wordChart) currentActivity = 'word-chart';
 
+    const tabs = document.querySelectorAll('.activity-tab');
+    tabs.forEach(tab => {
+      const isActive = tab.dataset.activity === currentActivity;
+      tab.classList.toggle('active', isActive);
+      tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+  }
+
+  function setActiveActivity(activityId) {
+    options.quizMode = (activityId === 'word-quiz');
+    options.soundQuizMode = (activityId === 'sound-quiz');
+    options.pictureQuizMode = (activityId === 'picture-quiz');
+    options.dictationMode = (activityId === 'dictation');
+    options.wordChart = (activityId === 'word-chart');
+
+    localStorage.setItem('phonics-flash-quiz', options.quizMode);
+    localStorage.setItem('phonics-flash-sound-quiz', options.soundQuizMode);
+    localStorage.setItem('phonics-flash-picture-quiz', options.pictureQuizMode);
+    localStorage.setItem('phonics-flash-dictation', options.dictationMode);
+    localStorage.setItem('phonics-flash-word-chart', options.wordChart);
+
+    syncModeOptionDependencies();
+  }
+
+  // Helper to enforce option constraints when Quiz, Dictation, or Word Chart Mode is active
+  function syncModeOptionDependencies() {
     const extrasBtn = document.getElementById('toggle-extras');
     const sightBtn = document.getElementById('toggle-sight');
     const imagesBtn = document.getElementById('toggle-images');
+    const mixBtn = document.getElementById('toggle-mix');
 
-    if (isSpecialMode) {
+    if (options.wordChart) {
+      // Word Chart disables Images and All-in-One Deck
+      options.includeImages = false;
+      options.mixMode = false;
+
+      localStorage.setItem('phonics-flash-images', 'false');
+      localStorage.setItem('phonics-flash-mix', 'false');
+
+      if (imagesBtn) {
+        imagesBtn.disabled = true;
+        imagesBtn.title = 'Images unavailable in Word Chart';
+      }
+      if (mixBtn) {
+        mixBtn.disabled = true;
+        mixBtn.title = 'All-in-One Deck unavailable in Word Chart';
+      }
+      if (extrasBtn) {
+        extrasBtn.disabled = false;
+        extrasBtn.title = 'Include extra words in the review';
+      }
+      if (sightBtn) {
+        sightBtn.disabled = false;
+        sightBtn.title = 'Include sight words with selected units';
+      }
+    } else if (options.soundQuizMode) {
+      // Extra words and sight words cannot be enabled in Sound Quiz (focus on target phonics blends/vowels)
+      options.includeExtras = false;
+      options.includeSightWords = false;
+
+      localStorage.setItem('phonics-flash-extras', 'false');
+      localStorage.setItem('phonics-flash-sight', 'false');
+
+      if (extrasBtn) {
+        extrasBtn.disabled = true;
+        extrasBtn.title = 'Extra words unavailable in Sound Quiz';
+      }
+      if (sightBtn) {
+        sightBtn.disabled = true;
+        sightBtn.title = 'Sight words unavailable in Sound Quiz';
+      }
+      if (imagesBtn) {
+        imagesBtn.disabled = false;
+        imagesBtn.title = 'Show or hide pictures in Sound Quiz';
+      }
+      if (mixBtn) {
+        mixBtn.disabled = false;
+        mixBtn.title = 'Interleave words from selected units';
+      }
+    } else if (options.quizMode || options.dictationMode || options.pictureQuizMode) {
+      const modeName = options.pictureQuizMode ? 'Picture Quiz' : (options.quizMode ? 'Word Quiz' : 'Dictation Mode');
       // Extra words and sight words cannot be enabled (no pictures)
       options.includeExtras = false;
       options.includeSightWords = false;
-      // Images are required for Quiz and Dictation modes and cannot be disabled
+      // Images are required for Word Quiz, Picture Quiz, and Dictation modes and cannot be disabled
       options.includeImages = true;
 
       localStorage.setItem('phonics-flash-extras', 'false');
@@ -490,6 +659,10 @@
         imagesBtn.disabled = true;
         imagesBtn.title = `Images are required for ${modeName} and cannot be disabled`;
       }
+      if (mixBtn) {
+        mixBtn.disabled = false;
+        mixBtn.title = 'Interleave words from selected units';
+      }
     } else {
       if (extrasBtn) {
         extrasBtn.disabled = false;
@@ -503,11 +676,17 @@
         imagesBtn.disabled = false;
         imagesBtn.title = 'Show images with words';
       }
+      if (mixBtn) {
+        mixBtn.disabled = false;
+        mixBtn.title = 'Interleave words from selected units';
+      }
     }
 
     syncOptionButton('toggle-extras', options.includeExtras);
     syncOptionButton('toggle-sight', options.includeSightWords);
     syncOptionButton('toggle-images', options.includeImages);
+    syncOptionButton('toggle-mix', options.mixMode);
+    syncActivityTabs();
   }
 
   // Helper to sync letter case buttons with state
@@ -521,7 +700,7 @@
   // Wire up toggles and buttons once on initialization
   function initMenuEvents() {
     document.getElementById('toggle-extras').addEventListener('click', (e) => {
-      if (options.quizMode || options.dictationMode) return;
+      if (options.quizMode || options.dictationMode || options.soundQuizMode || options.pictureQuizMode) return;
       options.includeExtras = !options.includeExtras;
       syncOptionButton('toggle-extras', options.includeExtras);
       localStorage.setItem('phonics-flash-extras', options.includeExtras);
@@ -530,7 +709,7 @@
     });
 
     document.getElementById('toggle-sight').addEventListener('click', (e) => {
-      if (options.quizMode || options.dictationMode) return;
+      if (options.quizMode || options.dictationMode || options.soundQuizMode || options.pictureQuizMode) return;
       options.includeSightWords = !options.includeSightWords;
       syncOptionButton('toggle-sight', options.includeSightWords);
       localStorage.setItem('phonics-flash-sight', options.includeSightWords);
@@ -539,7 +718,7 @@
     });
 
     document.getElementById('toggle-images').addEventListener('click', (e) => {
-      if (options.quizMode || options.dictationMode) return;
+      if (options.quizMode || options.dictationMode || options.pictureQuizMode || options.wordChart) return;
       options.includeImages = !options.includeImages;
       syncOptionButton('toggle-images', options.includeImages);
       localStorage.setItem('phonics-flash-images', options.includeImages);
@@ -548,38 +727,24 @@
     });
 
     document.getElementById('toggle-mix').addEventListener('click', (e) => {
+      if (options.wordChart) return;
       options.mixMode = !options.mixMode;
       syncOptionButton('toggle-mix', options.mixMode);
       localStorage.setItem('phonics-flash-mix', options.mixMode);
       saveCurrentOptionsToActiveClass();
     });
 
-    document.getElementById('toggle-dictation').addEventListener('click', (e) => {
-      options.dictationMode = !options.dictationMode;
-      if (options.dictationMode) {
-        options.quizMode = false;
-        syncOptionButton('toggle-quiz', false);
-        localStorage.setItem('phonics-flash-quiz', 'false');
-      }
-      syncOptionButton('toggle-dictation', options.dictationMode);
-      localStorage.setItem('phonics-flash-dictation', options.dictationMode);
-      syncModeOptionDependencies();
-      saveCurrentOptionsToActiveClass();
-      updateStartButton();
-    });
-
-    document.getElementById('toggle-quiz').addEventListener('click', (e) => {
-      options.quizMode = !options.quizMode;
-      if (options.quizMode) {
-        options.dictationMode = false;
-        syncOptionButton('toggle-dictation', false);
-        localStorage.setItem('phonics-flash-dictation', 'false');
-      }
-      syncOptionButton('toggle-quiz', options.quizMode);
-      localStorage.setItem('phonics-flash-quiz', options.quizMode);
-      syncModeOptionDependencies();
-      saveCurrentOptionsToActiveClass();
-      updateStartButton();
+    // Wire up activity segmented tabs
+    const activityTabs = document.querySelectorAll('.activity-tab');
+    activityTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const activity = tab.dataset.activity;
+        if (activity) {
+          setActiveActivity(activity);
+          saveCurrentOptionsToActiveClass();
+          updateStartButton();
+        }
+      });
     });
 
     // Wire up start button click & Enter key shortcut
@@ -715,7 +880,7 @@
           <p style="font-size:1.1rem;font-weight:600;margin-bottom:0.5rem;">No levels in this book series yet</p>
           <p style="font-size:0.9rem;margin-bottom:1.5rem;">Use the curriculum editor to create levels, units, and flashcards.</p>
           <a href="editor.html" class="btn btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
-            ✏️ Open Curriculum Editor
+            Open Curriculum Editor
           </a>
         </div>
       `;
@@ -731,9 +896,6 @@
     });
 
     // Set initial toggle states in UI
-    syncOptionButton('toggle-mix', options.mixMode);
-    syncOptionButton('toggle-dictation', options.dictationMode);
-    syncOptionButton('toggle-quiz', options.quizMode);
     syncCaseButtons(options.letterCase);
     syncModeOptionDependencies();
 
@@ -771,8 +933,8 @@
         </div>
       </div>
       <div class="units-container">
-        <div class="level-tools-bar">
-          ${level.id === 'L1' ? `
+        ${level.id === 'L1' ? `
+          <div class="level-tools-bar">
             <div class="case-selector-group" title="Select letter casing for Level 1">
               <span class="case-label">Letter Case:</span>
               <div class="case-btn-group">
@@ -782,27 +944,8 @@
                 <button class="case-btn ${options.letterCase === 'lower' ? 'active' : ''}" data-case="lower" title="Lowercase only (a)">a</button>
               </div>
             </div>
-            <button class="chart-launch-btn" data-level="${level.id}" title="Open full screen letter chart for selected Level 1 units">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="7" height="7"></rect>
-                <rect x="14" y="3" width="7" height="7"></rect>
-                <rect x="14" y="14" width="7" height="7"></rect>
-                <rect x="3" y="14" width="7" height="7"></rect>
-              </svg>
-              <span>Letter Chart</span>
-            </button>
-          ` : `
-            <button class="chart-launch-btn" data-level="${level.id}" title="Open full screen word chart for selected ${level.name} units">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="7" height="7"></rect>
-                <rect x="14" y="3" width="7" height="7"></rect>
-                <rect x="14" y="14" width="7" height="7"></rect>
-                <rect x="3" y="14" width="7" height="7"></rect>
-              </svg>
-              <span>Word Chart</span>
-            </button>
-          `}
-        </div>
+          </div>
+        ` : ''}
         <div class="units-grid">
           ${units.length > 0 ? units.map(unit => {
             const isChecked = savedUnits.includes(unit.id);
@@ -852,15 +995,6 @@
           saveCurrentOptionsToActiveClass();
           updateStartButton();
         });
-      });
-    }
-
-    // Chart Launch button handler (Letter Chart for L1, Word Chart for L2-L5)
-    const chartBtn = card.querySelector('.chart-launch-btn');
-    if (chartBtn) {
-      chartBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openChart(level.id);
       });
     }
 
@@ -915,14 +1049,21 @@
 
     btn.disabled = selectedIds.length === 0;
 
+    const actionText = options.wordChart ? 'Open Word Chart' : 'Start Review';
     const countSpan = btn.querySelector('.start-btn-count');
     if (selectedIds.length === 0) {
+      if (btn.childNodes[0]) {
+        btn.childNodes[0].nodeValue = `${actionText}\n        `;
+      }
       if (countSpan) countSpan.textContent = 'Select at least one unit';
-      btn.title = 'Select at least one unit to start review';
+      btn.title = options.wordChart ? 'Select at least one unit to open Word Chart' : 'Select at least one unit to start review';
     } else {
       const count = countWords(selectedIds);
+      if (btn.childNodes[0]) {
+        btn.childNodes[0].nodeValue = `${actionText}\n        `;
+      }
       if (countSpan) countSpan.textContent = `${selectedIds.length} unit${selectedIds.length > 1 ? 's' : ''} · ${count} words`;
-      btn.title = 'Start Review (Enter)';
+      btn.title = `${actionText} (Enter)`;
     }
   }
 
@@ -930,77 +1071,17 @@
    * Transforms and deduplicates words for a unit according to opts (Images, LetterCase).
    */
   function prepareUnitWords(unit, isExtra = false, opts = options) {
-    const rawWords = isExtra ? (unit.extraWords || []) : (unit.words || []);
-    if (!rawWords || rawWords.length === 0) return [];
-
-    const isL1 = unit.levelId === 'L1' || (unit.id && unit.id.startsWith('L1'));
-
-    let words = rawWords.map(w => ({ ...w, isExtra }));
-
-    // If Level 1 and Images are disabled, deduplicate identical letters
-    if (isL1 && !opts.includeImages) {
-      const seen = new Set();
-      words = words.filter(w => {
-        const key = (w.word || '').toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
+    if (window.PhonicsEngine) {
+      return PhonicsEngine.prepareUnitWords(unit, isExtra, opts);
     }
-
-    // Apply Letter Casing
-    const letterCase = opts.letterCase || 'both';
-
-    if (isL1) {
-      if (letterCase === 'separate') {
-        // Expand each word into two separate entries: Uppercase and Lowercase
-        const expanded = [];
-        words.forEach(w => {
-          const baseChar = w.word ? w.word.charAt(0) : '';
-          expanded.push({
-            ...w,
-            word: baseChar.toUpperCase()
-          });
-          expanded.push({
-            ...w,
-            word: baseChar.toLowerCase()
-          });
-        });
-        return expanded;
-      } else if (letterCase === 'upper') {
-        return words.map(w => ({
-          ...w,
-          word: w.word ? w.word.charAt(0).toUpperCase() : w.word
-        }));
-      } else if (letterCase === 'lower') {
-        return words.map(w => ({
-          ...w,
-          word: w.word ? w.word.charAt(0).toLowerCase() : w.word
-        }));
-      } else {
-        // 'both' -> e.g. "Aa"
-        return words.map(w => {
-          if (w.word && w.word.length >= 1) {
-            const first = w.word.charAt(0).toUpperCase();
-            const second = (w.word.length > 1 ? w.word.charAt(1) : w.word.charAt(0)).toLowerCase();
-            return { ...w, word: first + second };
-          }
-          return w;
-        });
-      }
-    }
-
-    return words;
+    return isExtra ? (unit.extraWords || []) : (unit.words || []);
   }
 
   function prepareUnitSightWords(unit) {
-    if (!unit || !unit.sightWords || unit.sightWords.length === 0) return [];
-    return unit.sightWords.map(sw => {
-      if (typeof sw === 'string') {
-        return { word: sw, isSightWord: true };
-      }
-      return { ...sw, isSightWord: true };
-    });
+    if (window.PhonicsEngine) {
+      return PhonicsEngine.prepareUnitSightWords(unit);
+    }
+    return (unit.sightWords || []).map(sw => typeof sw === 'string' ? { word: sw, isSightWord: true } : { ...sw, isSightWord: true });
   }
 
   function countWords(unitIds) {
@@ -1052,15 +1133,24 @@
     const unitIds = getSelectedUnitIds();
     if (unitIds.length === 0) return;
 
+    if (options.wordChart) {
+      openChart(null, unitIds);
+      return;
+    }
+
     startSlideshow(unitIds, { ...options });
   }
 
   function startSlideshow(unitIds, opts) {
-    // Enforce quiz/dictation mode constraints
-    if (opts.quizMode || opts.dictationMode) {
+    // Enforce quiz/dictation/sound-quiz/picture-quiz mode constraints
+    if (opts.quizMode || opts.dictationMode || opts.pictureQuizMode) {
       opts.includeExtras = false;
       opts.includeSightWords = false;
       opts.includeImages = true;
+    } else if (opts.soundQuizMode) {
+      opts.includeExtras = false;
+      opts.includeSightWords = false;
+      // opts.includeImages is optional for Sound Quiz
     }
 
     // Gather selected unit data with level context
@@ -1331,11 +1421,13 @@
 
     // Additional mode tags
     const modeTags = [];
-    if (opts && opts.mixMode) modeTags.push('🔀 Mix Mode');
-    if (opts && opts.dictationMode) modeTags.push('✍️ Dictation');
-    if (opts && opts.quizMode) modeTags.push('❓ Quiz Mode');
-    if (opts && opts.includeSightWords) modeTags.push('👁️ Sight Words');
-    if (opts && opts.includeExtras) modeTags.push('★ Extra Words');
+    if (opts && opts.mixMode) modeTags.push('All-in-One Deck');
+    if (opts && opts.dictationMode) modeTags.push('Dictation Mode');
+    if (opts && opts.quizMode) modeTags.push('Word Quiz');
+    if (opts && opts.soundQuizMode) modeTags.push('Sound Quiz');
+    if (opts && opts.pictureQuizMode) modeTags.push('Picture Quiz');
+    if (opts && opts.includeSightWords) modeTags.push('Sight Words');
+    if (opts && opts.includeExtras) modeTags.push('Extra Words');
 
     const modeBadgesHTML = modeTags.length > 0
       ? `<div class="intro-modes-row">${modeTags.map(t => `<span class="intro-mode-pill">${t}</span>`).join('')}</div>`
@@ -1391,37 +1483,49 @@
     return section;
   }
 
-  // ── Select a Distractor Word ────────────────────────────────
+  // ── Distractor Generators (Word & Picture Quiz) ─────────────
   function getDistractorWord(wordData, unit, opts) {
-    let unitWords = prepareUnitWords(unit, false, opts);
-    if (opts.includeExtras && unit.extraWords) {
-      unitWords = [...unitWords, ...prepareUnitWords(unit, true, opts)];
+    if (window.PhonicsEngine) {
+      return PhonicsEngine.getDistractorWord(wordData, unit, opts, phonicsData);
     }
+    return 'Review';
+  }
 
-    const candidates = unitWords.filter(w => w.word.toLowerCase() !== wordData.word.toLowerCase());
-    if (candidates.length > 0) {
-      const chosen = candidates[Math.floor(Math.random() * candidates.length)];
-      return chosen.word;
+  function getDistractorPictureCandidate(wordData, unit, opts) {
+    if (window.PhonicsEngine) {
+      return PhonicsEngine.getDistractorPictureCandidate(wordData, unit, opts, phonicsData);
     }
+    return null;
+  }
 
-    const level = phonicsData.levels.find(l => l.id === unit.levelId);
-    if (level) {
-      let levelWords = [];
-      level.units.forEach(u => {
-        const uWithLevel = { ...u, levelId: level.id, levelName: level.name };
-        levelWords = [...levelWords, ...prepareUnitWords(uWithLevel, false, opts)];
-        if (opts.includeExtras && u.extraWords) {
-          levelWords = [...levelWords, ...prepareUnitWords(uWithLevel, true, opts)];
-        }
-      });
-      const levelCandidates = levelWords.filter(w => w.word.toLowerCase() !== wordData.word.toLowerCase());
-      if (levelCandidates.length > 0) {
-        const chosen = levelCandidates[Math.floor(Math.random() * levelCandidates.length)];
-        return chosen.word;
+  /**
+   * Format the unit badge label for slide chrome.
+   * In dictation mode, target sounds (e.g. "Unit 5: sm, sn, st, sw" -> "Unit 5")
+   * are omitted to avoid giving students hints.
+   */
+  function formatUnitLabel(unit, isDictationMode) {
+    if (!unit) return '';
+    let name = (unit.name || '').trim();
+    if (isDictationMode) {
+      if (name.includes(':')) {
+        name = name.split(':')[0].trim();
+      } else if (/^Unit\s+\d+\s*[-–—]/i.test(name)) {
+        name = name.split(/[-–—]/)[0].trim();
+      } else if (unit.targetSound && name.toLowerCase().includes(unit.targetSound.toLowerCase())) {
+        const escaped = unit.targetSound.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        name = name.replace(new RegExp(escaped, 'gi'), '').replace(/[-–—:\s]+$/, '').trim();
+      }
+
+      if (!name) {
+        const match = (unit.id || '').match(/U(\d+)$/i);
+        name = match ? `Unit ${match[1]}` : '';
       }
     }
 
-    return 'Review';
+    if (unit.levelName && name) {
+      return `${unit.levelName} · ${name}`;
+    }
+    return unit.levelName || name || '';
   }
 
   // ── Create a Single Word Slide ─────────────────────────────
@@ -1438,10 +1542,16 @@
     // Store all metadata as data attributes for the chrome overlay
     section.dataset.word = wordData.word;
     section.dataset.audioPath = wordData.audio || '';
-    section.dataset.unitLabel = `${unit.levelName} · ${unit.name}`;
+    const isDictation = !!(opts && opts.dictationMode);
+    const isSoundQuiz = !!(opts && opts.soundQuizMode);
+    const isPictureQuiz = !!(opts && opts.pictureQuizMode);
+    section.dataset.unitLabel = formatUnitLabel(unit, isDictation || isSoundQuiz || isPictureQuiz);
     section.dataset.targetSound = unit.targetSound || unit.sound || '';
     section.dataset.levelId = unit.levelId;
     section.dataset.progress = `${index + 1} / ${total}`;
+    if (isDictation) section.dataset.dictationMode = 'true';
+    if (isSoundQuiz) section.dataset.soundQuizMode = 'true';
+    if (isPictureQuiz) section.dataset.pictureQuizMode = 'true';
     if (wordData.isExtra) section.dataset.extra = 'true';
     if (wordData.isSightWord) section.dataset.sightWord = 'true';
 
@@ -1457,6 +1567,14 @@
       const choices = [wordData.word, distractor];
       shuffleArray(choices);
 
+      const targetSound = unit.targetSound || unit.sound || '';
+      const choice0Display = (opts && opts.highlightSounds && !isSightWord)
+        ? highlightTargetSound(choices[0], targetSound, unit.levelId)
+        : choices[0];
+      const choice1Display = (opts && opts.highlightSounds && !isSightWord)
+        ? highlightTargetSound(choices[1], targetSound, unit.levelId)
+        : choices[1];
+
       section.innerHTML = `
         <div class="slide-center quiz-mode-layout">
           ${isSightWord ? '<div class="sight-word-badge">Sight Word</div>' : ''}
@@ -1465,14 +1583,110 @@
                  onerror="if(this.src) this.style.display='none'">`
             : ''}
           <div class="quiz-options-container">
-            <button class="quiz-option-btn" data-word="${choices[0]}">${choices[0]}</button>
-            <button class="quiz-option-btn" data-word="${choices[1]}">${choices[1]}</button>
+            <button class="quiz-option-btn" data-word="${choices[0]}">${choice0Display}</button>
+            <button class="quiz-option-btn" data-word="${choices[1]}">${choice1Display}</button>
+          </div>
+        </div>
+      `;
+    } else if (opts && opts.soundQuizMode) {
+      section.dataset.soundQuizMode = "true";
+      section.dataset.answered = "false";
+
+      const showImageInSoundQuiz = opts ? !!opts.includeImages : false;
+      const hasSoundQuizImage = showImageInSoundQuiz && hasImage;
+      section.dataset.hasImage = hasSoundQuizImage ? 'true' : 'false';
+
+      const soundInfo = getTargetSoundInfo(wordData.word, unit, opts);
+      const correctSound = soundInfo ? soundInfo.correctSound : '';
+      const distractor = soundInfo ? soundInfo.distractor : '';
+      section.dataset.correctSound = correctSound;
+
+      const choices = [correctSound, distractor];
+      shuffleArray(choices);
+
+      const targetSound = unit.targetSound || unit.sound || '';
+      const blankedWordDisplay = getBlankedWord(wordData.word, targetSound, unit.levelId);
+      const fullWordDisplay = (opts && opts.highlightSounds && !isSightWord)
+        ? highlightTargetSound(wordData.word, targetSound, unit.levelId)
+        : wordData.word;
+
+      section.innerHTML = `
+        <div class="slide-center sound-quiz-layout ${!hasSoundQuizImage ? 'no-image' : ''}">
+          ${isSightWord ? '<div class="sight-word-badge">Sight Word</div>' : ''}
+          ${hasSoundQuizImage
+            ? `<img ${isMediaUri ? `data-media-uri="${wordData.image}" style="display:none;"` : `src="${wordData.image}"`} alt="Sound Quiz Image" class="word-image quiz-image"
+                 onerror="if(this.src) this.style.display='none'">`
+            : ''}
+          <div class="sound-quiz-word-row">
+            <div class="sound-quiz-blanked-word" data-full-word="${encodeURIComponent(fullWordDisplay)}">${blankedWordDisplay}</div>
+          </div>
+          <div class="quiz-options-container">
+            <button class="quiz-option-btn sound-option-btn" data-sound="${choices[0]}">${choices[0]}</button>
+            <button class="quiz-option-btn sound-option-btn" data-sound="${choices[1]}">${choices[1]}</button>
+          </div>
+        </div>
+      `;
+    } else if (opts && opts.pictureQuizMode) {
+      section.dataset.pictureQuizMode = "true";
+      section.dataset.answered = "false";
+
+      const soundInfo = getTargetSoundInfo(wordData.word, unit, opts);
+      const targetSound = soundInfo ? soundInfo.correctSound : (unit.targetSound || unit.sound || '');
+      section.dataset.correctSound = targetSound;
+
+      const distractorData = getDistractorPictureCandidate(wordData, unit, opts);
+
+      const choices = [
+        {
+          word: wordData.word,
+          image: wordData.image,
+          isCorrect: true,
+          unit: unit
+        },
+        {
+          word: distractorData ? distractorData.word : 'Review',
+          image: distractorData ? distractorData.image : '',
+          isCorrect: false,
+          unit: distractorData ? { levelId: distractorData.levelId, targetSound: distractorData.targetSound } : unit
+        }
+      ];
+      shuffleArray(choices);
+
+      const cardsHTML = choices.map((c) => {
+        const cTargetSound = c.unit.targetSound || c.unit.sound || '';
+        const cDisplay = (opts && opts.highlightSounds)
+          ? highlightTargetSound(c.word, cTargetSound, c.unit.levelId)
+          : c.word;
+        const cIsMedia = c.image && c.image.startsWith('media:');
+
+        return `
+          <button class="picture-option-card" data-correct="${c.isCorrect ? 'true' : 'false'}" data-word="${c.word}" type="button">
+            <span class="picture-card-status-badge" aria-hidden="true"></span>
+            <img ${cIsMedia ? `data-media-uri="${c.image}" style="display:none;"` : `src="${c.image || ''}"`} alt="${c.word}" class="picture-card-img word-image" onerror="if(this.src) this.style.display='none'">
+            <div class="picture-card-word">${cDisplay}</div>
+          </button>
+        `;
+      }).join('');
+
+      section.innerHTML = `
+        <div class="slide-center picture-quiz-layout">
+          <div class="target-sound-bubble">${targetSound}</div>
+          <div class="picture-options-container">
+            ${cardsHTML}
           </div>
         </div>
       `;
     } else {
       const showImages = opts ? opts.includeImages : false;
       const showImageInDictation = opts ? opts.dictationMode : false;
+      const targetSound = unit.targetSound || unit.sound || '';
+      const wordDisplay = (opts && opts.highlightSounds && !isSightWord)
+        ? highlightTargetSound(wordData.word, targetSound, unit.levelId)
+        : wordData.word;
+
+      const blankedWordDisplay = isDictation
+        ? getBlankedWord(wordData.word, targetSound, unit.levelId)
+        : '';
 
       // Only render the word (+ optional image + optional sight word badge) — no chrome
       section.innerHTML = `
@@ -1482,23 +1696,30 @@
             ? `<img ${isMediaUri ? `data-media-uri="${wordData.image}" style="display:none;"` : `src="${wordData.image}"`} alt="${wordData.word}" class="word-image"
                  onerror="if(this.src) this.style.display='none'">`
             : ''}
-          <div class="word-text ${(opts && opts.dictationMode) ? 'dictation-hide' : ''}">${wordData.word}</div>
+          <div class="word-display-container">
+            <div class="word-text ${isDictation ? 'dictation-hide' : ''}">${wordDisplay}</div>
+            ${isDictation ? `<div class="dictation-hint-text hidden">${blankedWordDisplay}</div>` : ''}
+          </div>
+          ${isDictation ? `<button class="dictation-hint-btn" type="button" title="Show Hint (H)">💡 Hint</button>` : ''}
         </div>
       `;
     }
 
-    if (isMediaUri && typeof MediaDB !== 'undefined') {
-      const imgEl = section.querySelector('.word-image');
-      if (imgEl) {
-        MediaDB.resolveMediaUrl(wordData.image).then(blobUrl => {
-          if (blobUrl) {
-            imgEl.src = blobUrl;
-            imgEl.style.display = '';
-          }
-        }).catch(err => {
-          console.warn('[MediaDB] Slide image resolution failed:', wordData.image, err);
-        });
-      }
+    if (typeof MediaDB !== 'undefined') {
+      const mediaImgEls = section.querySelectorAll('img[data-media-uri]');
+      mediaImgEls.forEach(imgEl => {
+        const uri = imgEl.dataset.mediaUri;
+        if (uri) {
+          MediaDB.resolveMediaUrl(uri).then(blobUrl => {
+            if (blobUrl) {
+              imgEl.src = blobUrl;
+              imgEl.style.display = '';
+            }
+          }).catch(err => {
+            console.warn('[MediaDB] Slide image resolution failed:', uri, err);
+          });
+        }
+      });
     }
 
     return section;
@@ -1571,9 +1792,11 @@
     // Audio button
     const audioBtn = document.getElementById('chrome-audio');
     if (audioBtn) {
-      const isQuiz = slide.dataset.quizMode === 'true';
+      // Word Quiz and Picture Quiz hide audio until answered so students don't hear the word prematurely.
+      // Sound Quiz allows audio before answering so students can hear the word to identify the missing sound.
+      const isWordOrPicQuiz = slide.dataset.quizMode === 'true' || slide.dataset.pictureQuizMode === 'true';
       const isAnswered = slide.dataset.answered === 'true';
-      const hideAudio = isIntro || (isQuiz && !isAnswered);
+      const hideAudio = isIntro || (isWordOrPicQuiz && !isAnswered);
       audioBtn.classList.toggle('hidden', hideAudio);
     }
   }
@@ -1615,11 +1838,20 @@
 
       // Disable default keyboard for Space/Enter (we use them for audio)
       // and map Escape (27) & Backspace (8) to backToMenu()
+      // 'H' (72) for Dictation Hint / left navigation
+      // '1' (49/97) and '2' (50/98) for option selections
+      // 'Shift' (16) for playing audio anytime without revealing answer
       keyboard: {
         32: () => { revealOrPlayCurrentSlideAudio(); },  // Space
         13: () => { revealOrPlayCurrentSlideAudio(); },  // Enter
         27: () => { backToMenu(); },                     // Esc
-        8: () => { backToMenu(); }                       // Backspace
+        8: () => { backToMenu(); },                       // Backspace
+        72: () => { handleDictationHintShortcut(); },    // H (Hint)
+        49: () => { handleQuizOptionKey(0); },           // 1 (Option 1)
+        50: () => { handleQuizOptionKey(1); },           // 2 (Option 2)
+        97: () => { handleQuizOptionKey(0); },           // Numpad 1
+        98: () => { handleQuizOptionKey(1); },           // Numpad 2
+        16: () => { playCurrentSlideAudio(); }           // Shift (Play audio)
       },
 
       // Touch — let reveal.js handle swipe gestures natively
@@ -1633,6 +1865,10 @@
     revealInstance.initialize().then(() => {
       // Update chrome after reveal.js has set up the .present classes
       updateSlideChrome();
+      const currentSlide = getCurrentSlide();
+      if (currentSlide && currentSlide.dataset.soundQuizMode === 'true' && currentSlide.dataset.hasImage !== 'true' && currentSlide.dataset.isIntro !== 'true') {
+        playCurrentSlideAudio();
+      }
     });
 
     // Wire up sync button click
@@ -1651,11 +1887,28 @@
       };
     }
 
-    // Update chrome (instantly) whenever the slide changes
+    // Update chrome and trigger auto-play if needed whenever slide changes
     revealInstance.on('slidechanged', () => {
       AudioPlayer.stop();
       updateSlideChrome();
+      const currentSlide = getCurrentSlide();
+      if (currentSlide && currentSlide.dataset.soundQuizMode === 'true' && currentSlide.dataset.hasImage !== 'true' && currentSlide.dataset.answered !== 'true' && currentSlide.dataset.isIntro !== 'true') {
+        playCurrentSlideAudio();
+      }
     });
+
+    // Dedicated keydown handler for Shift key (plays audio without revealing answer)
+    if (slideshowKeydownHandler) {
+      window.removeEventListener('keydown', slideshowKeydownHandler);
+    }
+    slideshowKeydownHandler = (e) => {
+      if (document.getElementById('slideshow-screen')?.classList.contains('hidden')) return;
+      if (e.key === 'Shift') {
+        e.preventDefault();
+        playCurrentSlideAudio();
+      }
+    };
+    window.addEventListener('keydown', slideshowKeydownHandler);
 
     // Click/tap on word text plays audio, click/tap background advances slide
     deck.addEventListener('click', handleSlideClick);
@@ -1682,6 +1935,129 @@
     updateSlideChrome(); // Shows the audio button
   }
 
+  // ── Select a Choice / Reveal Sound Quiz ────────────────────
+  function revealSoundQuizAnswer(slide, clickedBtn = null) {
+    if (slide.dataset.answered === 'true') return;
+
+    slide.dataset.answered = 'true';
+
+    const correctSound = slide.dataset.correctSound;
+    const buttons = slide.querySelectorAll('.sound-option-btn');
+    buttons.forEach(btn => {
+      btn.disabled = true;
+      if (btn.dataset.sound === correctSound) {
+        btn.classList.add('correct');
+      } else if (clickedBtn && btn === clickedBtn) {
+        btn.classList.add('incorrect');
+      }
+    });
+
+    const blankedWordEl = slide.querySelector('.sound-quiz-blanked-word');
+    if (blankedWordEl && blankedWordEl.dataset.fullWord) {
+      blankedWordEl.innerHTML = decodeURIComponent(blankedWordEl.dataset.fullWord);
+      blankedWordEl.classList.add('filled');
+    }
+
+    playCurrentSlideAudio();
+    updateSlideChrome(); // Shows the audio button
+  }
+
+  // ── Select a Choice / Reveal Picture Quiz ──────────────────
+  function revealPictureQuizAnswer(slide, clickedCard = null) {
+    if (slide.dataset.answered === 'true') return;
+
+    slide.dataset.answered = 'true';
+
+    const cards = slide.querySelectorAll('.picture-option-card');
+    cards.forEach(card => {
+      card.disabled = true;
+      card.classList.add('answered');
+      if (card.dataset.correct === 'true') {
+        card.classList.add('correct');
+      } else if (clickedCard && card === clickedCard) {
+        card.classList.add('incorrect');
+      }
+    });
+
+    playCurrentSlideAudio();
+    updateSlideChrome(); // Shows the audio button
+  }
+
+  // ── Dictation Mode Hint & Reveal ───────────────────────────
+  function triggerDictationHint(slide) {
+    if (!slide) return;
+    const hintBtn = slide.querySelector('.dictation-hint-btn');
+    const hintText = slide.querySelector('.dictation-hint-text');
+    const wordText = slide.querySelector('.word-text');
+
+    if (hintText && hintText.classList.contains('hidden')) {
+      hintText.classList.remove('hidden');
+      if (hintBtn) hintBtn.classList.add('hidden');
+    } else if (wordText && wordText.classList.contains('dictation-hide')) {
+      revealDictationWord(slide);
+    }
+  }
+
+  function revealDictationWord(slide) {
+    if (!slide) return;
+    const wordText = slide.querySelector('.word-text');
+    const hintBtn = slide.querySelector('.dictation-hint-btn');
+    const hintText = slide.querySelector('.dictation-hint-text');
+
+    if (wordText && wordText.classList.contains('dictation-hide')) {
+      wordText.classList.remove('dictation-hide');
+      if (hintBtn) hintBtn.classList.add('hidden');
+      if (hintText) hintText.classList.add('hidden');
+      playCurrentSlideAudio();
+    }
+  }
+
+  function handleDictationHintShortcut() {
+    const currentSlide = getCurrentSlide();
+    if (!currentSlide) return;
+
+    if (currentSlide.dataset.dictationMode === 'true') {
+      const wordTextEl = currentSlide.querySelector('.word-text');
+      if (wordTextEl && wordTextEl.classList.contains('dictation-hide')) {
+        triggerDictationHint(currentSlide);
+        return;
+      }
+    }
+
+    if (revealInstance) {
+      revealInstance.left();
+    }
+  }
+
+  function handleQuizOptionKey(index) {
+    const currentSlide = getCurrentSlide();
+    if (!currentSlide) return;
+
+    if (currentSlide.dataset.pictureQuizMode === 'true' && currentSlide.dataset.answered !== 'true') {
+      const cards = currentSlide.querySelectorAll('.picture-option-card');
+      if (cards && cards[index]) {
+        revealPictureQuizAnswer(currentSlide, cards[index]);
+      }
+      return;
+    }
+
+    if (currentSlide.dataset.soundQuizMode === 'true' && currentSlide.dataset.answered !== 'true') {
+      const buttons = currentSlide.querySelectorAll('.sound-option-btn');
+      if (buttons && buttons[index]) {
+        revealSoundQuizAnswer(currentSlide, buttons[index]);
+      }
+      return;
+    }
+
+    if (currentSlide.dataset.quizMode === 'true' && currentSlide.dataset.answered !== 'true') {
+      const buttons = currentSlide.querySelectorAll('.quiz-option-btn');
+      if (buttons && buttons[index]) {
+        revealQuizAnswer(currentSlide, buttons[index]);
+      }
+      return;
+    }
+  }
+
   // ── Slide Interaction ──────────────────────────────────────
   // Desktop click fallback (touch devices use touchend above)
   function handleSlideClick(e) {
@@ -1699,13 +2075,39 @@
       return;
     }
 
+    // Picture Quiz Mode Interaction
+    if (currentSlide.dataset.pictureQuizMode === 'true') {
+      if (currentSlide.dataset.answered !== 'true') {
+        e.preventDefault();
+        e.stopPropagation();
+        const clickedCard = e.target.closest('.picture-option-card');
+        if (clickedCard) {
+          revealPictureQuizAnswer(currentSlide, clickedCard);
+        }
+      } else {
+        const correctCard = e.target.closest('.picture-option-card.correct');
+        if (correctCard) {
+          e.preventDefault();
+          e.stopPropagation();
+          playCurrentSlideAudio();
+        } else {
+          if (revealInstance) {
+            revealInstance.next();
+          }
+        }
+      }
+      return;
+    }
+
     // Quiz Mode Interaction
     if (currentSlide.dataset.quizMode === 'true') {
       if (currentSlide.dataset.answered !== 'true') {
         e.preventDefault();
         e.stopPropagation();
         const clickedOption = e.target.closest('.quiz-option-btn');
-        revealQuizAnswer(currentSlide, clickedOption);
+        if (clickedOption) {
+          revealQuizAnswer(currentSlide, clickedOption);
+        }
       } else {
         if (revealInstance) {
           revealInstance.next();
@@ -1714,13 +2116,46 @@
       return;
     }
 
-    // Dictation/Normal Mode Interaction
+    // Sound Quiz Mode Interaction
+    if (currentSlide.dataset.soundQuizMode === 'true') {
+      const clickedBlankedWord = e.target.closest('.sound-quiz-blanked-word');
+      if (clickedBlankedWord) {
+        e.preventDefault();
+        e.stopPropagation();
+        playCurrentSlideAudio();
+        return;
+      }
+
+      if (currentSlide.dataset.answered !== 'true') {
+        e.preventDefault();
+        e.stopPropagation();
+        const clickedOption = e.target.closest('.sound-option-btn');
+        if (clickedOption) {
+          revealSoundQuizAnswer(currentSlide, clickedOption);
+        }
+      } else {
+        if (revealInstance) {
+          revealInstance.next();
+        }
+      }
+      return;
+    }
+
+    // Dictation Mode Hint Button Click
+    const hintBtn = e.target.closest('.dictation-hint-btn');
+    if (hintBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerDictationHint(currentSlide);
+      return;
+    }
+
+    // Dictation Mode Reveal
     const wordTextElement = currentSlide.querySelector('.word-text');
     if (wordTextElement && wordTextElement.classList.contains('dictation-hide')) {
       e.preventDefault();
       e.stopPropagation();
-      wordTextElement.classList.remove('dictation-hide');
-      playCurrentSlideAudio();
+      revealDictationWord(currentSlide);
       return;
     }
 
@@ -1748,6 +2183,26 @@
       return;
     }
 
+    // Picture Quiz Mode Keyboard Handling
+    if (currentSlide.dataset.pictureQuizMode === 'true') {
+      if (currentSlide.dataset.answered !== 'true') {
+        revealPictureQuizAnswer(currentSlide);
+      } else {
+        playCurrentSlideAudio();
+      }
+      return;
+    }
+
+    // Sound Quiz Mode Keyboard Handling
+    if (currentSlide.dataset.soundQuizMode === 'true') {
+      if (currentSlide.dataset.answered !== 'true') {
+        revealSoundQuizAnswer(currentSlide);
+      } else {
+        playCurrentSlideAudio();
+      }
+      return;
+    }
+
     // Quiz Mode Keyboard Handling
     if (currentSlide.dataset.quizMode === 'true') {
       if (currentSlide.dataset.answered !== 'true') {
@@ -1760,8 +2215,7 @@
 
     const wordTextElement = currentSlide.querySelector('.word-text');
     if (wordTextElement && wordTextElement.classList.contains('dictation-hide')) {
-      wordTextElement.classList.remove('dictation-hide');
-      playCurrentSlideAudio();
+      revealDictationWord(currentSlide);
       return;
     }
 
@@ -1784,6 +2238,11 @@
     AudioPlayer.clearCache();
     if (typeof MediaDB !== 'undefined') {
       MediaDB.revokeAllUrls();
+    }
+
+    if (slideshowKeydownHandler) {
+      window.removeEventListener('keydown', slideshowKeydownHandler);
+      slideshowKeydownHandler = null;
     }
 
     if (revealInstance) {
@@ -1815,1265 +2274,51 @@
     }
   }
 
-  // ── Chart Mode (Letter Chart for L1, Word Chart for L2-L5) ──
-  let chartKeyboardHandler = null;
-  let currentChartIndex = -1;
-  let currentChartLevel = null;
-  let chartIsRandom = false;
-  let chartTypeAheadBuffer = '';
-  let chartTypeAheadTimer = null;
-  const TYPEAHEAD_TIMEOUT_MS = 1000;
-
-  function clearTypeAhead() {
-    chartTypeAheadBuffer = '';
-    if (chartTypeAheadTimer) {
-      clearTimeout(chartTypeAheadTimer);
-      chartTypeAheadTimer = null;
+  // ── Chart Mode Delegates ────────────────────────────────────
+  function openChart(levelId = null, customUnitIds = null) {
+    if (window.ChartScreen) {
+      ChartScreen.open(levelId, customUnitIds);
     }
-    hideChartSearchHUD();
-  }
-
-  function resetTypeAheadTimer() {
-    if (chartTypeAheadTimer) {
-      clearTimeout(chartTypeAheadTimer);
-    }
-    chartTypeAheadTimer = setTimeout(() => {
-      clearTypeAhead();
-    }, TYPEAHEAD_TIMEOUT_MS);
-  }
-
-  function showChartSearchHUD(text, matched = true) {
-    const hud = document.getElementById('chart-typeahead-hud');
-    if (!hud) return;
-    const textEl = hud.querySelector('.hud-text');
-    if (textEl) {
-      textEl.textContent = text + (matched ? '' : ' (not found)');
-    }
-    hud.classList.toggle('not-found', !matched);
-    hud.classList.remove('hidden');
-  }
-
-  function hideChartSearchHUD() {
-    const hud = document.getElementById('chart-typeahead-hud');
-    if (!hud) return;
-    hud.classList.add('hidden');
-  }
-
-  function shuffleArray(arr) {
-    const copy = [...arr];
-    for (let i = copy.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy;
-  }
-
-  function updateChartURL(targetUnits, level) {
-    const params = new URLSearchParams();
-    params.set('q', 'chart');
-    if (typeof EditorStore !== 'undefined') {
-      const curId = EditorStore.getActiveCurriculumId();
-      if (curId && curId !== 'smart-phonics') {
-        params.set('book', curId);
-      }
-    }
-    if (level && level.id !== 'L1') {
-      params.set('level', level.id);
-    }
-    if (targetUnits && targetUnits.length > 0) {
-      const allCount = level?.units?.length || 8;
-      if (targetUnits.length < allCount) {
-        params.set('units', targetUnits.map(u => u.id).join(','));
-      }
-    }
-    if (level && level.id === 'L1' && options.letterCase && options.letterCase !== 'both') {
-      params.set('case', options.letterCase);
-    }
-    const newURL = `${window.location.pathname}?${params.toString()}`;
-    window.history.replaceState({}, '', newURL);
-  }
-
-  function openChart(levelId = 'L1', customUnitIds = null) {
-    clearTypeAhead();
-    const selectedIds = customUnitIds || getSelectedUnitIds();
-    const level = phonicsData.levels.find(l => l.id === levelId) || phonicsData.levels[0];
-    if (!level) return;
-
-    currentChartLevel = level;
-    currentChartIndex = -1;
-    chartIsRandom = false;
-
-    // Filter selected units in this level, or if none selected, use all units of this level
-    let targetUnits = level.units.filter(u => selectedIds.includes(u.id));
-    if (targetUnits.length === 0) {
-      targetUnits = level.units;
-    }
-
-    // Update URL with q=chart and level
-    updateChartURL(targetUnits, level);
-
-    // Update header title
-    const titleEl = document.querySelector('#chart-screen .chart-title');
-    if (titleEl) {
-      titleEl.textContent = level.id === 'L1' ? 'Level 1 Letter Chart' : `${level.name} Word Chart`;
-    }
-
-    // Show/hide case controls (only relevant for Level 1 alphabet)
-    const caseBar = document.querySelector('#chart-screen .chart-case-bar');
-    if (caseBar) {
-      caseBar.style.display = level.id === 'L1' ? '' : 'none';
-    }
-
-    // Switch screen to chart-screen
-    document.getElementById('menu-screen').classList.add('hidden');
-    document.getElementById('slideshow-screen').classList.add('hidden');
-    document.getElementById('chart-screen').classList.remove('hidden');
-
-    // Wire up header buttons inside chart screen
-    const backBtn = document.getElementById('chart-back-btn');
-    if (backBtn) {
-      backBtn.onclick = closeChart;
-    }
-
-    const randomBtn = document.getElementById('chart-random-btn');
-    if (randomBtn) {
-      randomBtn.onclick = () => {
-        clearTypeAhead();
-        chartIsRandom = true;
-        currentChartIndex = -1;
-        renderChartGrid(targetUnits, currentChartLevel);
-      };
-    }
-
-    const resetOrderBtn = document.getElementById('chart-reset-order-btn');
-    if (resetOrderBtn) {
-      resetOrderBtn.onclick = () => {
-        clearTypeAhead();
-        chartIsRandom = false;
-        currentChartIndex = -1;
-        renderChartGrid(targetUnits, currentChartLevel);
-      };
-    }
-
-    // Render the grid
-    renderChartGrid(targetUnits, level);
-
-    // Wire up case buttons inside chart screen (Level 1 only)
-    const chartCaseBtns = document.querySelectorAll('#chart-screen .case-btn');
-    chartCaseBtns.forEach(btn => {
-      btn.onclick = () => {
-        if (!currentChartLevel || currentChartLevel.id !== 'L1') return;
-        clearTypeAhead();
-        const selectedCase = normalizeLetterCase(btn.dataset.case);
-        options.letterCase = selectedCase;
-        syncCaseButtons(selectedCase);
-        localStorage.setItem('phonics-flash-letter-case', selectedCase);
-        updateStartButton();
-        updateChartURL(targetUnits, currentChartLevel);
-        currentChartIndex = -1;
-        renderChartGrid(targetUnits, currentChartLevel);
-      };
-    });
-
-    // Wire up keyboard shortcuts (Arrow keys for 2D grid, multi-letter type-ahead, Space/Enter, Escape/Backspace)
-    if (chartKeyboardHandler) {
-      window.removeEventListener('keydown', chartKeyboardHandler);
-    }
-    chartKeyboardHandler = (e) => {
-      // Ignore modified keys (Ctrl, Alt, Meta)
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-
-      const active = document.activeElement;
-      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
-        return;
-      }
-
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        clearTypeAhead();
-        closeChart();
-        return;
-      }
-
-      if (e.key === 'Backspace') {
-        e.preventDefault();
-        if (chartTypeAheadBuffer.length > 0) {
-          chartTypeAheadBuffer = chartTypeAheadBuffer.slice(0, -1);
-          if (chartTypeAheadBuffer.length > 0) {
-            const tiles = Array.from(document.querySelectorAll('#chart-grid .letter-tile'));
-            const matchIndex = tiles.findIndex(t => {
-              const text = (t.dataset.text || t.dataset.baseLetter || '').trim().toLowerCase();
-              return text.startsWith(chartTypeAheadBuffer);
-            });
-            if (matchIndex !== -1) {
-              setActiveChartTile(matchIndex, true);
-              showChartSearchHUD(chartTypeAheadBuffer, true);
-            } else {
-              showChartSearchHUD(chartTypeAheadBuffer, false);
-            }
-            resetTypeAheadTimer();
-          } else {
-            clearTypeAhead();
-          }
-          return;
-        }
-        closeChart();
-        return;
-      }
-
-      if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        clearTypeAhead();
-        navigateChart2D('right');
-        return;
-      }
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        clearTypeAhead();
-        navigateChart2D('left');
-        return;
-      }
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        clearTypeAhead();
-        navigateChart2D('down');
-        return;
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        clearTypeAhead();
-        navigateChart2D('up');
-        return;
-      }
-      if (e.key === ' ' || e.key === 'Enter') {
-        e.preventDefault();
-        clearTypeAhead();
-        if (currentChartIndex >= 0) {
-          setActiveChartTile(currentChartIndex, true);
-        } else {
-          setActiveChartTile(0, true);
-        }
-        return;
-      }
-
-      if (/^[a-zA-Z]$/.test(e.key)) {
-        const keyChar = e.key.toLowerCase();
-        const tiles = Array.from(document.querySelectorAll('#chart-grid .letter-tile'));
-        if (tiles.length === 0) return;
-
-        // 1. If pressing the same single letter repeatedly, cycle through words starting with that letter
-        if (chartTypeAheadBuffer.length === 1 && chartTypeAheadBuffer === keyChar) {
-          const matchingIndices = [];
-          tiles.forEach((t, idx) => {
-            const text = (t.dataset.text || t.dataset.baseLetter || '').trim().toLowerCase();
-            if (text.startsWith(keyChar)) {
-              matchingIndices.push(idx);
-            }
-          });
-
-          if (matchingIndices.length > 0) {
-            e.preventDefault();
-            const currPos = matchingIndices.indexOf(currentChartIndex);
-            const nextPos = currPos >= 0 ? (currPos + 1) % matchingIndices.length : 0;
-            const nextIdx = matchingIndices[nextPos];
-            setActiveChartTile(nextIdx, true);
-            const countLabel = matchingIndices.length > 1 ? ` (${nextPos + 1}/${matchingIndices.length})` : '';
-            showChartSearchHUD(`${keyChar.toUpperCase()}${countLabel}`, true);
-            resetTypeAheadTimer();
-            return;
-          }
-        }
-
-        // 2. Try extending current buffer
-        const extendedQuery = chartTypeAheadBuffer + keyChar;
-        const extendedMatchIndex = tiles.findIndex(t => {
-          const text = (t.dataset.text || t.dataset.baseLetter || '').trim().toLowerCase();
-          return text.startsWith(extendedQuery);
-        });
-
-        if (extendedMatchIndex !== -1) {
-          e.preventDefault();
-          chartTypeAheadBuffer = extendedQuery;
-          setActiveChartTile(extendedMatchIndex, true);
-          showChartSearchHUD(chartTypeAheadBuffer, true);
-          resetTypeAheadTimer();
-          return;
-        }
-
-        // 3. If extended query didn't match, try fresh search with keyChar
-        const singleMatchIndex = tiles.findIndex(t => {
-          const text = (t.dataset.text || t.dataset.baseLetter || '').trim().toLowerCase();
-          return text.startsWith(keyChar);
-        });
-
-        if (singleMatchIndex !== -1) {
-          e.preventDefault();
-          chartTypeAheadBuffer = keyChar;
-          setActiveChartTile(singleMatchIndex, true);
-          showChartSearchHUD(chartTypeAheadBuffer, true);
-          resetTypeAheadTimer();
-          return;
-        }
-
-        // 4. No match for extended query or single keyChar
-        e.preventDefault();
-        showChartSearchHUD(extendedQuery, false);
-        resetTypeAheadTimer();
-      }
-    };
-    window.addEventListener('keydown', chartKeyboardHandler);
   }
 
   const openLetterChart = (customUnitIds = null) => openChart('L1', customUnitIds);
 
-  function setActiveChartTile(index, playAudio = true) {
-    const tiles = Array.from(document.querySelectorAll('#chart-grid .letter-tile'));
-    if (tiles.length === 0) return;
-
-    if (index < 0) index = 0;
-    if (index >= tiles.length) index = tiles.length - 1;
-
-    currentChartIndex = index;
-
-    tiles.forEach((t, i) => {
-      t.classList.toggle('active-focus', i === currentChartIndex);
-    });
-
-    const targetTile = tiles[currentChartIndex];
-    if (targetTile) {
-      targetTile.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-      if (playAudio) {
-        playLetterTile(targetTile);
-      }
-    }
-  }
-
-  function navigateChart2D(direction) {
-    const rows = Array.from(document.querySelectorAll('#chart-grid .chart-row'));
-    if (rows.length === 0) return;
-
-    const allTiles = Array.from(document.querySelectorAll('#chart-grid .letter-tile'));
-    if (allTiles.length === 0) return;
-
-    if (currentChartIndex < 0) {
-      setActiveChartTile(0, true);
-      return;
-    }
-
-    const currentTile = allTiles[currentChartIndex];
-    const currentRowEl = currentTile ? currentTile.closest('.chart-row') : null;
-    const currentRowIndex = rows.indexOf(currentRowEl);
-    const rowTiles = currentRowEl ? Array.from(currentRowEl.querySelectorAll('.letter-tile')) : [];
-    const currentColIndex = rowTiles.indexOf(currentTile);
-
-    if (direction === 'right') {
-      const nextIndex = (currentChartIndex + 1) % allTiles.length;
-      setActiveChartTile(nextIndex, true);
-    } else if (direction === 'left') {
-      const nextIndex = (currentChartIndex - 1 + allTiles.length) % allTiles.length;
-      setActiveChartTile(nextIndex, true);
-    } else if (direction === 'down') {
-      const nextRowIndex = (currentRowIndex + 1) % rows.length;
-      const nextRowTiles = Array.from(rows[nextRowIndex].querySelectorAll('.letter-tile'));
-      const targetCol = Math.min(currentColIndex, nextRowTiles.length - 1);
-      const targetTile = nextRowTiles[targetCol];
-      const targetIndex = allTiles.indexOf(targetTile);
-      setActiveChartTile(targetIndex, true);
-    } else if (direction === 'up') {
-      const prevRowIndex = (currentRowIndex - 1 + rows.length) % rows.length;
-      const prevRowTiles = Array.from(rows[prevRowIndex].querySelectorAll('.letter-tile'));
-      const targetCol = Math.min(currentColIndex, prevRowTiles.length - 1);
-      const targetTile = prevRowTiles[targetCol];
-      const targetIndex = allTiles.indexOf(targetTile);
-      setActiveChartTile(targetIndex, true);
-    }
-  }
-
-  function renderChartGrid(targetUnits, level) {
-    const grid = document.getElementById('chart-grid');
-    if (!grid) return;
-    grid.innerHTML = '';
-
-    const isLevel1 = level ? level.id === 'L1' : true;
-    grid.classList.toggle('words-mode', !isLevel1);
-
-    let displayItems = [];
-
-    if (isLevel1) {
-      // Collect all unique base letters from target units in order
-      const letterMap = new Map();
-      targetUnits.forEach(unit => {
-        (unit.words || []).forEach(w => {
-          const baseLetter = w.word ? w.word.charAt(0).toUpperCase() : '';
-          if (baseLetter && !letterMap.has(baseLetter)) {
-            // Use dedicated single-sound audio files for letter chart
-            const singleAudio = `media/SmartPhonics/1/sounds/SingleLetters_single/${baseLetter}${baseLetter.toLowerCase()}.mp3`;
-            letterMap.set(baseLetter, {
-              baseLetter: baseLetter,
-              word: w.word,
-              audio: singleAudio
-            });
-          }
-        });
-      });
-
-      const uniqueLetters = Array.from(letterMap.values());
-      uniqueLetters.sort((a, b) => a.baseLetter.localeCompare(b.baseLetter));
-
-      const letterCase = options.letterCase || 'both';
-      if (letterCase === 'separate') {
-        uniqueLetters.forEach(item => {
-          displayItems.push({
-            displayText: item.baseLetter.toUpperCase(),
-            baseLetter: item.baseLetter,
-            audio: item.audio
-          });
-          displayItems.push({
-            displayText: item.baseLetter.toLowerCase(),
-            baseLetter: item.baseLetter,
-            audio: item.audio
-          });
-        });
-      } else if (letterCase === 'upper') {
-        displayItems = uniqueLetters.map(item => ({
-          displayText: item.baseLetter.toUpperCase(),
-          baseLetter: item.baseLetter,
-          audio: item.audio
-        }));
-      } else if (letterCase === 'lower') {
-        displayItems = uniqueLetters.map(item => ({
-          displayText: item.baseLetter.toLowerCase(),
-          baseLetter: item.baseLetter,
-          audio: item.audio
-        }));
-      } else {
-        displayItems = uniqueLetters.map(item => ({
-          displayText: item.baseLetter.toUpperCase() + item.baseLetter.toLowerCase(),
-          baseLetter: item.baseLetter,
-          audio: item.audio
-        }));
-      }
-
-      syncCaseButtons(letterCase);
-    } else {
-      // Word Chart Mode (Levels 2–5): extract unique target words in curriculum order
-      const seenWords = new Set();
-      targetUnits.forEach(unit => {
-        (unit.words || []).forEach(w => {
-          const cleanWord = w.word ? w.word.trim() : '';
-          if (cleanWord && !seenWords.has(cleanWord.toLowerCase())) {
-            seenWords.add(cleanWord.toLowerCase());
-            displayItems.push({
-              displayText: cleanWord,
-              baseLetter: cleanWord.charAt(0).toUpperCase(),
-              word: cleanWord,
-              audio: w.audio
-            });
-          }
-        });
-      });
-    }
-
-    if (chartIsRandom) {
-      displayItems = shuffleArray(displayItems);
-    }
-
-    // Preload audio files for instant chart tile playback
-    displayItems.forEach(item => {
-      if (item.audio) AudioPlayer.preload(item.audio);
-    });
-
-    // Update count badge
-    const badge = document.getElementById('chart-count-badge');
-    if (badge) {
-      const noun = isLevel1 ? 'Letter' : 'Word';
-      badge.textContent = `${displayItems.length} ${noun}${displayItems.length === 1 ? '' : 's'}`;
-    }
-
-    // Update randomize and reset order button states
-    const randomBtn = document.getElementById('chart-random-btn');
-    if (randomBtn) {
-      randomBtn.classList.toggle('active', chartIsRandom);
-      randomBtn.title = chartIsRandom ? 'Randomized order (click to re-shuffle)' : 'Randomize word/letter order';
-    }
-    const resetOrderBtn = document.getElementById('chart-reset-order-btn');
-    if (resetOrderBtn) {
-      resetOrderBtn.classList.toggle('hidden', !chartIsRandom);
-    }
-
-    // Calculate balanced row distribution
-    const rowCounts = calculateRowDistribution(displayItems.length, !isLevel1);
-    grid.dataset.rows = rowCounts.length;
-
-    let itemIndex = 0;
-    rowCounts.forEach(count => {
-      const rowEl = document.createElement('div');
-      rowEl.className = 'chart-row';
-
-      for (let i = 0; i < count; i++) {
-        if (itemIndex >= displayItems.length) break;
-        const currentIdx = itemIndex;
-        const item = displayItems[itemIndex++];
-
-        const tile = document.createElement('div');
-        tile.className = 'letter-tile';
-        tile.dataset.baseLetter = item.baseLetter;
-        tile.dataset.audio = item.audio || '';
-        tile.dataset.text = item.displayText;
-        tile.dataset.tileIndex = currentIdx;
-        tile.innerHTML = `<span class="letter-tile-text">${item.displayText}</span>`;
-
-        tile.addEventListener('click', (e) => {
-          e.stopPropagation();
-          clearTypeAhead();
-          setActiveChartTile(currentIdx, true);
-        });
-
-        rowEl.appendChild(tile);
-      }
-
-      grid.appendChild(rowEl);
-    });
-  }
-
-  const renderLetterChartGrid = (targetUnits) => renderChartGrid(targetUnits, currentChartLevel || phonicsData.levels[0]);
-
-  function calculateRowDistribution(totalItems, isWordsMode = false) {
-    if (totalItems <= 4) {
-      return [totalItems];
-    }
-    let numRows = 2;
-    if (isWordsMode) {
-      if (totalItems <= 8) numRows = 2;
-      else if (totalItems <= 16) numRows = 3;
-      else if (totalItems <= 24) numRows = 4;
-      else if (totalItems <= 36) numRows = 5;
-      else if (totalItems <= 50) numRows = 6;
-      else if (totalItems <= 72) numRows = 7;
-      else numRows = 8;
-    } else {
-      if (totalItems <= 8) numRows = 2;
-      else if (totalItems <= 18) numRows = 3;
-      else if (totalItems <= 28) numRows = 4;
-      else if (totalItems <= 42) numRows = 5;
-      else if (totalItems <= 56) numRows = 6;
-      else numRows = 7;
-    }
-
-    const base = Math.floor(totalItems / numRows);
-    const remainder = totalItems % numRows;
-    const distribution = [];
-    for (let r = 0; r < numRows; r++) {
-      distribution.push(r < remainder ? base + 1 : base);
-    }
-    return distribution;
-  }
-
-  function playLetterTile(tile) {
-    if (!tile) return;
-
-    // Visual pulse
-    tile.classList.remove('playing');
-    void tile.offsetWidth; // trigger reflow
-    tile.classList.add('playing');
-    setTimeout(() => {
-      tile.classList.remove('playing');
-    }, 500);
-
-    const audioPath = tile.dataset.audio;
-    const text = tile.dataset.text;
-    AudioPlayer.playWord(text, audioPath || undefined);
-  }
-
   function closeChart() {
-    AudioPlayer.stop();
-    if (typeof MediaDB !== 'undefined') {
-      MediaDB.revokeAllUrls();
-    }
-    clearTypeAhead();
-    if (chartKeyboardHandler) {
-      window.removeEventListener('keydown', chartKeyboardHandler);
-      chartKeyboardHandler = null;
-    }
-    currentChartIndex = -1;
-    currentChartLevel = null;
-    chartIsRandom = false;
-    document.getElementById('chart-screen').classList.add('hidden');
-    document.getElementById('menu-screen').classList.remove('hidden');
-    renderMenu();
-
-    // Clear URL params (theme is saved in localStorage, not needed in URL)
-    if (window.location.search) {
-      window.history.replaceState({}, '', window.location.pathname);
+    if (window.ChartScreen) {
+      ChartScreen.close();
     }
   }
 
   const closeLetterChart = closeChart;
 
-  // ── Classes & Schedule UI Management ──────────────────────
-  let classesUIInitialized = false;
-
+  // ── Classes & Settings Modal Delegates ──────────────────────
   function populateClassDropdown() {
-    const classSelect = document.getElementById('class-select');
-    if (!classSelect || typeof ClassesManager === 'undefined') return;
-    const classes = ClassesManager.getClasses();
-    const activeClass = ClassesManager.getActiveClass();
+    if (window.SettingsModal) {
+      SettingsModal.populateClassDropdown();
+    }
+  }
 
-    const sortedClasses = [...classes].sort((a, b) => a.name.localeCompare(b.name));
+  function openClassModal(tabId = "classes-tab") {
+    if (window.SettingsModal) {
+      SettingsModal.open(tabId);
+    }
+  }
 
-    classSelect.innerHTML = `<option value="">General (No Class)</option>`;
-    sortedClasses.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.id;
-      opt.textContent = c.name;
-      classSelect.appendChild(opt);
-    });
-
-    if (activeClass) {
-      classSelect.value = activeClass.id;
-    } else {
-      classSelect.value = "";
+  function closeClassModal() {
+    if (window.SettingsModal) {
+      SettingsModal.close();
     }
   }
 
   function initClassesUI() {
-    populateClassDropdown();
-    if (classesUIInitialized) return;
-    classesUIInitialized = true;
-
-    const classSelect = document.getElementById('class-select');
-    const settingsBtn = document.getElementById('open-settings-btn');
-    const modal = document.getElementById('class-modal');
-    const modalTitle = document.getElementById('modal-title');
-    const closeBtn = document.getElementById('modal-close-btn');
-    const tabBtns = document.querySelectorAll('.modal-tab-btn');
-    const addClassBtn = document.getElementById('add-class-btn');
-    const classForm = document.getElementById('class-form');
-    const cancelFormBtn = document.getElementById('form-cancel-btn');
-    const formBackBtn = document.getElementById('form-back-btn');
-    const classesListView = document.getElementById('classes-list-view');
-    const classFormView = document.getElementById('class-form-view');
-    const classFormTitle = document.getElementById('class-form-title');
-    const saveUpstashBtn = document.getElementById('save-upstash-btn');
-    const exportBtn = document.getElementById('export-classes-btn');
-    const importInput = document.getElementById('import-classes-input');
-
-    // ElevenLabs / TTS Settings Elements
-    const keyInput = document.getElementById('elevenlabs-key-input');
-    const visibilityBtn = document.getElementById('toggle-key-visibility');
-    const voiceSelect = document.getElementById('elevenlabs-voice-select');
-    const speedInput = document.getElementById('elevenlabs-speed-input');
-    const speedDisplay = document.getElementById('elevenlabs-speed-display');
-    const speedResetBtn = document.getElementById('speed-reset-default-btn');
-    const specsSpeedVal = document.getElementById('specs-speed-val');
-    const saveTtsBtn = document.getElementById('save-elevenlabs-btn');
-    const testTtsBtn = document.getElementById('test-elevenlabs-btn');
-    const clearTtsBtn = document.getElementById('clear-elevenlabs-btn');
-    const statusBadge = document.getElementById('tts-status-badge');
-    const feedbackEl = document.getElementById('tts-test-feedback');
-
-    function updateSpeedUI(val) {
-      const num = parseFloat(val);
-      const formatted = (isNaN(num) ? 0.85 : num).toFixed(2) + 'x';
-      if (speedDisplay) speedDisplay.textContent = formatted;
-      if (specsSpeedVal) specsSpeedVal.textContent = formatted;
-    }
-
-    // Dropdown change
-    if (classSelect) {
-      classSelect.addEventListener('change', (e) => {
-        const classId = e.target.value;
-        if (!classId) {
-          resetToDefaultSettings();
-          renderMenu();
-        } else {
-          const cls = ClassesManager.getClasses().find(c => c.id === classId);
-          if (cls) {
-            ClassesManager.setActiveClassId(cls.id);
-            applyClassProfile(cls);
-          }
-        }
-      });
-    }
-
-    // Settings button -> Open modal to My Classes tab
-    if (settingsBtn && modal) {
-      settingsBtn.addEventListener('click', () => {
-        openClassModal('classes-tab');
-      });
-    }
-
-    // Modal close
-    if (closeBtn && modal) {
-      closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.classList.add('hidden');
-      });
-    }
-
-    // Tab switching
-    tabBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const targetTab = btn.dataset.tab;
-        switchModalTab(targetTab);
-      });
-    });
-
-    function switchModalTab(tabId) {
-      tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
-      document.querySelectorAll('.modal-tab-content').forEach(c => {
-        c.classList.toggle('active', c.id === tabId);
-      });
-
-      if (modalTitle) {
-        if (tabId === 'classes-tab') modalTitle.textContent = 'My Classes';
-        else if (tabId === 'tts-tab') modalTitle.textContent = 'Voice & TTS Settings';
-        else if (tabId === 'media-tab') modalTitle.textContent = 'Media & AI Keys';
-        else if (tabId === 'sync-tab') modalTitle.textContent = 'Cloud Sync & Backup';
-        else modalTitle.textContent = 'Settings & Classes';
-      }
-
-      if (tabId === 'classes-tab') {
-        hideClassForm();
-        renderClassesListModal();
-      } else if (tabId === 'tts-tab') {
-        populateTTSSettings();
-      } else if (tabId === 'media-tab') {
-        populateMediaSettings();
-      } else if (tabId === 'sync-tab') {
-        populateSyncForm();
-      }
-    }
-
-    function openClassModal(tabId = 'classes-tab') {
-      if (!modal) return;
-      modal.classList.remove('hidden');
-      switchModalTab(tabId);
-    }
-
-    // ── Voice & TTS Settings UI Handlers ─────────────────────
-    function updateTTSBadge() {
-      if (!statusBadge || typeof AudioPlayer === 'undefined') return;
-      const key = AudioPlayer.getApiKey();
-      if (key) {
-        statusBadge.className = 'tts-status-badge active';
-        const masked = key.length > 8 ? key.slice(0, 4) + '...' + key.slice(-4) : 'Active';
-        statusBadge.textContent = `Active (${masked})`;
-        statusBadge.title = `ElevenLabs API active: ${key}`;
-      } else {
-        statusBadge.className = 'tts-status-badge fallback';
-        statusBadge.textContent = 'Browser Speech';
-        statusBadge.title = 'No ElevenLabs key saved. Using browser Web Speech API fallback.';
-      }
-    }
-
-    function populateTTSSettings() {
-      if (keyInput && typeof AudioPlayer !== 'undefined') {
-        keyInput.value = AudioPlayer.getApiKey() || '';
-      }
-      if (voiceSelect && typeof AudioPlayer !== 'undefined') {
-        voiceSelect.value = AudioPlayer.getSelectedVoiceId() || '';
-      }
-      if (typeof AudioPlayer !== 'undefined') {
-        const currentSpeed = AudioPlayer.getPlaybackSpeed();
-        if (speedInput) speedInput.value = currentSpeed.toFixed(2);
-        updateSpeedUI(currentSpeed);
-      }
-      if (feedbackEl) {
-        feedbackEl.className = 'tts-feedback-msg hidden';
-        feedbackEl.textContent = '';
-      }
-      updateTTSBadge();
-    }
-
-    // Speaking speed range slider & reset
-    if (speedInput) {
-      speedInput.addEventListener('input', (e) => {
-        updateSpeedUI(e.target.value);
-      });
-    }
-
-    if (speedResetBtn && speedInput) {
-      speedResetBtn.addEventListener('click', () => {
-        speedInput.value = '0.85';
-        updateSpeedUI(0.85);
-      });
-    }
-
-    // Toggle API key visibility (password vs text)
-    if (visibilityBtn && keyInput) {
-      visibilityBtn.addEventListener('click', () => {
-        const isPassword = keyInput.type === 'password';
-        keyInput.type = isPassword ? 'text' : 'password';
-        visibilityBtn.title = isPassword ? 'Hide API key' : 'Show API key';
-        visibilityBtn.classList.toggle('active', isPassword);
-      });
-    }
-
-    // Save API key & voice preferences
-    if (saveTtsBtn) {
-      saveTtsBtn.addEventListener('click', () => {
-        const newKey = (keyInput ? keyInput.value : '').trim();
-        const voiceId = (voiceSelect ? voiceSelect.value : '').trim();
-        const speedVal = speedInput ? parseFloat(speedInput.value) : 0.85;
-
-        if (newKey) {
-          localStorage.setItem('phonics-flash-elevenlabs-key', newKey);
-        } else {
-          localStorage.removeItem('phonics-flash-elevenlabs-key');
-        }
-
-        if (voiceId) {
-          localStorage.setItem('phonics-flash-elevenlabs-voice', voiceId);
-        } else {
-          localStorage.removeItem('phonics-flash-elevenlabs-voice');
-        }
-
-        if (!isNaN(speedVal)) {
-          localStorage.setItem('phonics-flash-elevenlabs-speed', speedVal.toString());
-        }
-
-        if (typeof AudioPlayer !== 'undefined') {
-          AudioPlayer.clearCache();
-        }
-
-        updateTTSBadge();
-
-        if (feedbackEl) {
-          feedbackEl.className = 'tts-feedback-msg success';
-          feedbackEl.textContent = newKey
-            ? '✓ ElevenLabs API key and voice preferences saved!'
-            : '✓ Preferences saved (using browser speech fallback).';
-          feedbackEl.classList.remove('hidden');
-          setTimeout(() => {
-            if (feedbackEl) feedbackEl.classList.add('hidden');
-          }, 4000);
-        }
-
-        showToast('Voice settings saved!', 'success', 2500);
-      });
-    }
-
-    // Test Voice directly with sample synthesis
-    if (testTtsBtn) {
-      testTtsBtn.addEventListener('click', async () => {
-        const testKey = (keyInput ? keyInput.value : '').trim() || (typeof AudioPlayer !== 'undefined' ? AudioPlayer.getApiKey() : null);
-        const voiceId = (voiceSelect ? voiceSelect.value : '').trim();
-        const testSpeed = speedInput ? parseFloat(speedInput.value) : null;
-
-        if (!testKey) {
-          if (feedbackEl) {
-            feedbackEl.className = 'tts-feedback-msg error';
-            feedbackEl.textContent = '⚠️ Please enter an ElevenLabs API key first.';
-            feedbackEl.classList.remove('hidden');
-          }
-          if (keyInput) keyInput.focus();
-          return;
-        }
-
-        const originalBtnHTML = testTtsBtn.innerHTML;
-        testTtsBtn.disabled = true;
-        testTtsBtn.innerHTML = `<span>Testing voice...</span>`;
-        if (feedbackEl) {
-          feedbackEl.className = 'tts-feedback-msg';
-          feedbackEl.textContent = 'Connecting to ElevenLabs API...';
-          feedbackEl.classList.remove('hidden');
-        }
-
-        try {
-          await AudioPlayer.testElevenLabs(testKey, voiceId, 'phonics', testSpeed);
-          if (feedbackEl) {
-            feedbackEl.className = 'tts-feedback-msg success';
-            feedbackEl.textContent = '✓ Voice synthesis connected! Test audio played successfully.';
-            feedbackEl.classList.remove('hidden');
-          }
-        } catch (err) {
-          if (feedbackEl) {
-            feedbackEl.className = 'tts-feedback-msg error';
-            feedbackEl.textContent = `✕ ${err.message || 'ElevenLabs request failed'}`;
-            feedbackEl.classList.remove('hidden');
-          }
-        } finally {
-          testTtsBtn.disabled = false;
-          testTtsBtn.innerHTML = originalBtnHTML;
-        }
-      });
-    }
-
-    // Clear key
-    if (clearTtsBtn) {
-      clearTtsBtn.addEventListener('click', () => {
-        if (!confirm('Are you sure you want to remove your saved ElevenLabs API key from this browser?')) {
-          return;
-        }
-        localStorage.removeItem('phonics-flash-elevenlabs-key');
-        localStorage.removeItem('phonics-flash-elevenlabs-speed');
-        if (keyInput) keyInput.value = '';
-        if (speedInput) speedInput.value = '0.85';
-        updateSpeedUI(0.85);
-
-        if (typeof AudioPlayer !== 'undefined') {
-          AudioPlayer.clearCache();
-        }
-        updateTTSBadge();
-
-        if (feedbackEl) {
-          feedbackEl.className = 'tts-feedback-msg';
-          feedbackEl.textContent = 'API key removed. Audio will now use browser Speech Synthesis fallback.';
-          feedbackEl.classList.remove('hidden');
-          setTimeout(() => {
-            if (feedbackEl) feedbackEl.classList.add('hidden');
-          }, 4000);
-        }
-
-        showToast('API key removed from browser', 'info', 2500);
-      });
-    }
-
-    // Initialize TTS badge on startup
-    updateTTSBadge();
-
-    function renderClassesListModal() {
-      const container = document.getElementById('classes-list-container');
-      if (!container || typeof ClassesManager === 'undefined') return;
-
-      const classes = ClassesManager.getClasses();
-      const activeClass = ClassesManager.getActiveClass();
-
-      if (classes.length === 0) {
-        container.innerHTML = `
-          <div style="text-align:center;padding:2rem;color:var(--text-muted);">
-            <p>No classes created yet.</p>
-            <p style="margin-top:0.5rem;font-size:0.85rem;">Click "+ New Class" above to create one.</p>
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = '';
-      const sortedClasses = [...classes].sort((a, b) => a.name.localeCompare(b.name));
-      sortedClasses.forEach(c => {
-        const isActive = activeClass && activeClass.id === c.id;
-
-        const card = document.createElement('div');
-        card.className = `class-card-item ${isActive ? 'active-class' : ''}`;
-        card.innerHTML = `
-          <div class="class-card-info" title="Click to use this class">
-            <div class="class-card-name">
-              <span class="class-name-text"></span>
-              ${isActive ? '<span class="active-pill">Active</span>' : ''}
-            </div>
-          </div>
-          <div class="class-card-actions">
-            <button class="btn-icon-small edit-btn" title="Edit class">✏️ Edit</button>
-            <button class="btn-icon-small select-btn" title="Use this class">✔️ Use</button>
-            <button class="btn-icon-small delete delete-btn" title="Delete class">🗑️</button>
-          </div>
-        `;
-        card.querySelector('.class-name-text').textContent = c.name;
-
-        card.querySelector('.class-card-info').addEventListener('click', () => {
-          ClassesManager.setActiveClassId(c.id);
-          applyClassProfile(c);
-          populateClassDropdown();
-          modal.classList.add('hidden');
-        });
-
-        card.querySelector('.select-btn').addEventListener('click', () => {
-          ClassesManager.setActiveClassId(c.id);
-          applyClassProfile(c);
-          populateClassDropdown();
-          modal.classList.add('hidden');
-        });
-
-        card.querySelector('.edit-btn').addEventListener('click', (e) => {
-          e.stopPropagation();
-          showClassForm(c);
-        });
-
-        card.querySelector('.delete-btn').addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (confirm(`Delete class "${c.name}"?`)) {
-            ClassesManager.deleteClass(c.id);
-            populateClassDropdown();
-            renderClassesListModal();
-            renderMenu();
-          }
-        });
-
-        container.appendChild(card);
-      });
-    }
-
-    function showClassForm(cls) {
-      if (classesListView) classesListView.classList.add('hidden');
-      if (classFormView) classFormView.classList.remove('hidden');
-
-      const nameInput = document.getElementById('form-class-name');
-      document.getElementById('form-class-id').value = cls ? cls.id : '';
-      if (nameInput) nameInput.value = cls ? cls.name : '';
-      document.getElementById('form-start-time').value = cls?.schedule?.startTime || '15:00';
-      document.getElementById('form-end-time').value = cls?.schedule?.endTime || '16:00';
-
-      const selectedDays = cls?.schedule?.days || ['Mon', 'Wed', 'Fri'];
-      document.querySelectorAll('#class-form input[name="days"]').forEach(cb => {
-        cb.checked = selectedDays.includes(cb.value);
-      });
-
-      // Populate curriculum selector for class
-      const curSelect = document.getElementById('form-class-curriculum');
-      if (curSelect && typeof EditorStore !== 'undefined') {
-        let curricula = EditorStore.getCurricula();
-        if (!curricula || curricula.length === 0) {
-          curricula = EditorStore.getAllCurriculaRaw();
-        }
-        curSelect.innerHTML = '';
-        curricula.forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c.id;
-          opt.textContent = c.name;
-          curSelect.appendChild(opt);
-        });
-        const selectedCurId = cls ? (cls.curriculumId || 'smart-phonics') : EditorStore.getActiveCurriculumId();
-        curSelect.value = selectedCurId;
-        if (!curSelect.value && curSelect.options.length > 0) {
-          curSelect.selectedIndex = 0;
-        }
-      }
-
-      if (classFormTitle) {
-        classFormTitle.textContent = cls ? `Edit Class: ${cls.name}` : 'Create New Class';
-      }
-
-      if (nameInput) {
-        setTimeout(() => nameInput.focus(), 50);
-      }
-    }
-
-    function hideClassForm() {
-      if (classFormView) classFormView.classList.add('hidden');
-      if (classesListView) classesListView.classList.remove('hidden');
-    }
-
-    if (addClassBtn) {
-      addClassBtn.addEventListener('click', () => {
-        showClassForm(null);
-      });
-    }
-
-    if (cancelFormBtn) {
-      cancelFormBtn.addEventListener('click', () => {
-        hideClassForm();
-      });
-    }
-
-    if (formBackBtn) {
-      formBackBtn.addEventListener('click', () => {
-        hideClassForm();
-      });
-    }
-
-    // Auto-parse schedule (days and time) from class name input
-    const classNameInput = document.getElementById('form-class-name');
-    if (classNameInput) {
-      classNameInput.addEventListener('input', () => {
-        const val = classNameInput.value;
-        if (typeof ClassesManager !== 'undefined' && ClassesManager.parseScheduleFromClassName) {
-          const { days, time } = ClassesManager.parseScheduleFromClassName(val);
-          if (days && days.length > 0) {
-            document.querySelectorAll('#class-form input[name="days"]').forEach(cb => {
-              cb.checked = days.includes(cb.value);
-            });
-          }
-          if (time) {
-            const startEl = document.getElementById('form-start-time');
-            const endEl = document.getElementById('form-end-time');
-            if (startEl && time.startTime) startEl.value = time.startTime;
-            if (endEl && time.endTime) endEl.value = time.endTime;
-          }
-        }
-      });
-    }
-
-    if (classForm) {
-      classForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const classId = document.getElementById('form-class-id').value;
-        const name = document.getElementById('form-class-name').value.trim();
-        const startTime = document.getElementById('form-start-time').value;
-        const endTime = document.getElementById('form-end-time').value;
-        const checkedDays = Array.from(document.querySelectorAll('#class-form input[name="days"]:checked')).map(cb => cb.value);
-        const curSelect = document.getElementById('form-class-curriculum');
-        const curriculumId = curSelect ? curSelect.value : 'smart-phonics';
-
-        if (!name) return;
-
-        if (classId) {
-          // Update existing
-          ClassesManager.updateClass(classId, {
-            name,
-            curriculumId,
-            schedule: { days: checkedDays, startTime, endTime }
-          });
-          showToast(`Updated class "${name}"`, 'success', 2000);
-        } else {
-          // Add new class (captures currently selected units & options)
-          const currentUnits = getSelectedUnitIds();
-          const newCls = ClassesManager.addClass({
-            name,
-            curriculumId,
-            schedule: { days: checkedDays, startTime, endTime },
-            selectedUnits: currentUnits,
-            options: { ...options }
-          });
-          showToast(`Created class "${name}"`, 'success', 2000);
-        }
-
-        populateClassDropdown();
-        renderClassesListModal();
-        hideClassForm();
-      });
-    }
-
-    // ── Media & AI Keys Tab Setup ──────────────────────────────
-    function populateMediaSettings() {
-      const pixabayInput = document.getElementById('pixabay-key-settings');
-      const geminiInput = document.getElementById('gemini-key-settings');
-      const unsplashInput = document.getElementById('unsplash-key-settings');
-      const hideSmartCb = document.getElementById('hide-smart-phonics-checkbox');
-
-      if (pixabayInput && typeof MediaAPIs !== 'undefined') {
-        pixabayInput.value = MediaAPIs.getPixabayKey() || '';
-      }
-      if (geminiInput && typeof MediaAPIs !== 'undefined') {
-        geminiInput.value = MediaAPIs.getGeminiKey() || '';
-      }
-      if (unsplashInput && typeof MediaAPIs !== 'undefined') {
-        unsplashInput.value = MediaAPIs.getUnsplashKey() || '';
-      }
-      if (hideSmartCb && typeof EditorStore !== 'undefined') {
-        hideSmartCb.checked = EditorStore.isBuiltInHidden();
-      }
-    }
-
-    const saveMediaKeysBtn = document.getElementById('save-media-keys-btn');
-    if (saveMediaKeysBtn) {
-      saveMediaKeysBtn.addEventListener('click', () => {
-        const pixabay = document.getElementById('pixabay-key-settings')?.value.trim() || '';
-        const gemini = document.getElementById('gemini-key-settings')?.value.trim() || '';
-        const unsplash = document.getElementById('unsplash-key-settings')?.value.trim() || '';
-        const hideSmart = document.getElementById('hide-smart-phonics-checkbox')?.checked || false;
-
-        if (typeof MediaAPIs !== 'undefined') {
-          MediaAPIs.setPixabayKey(pixabay);
-          MediaAPIs.setGeminiKey(gemini);
-          MediaAPIs.setUnsplashKey(unsplash);
-        }
-
-        if (typeof EditorStore !== 'undefined') {
-          EditorStore.setHideBuiltIn(hideSmart);
-          renderBookDropdown();
-          renderMenu();
-        }
-
-        const msgSpan = document.getElementById('media-keys-status-msg');
-        if (msgSpan) {
-          msgSpan.textContent = '✅ Saved!';
-          msgSpan.style.color = '#3DAA5C';
-          setTimeout(() => { if (msgSpan) msgSpan.textContent = ''; }, 3000);
-        }
-        showToast('Media & AI settings saved', 'success', 2000);
-      });
-    }
-
-    const hideSmartCheckbox = document.getElementById('hide-smart-phonics-checkbox');
-    if (hideSmartCheckbox) {
-      hideSmartCheckbox.addEventListener('change', (e) => {
-        if (typeof EditorStore !== 'undefined') {
-          EditorStore.setHideBuiltIn(e.target.checked);
-          renderBookDropdown();
-          renderMenu();
-        }
-      });
-    }
-
-    // Cloud Sync Tab Setup
-    function populateSyncForm() {
-      const upstashCfg = ClassesManager.getUpstashConfig();
-      const urlInput = document.getElementById('upstash-url-input');
-      const tokenInput = document.getElementById('upstash-token-input');
-      if (urlInput && upstashCfg?.url) urlInput.value = upstashCfg.url;
-      if (tokenInput && upstashCfg?.token) tokenInput.value = upstashCfg.token;
-    }
-
-    if (saveUpstashBtn) {
-      saveUpstashBtn.addEventListener('click', async () => {
-        const url = document.getElementById('upstash-url-input').value.trim();
-        const token = document.getElementById('upstash-token-input').value.trim();
-        const msgSpan = document.getElementById('sync-status-msg');
-
-        ClassesManager.setUpstashConfig(url, token);
-
-        if (!url || !token) {
-          msgSpan.textContent = 'Configuration cleared.';
-          return;
-        }
-
-        msgSpan.textContent = 'Testing connection & syncing...';
-        try {
-          const res = await ClassesManager.syncCloud();
-          if (res && res.success) {
-            msgSpan.textContent = '✅ Connected and synced to Upstash!';
-            msgSpan.style.color = '#3DAA5C';
-            populateClassDropdown();
-            showToast('Connected and synced to Upstash Redis!', 'success', 3000);
-          } else {
-            msgSpan.textContent = '⚠️ Cloud sync failed. Check URL & Token.';
-            msgSpan.style.color = '#FF6B6B';
-          }
-        } catch (err) {
-          msgSpan.textContent = `❌ Error: ${err.message}`;
-          msgSpan.style.color = '#FF6B6B';
-        }
-      });
-    }
-
-    // Export JSON
-    if (exportBtn) {
-      exportBtn.addEventListener('click', () => {
-        const json = ClassesManager.exportJSON();
-        const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `phonics-flash-classes-${new Date().toISOString().slice(0, 10)}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showToast('Classes backup exported!', 'success', 2000);
-      });
-    }
-
-    // Import JSON
-    if (importInput) {
-      importInput.addEventListener('change', (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const res = ClassesManager.importJSON(ev.target.result);
-          if (res && res.success) {
-            populateClassDropdown();
-            renderClassesListModal();
-            renderMenu();
-            showToast(`Imported ${res.count} classes!`, 'success', 3000);
-          } else {
-            showToast(`Import failed: ${res.error}`, 'error', 4000);
-          }
-        };
-        reader.readAsText(file);
+    if (window.SettingsModal) {
+      SettingsModal.init({
+        onClassSelect: (cls) => applyClassProfile(cls),
+        onClassDeselect: () => resetToDefaultSettings(),
+        getSelectedUnitIds: () => getSelectedUnitIds(),
+        getOptions: () => options,
+        onCurriculumChange: () => renderMenu(),
+        showToast: (msg, type, dur) => showToast(msg, type, dur)
       });
     }
   }

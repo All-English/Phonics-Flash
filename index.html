@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css">
 
   <!-- App CSS -->
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=2.6">
 </head>
 <body>
 
@@ -66,19 +66,34 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             <span>Settings</span>
           </button>
+
+          <button id="theme-toggle" class="class-action-btn theme-toggle-btn" title="Toggle theme" aria-label="Toggle light/dark mode"></button>
         </div>
       </div>
     </header>
 
-    <!-- Special Review Modes Bar -->
-    <div class="modes-bar">
-      <button id="toggle-dictation" class="option-btn mode-btn" title="Show images first, click/tap to reveal the word text">
-        <span>Dictation Mode</span>
-      </button>
-
-      <button id="toggle-quiz" class="option-btn mode-btn" title="Show a picture with two word choices. Press Space/Enter or click to reveal correct answer.">
-        <span>Quiz Mode</span>
-      </button>
+    <!-- Activity Mode Bar (Segmented Control) -->
+    <div class="activity-section">
+      <div class="activity-segmented-bar" role="tablist" aria-label="Activity Mode">
+        <button id="mode-flashcards" class="activity-tab active" data-activity="flashcards" role="tab" aria-selected="true" title="Standard flashcard review">
+          <span>Flashcards</span>
+        </button>
+        <button id="mode-word-quiz" class="activity-tab" data-activity="word-quiz" role="tab" aria-selected="false" title="Show picture with two word choices">
+          <span>Word Quiz</span>
+        </button>
+        <button id="mode-sound-quiz" class="activity-tab" data-activity="sound-quiz" role="tab" aria-selected="false" title="Show picture with blanked sound and two sound choices">
+          <span>Sound Quiz</span>
+        </button>
+        <button id="mode-picture-quiz" class="activity-tab" data-activity="picture-quiz" role="tab" aria-selected="false" title="Show target sound with two picture choices">
+          <span>Picture Quiz</span>
+        </button>
+        <button id="mode-dictation" class="activity-tab" data-activity="dictation" role="tab" aria-selected="false" title="Show image first, reveal word text">
+          <span>Dictation Mode</span>
+        </button>
+        <button id="mode-word-chart" class="activity-tab" data-activity="word-chart" role="tab" aria-selected="false" title="Full screen interactive word grid">
+          <span>Word Chart</span>
+        </button>
+      </div>
     </div>
 
     <!-- Options Bar -->
@@ -470,9 +485,6 @@
     </div>
   </div>
 
-  <!-- Theme Toggle (always visible, persists across screens) -->
-  <button id="theme-toggle" title="Toggle theme" aria-label="Toggle light/dark mode"></button>
-
   <!-- ============================================================
        SCRIPTS
        ============================================================ -->
@@ -499,7 +511,16 @@
   <!-- Audio playback module -->
   <script src="js/audio.js"></script>
 
-  <!-- Main application -->
+  <!-- Phonics Rules & Target Sound Engine -->
+  <script src="js/phonics-engine.js"></script>
+
+  <!-- Word Chart & Letter Chart Screen -->
+  <script src="js/chart-screen.js"></script>
+
+  <!-- Settings & Classes Modal -->
+  <script src="js/settings-modal.js"></script>
+
+  <!-- Main application orchestrator -->
   <script src="js/app.js"></script>
 
 </body>
