@@ -498,30 +498,11 @@
     const seenWords = new Set();
     const letterMap = new Map();
 
-    targetUnits.forEach(unit => {
-      const uLevelId = unit.levelId || 'L1';
-      if (uLevelId === 'L1') {
-        (unit.words || []).forEach(w => {
-          const baseLetter = w.word ? w.word.charAt(0).toUpperCase() : '';
-          if (baseLetter && !letterMap.has(baseLetter)) {
-            const singleAudio = `media/SmartPhonics/1/sounds/SingleLetters_single/${baseLetter}${baseLetter.toLowerCase()}.mp3`;
-            letterMap.set(baseLetter, {
-              baseLetter: baseLetter,
-              word: w.word,
-              audio: singleAudio,
-              levelId: 'L1'
-            });
-          }
-        });
-      } else {
-        const wordsList = [...(unit.words || [])];
-        if (options.includeExtras && unit.extraWords) {
-          wordsList.push(...unit.extraWords);
-        }
-        if (options.includeSightWords && unit.sightWords) {
-          wordsList.push(...unit.sightWords);
-        }
-        wordsList.forEach(w => {
+    if (options.sightWordsOnly) {
+      targetUnits.forEach(unit => {
+        const uLevelId = unit.levelId || 'L1';
+        const sightWords = (unit.sightWords || []).map(sw => typeof sw === 'string' ? { word: sw, isSightWord: true } : { ...sw, isSightWord: true });
+        sightWords.forEach(w => {
           const cleanWord = w.word ? w.word.trim() : '';
           if (cleanWord && !seenWords.has(cleanWord.toLowerCase())) {
             seenWords.add(cleanWord.toLowerCase());
@@ -532,12 +513,54 @@
               audio: w.audio,
               levelId: uLevelId,
               targetSound: unit.targetSound || unit.sound || '',
-              isSightWord: !!w.isSightWord
+              isSightWord: true
             });
           }
         });
-      }
-    });
+      });
+    } else {
+      targetUnits.forEach(unit => {
+        const uLevelId = unit.levelId || 'L1';
+        if (uLevelId === 'L1') {
+          (unit.words || []).forEach(w => {
+            const baseLetter = w.word ? w.word.charAt(0).toUpperCase() : '';
+            if (baseLetter && !letterMap.has(baseLetter)) {
+              const singleAudio = `media/SmartPhonics/1/sounds/SingleLetters_single/${baseLetter}${baseLetter.toLowerCase()}.mp3`;
+              letterMap.set(baseLetter, {
+                baseLetter: baseLetter,
+                word: w.word,
+                audio: singleAudio,
+                levelId: 'L1'
+              });
+            }
+          });
+        } else {
+          const wordsList = [...(unit.words || [])];
+          if (options.includeExtras && unit.extraWords) {
+            wordsList.push(...unit.extraWords);
+          }
+          if (options.includeSightWords && unit.sightWords) {
+            const swList = unit.sightWords.map(sw => typeof sw === 'string' ? { word: sw, isSightWord: true } : { ...sw, isSightWord: true });
+            wordsList.push(...swList);
+          }
+          wordsList.forEach(w => {
+            const cleanWord = w.word ? w.word.trim() : '';
+            if (cleanWord && !seenWords.has(cleanWord.toLowerCase())) {
+              seenWords.add(cleanWord.toLowerCase());
+              displayItems.push({
+                displayText: cleanWord,
+                baseLetter: cleanWord.charAt(0).toUpperCase(),
+                word: cleanWord,
+                audio: w.audio,
+                levelId: uLevelId,
+                targetSound: unit.targetSound || unit.sound || '',
+                isSightWord: !!w.isSightWord
+              });
+            }
+          });
+        }
+      });
+    }
 
     // Format Level 1 letters
     if (letterMap.size > 0) {

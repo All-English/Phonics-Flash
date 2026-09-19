@@ -46,18 +46,60 @@ window.MediaAPIs = (() => {
     else localStorage.removeItem(GEMINI_STORAGE_KEY);
   }
 
+  // ── Cache helper (In-memory + sessionStorage with 24h TTL) ──
+  const memCache = new Map();
+  const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours per Pixabay policy
+
+  function getFromCache(cacheKey) {
+    if (memCache.has(cacheKey)) {
+      const entry = memCache.get(cacheKey);
+      if (Date.now() - entry.timestamp < CACHE_TTL_MS) {
+        return entry.data;
+      }
+      memCache.delete(cacheKey);
+    }
+    try {
+      const raw = sessionStorage.getItem(cacheKey);
+      if (raw) {
+        const entry = JSON.parse(raw);
+        if (Date.now() - entry.timestamp < CACHE_TTL_MS) {
+          memCache.set(cacheKey, entry);
+          return entry.data;
+        }
+        sessionStorage.removeItem(cacheKey);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  function saveToCache(cacheKey, data) {
+    const entry = { timestamp: Date.now(), data };
+    memCache.set(cacheKey, entry);
+    try {
+      sessionStorage.setItem(cacheKey, JSON.stringify(entry));
+    } catch (_) {}
+  }
+
   // ── 2. Clipart Search (Wikimedia Commons, Zero-Key) ────────
-  async function searchClipart(query) {
-    if (!query || !query.trim()) return [];
+  async function searchClipart(query, offset = 0) {
+    if (!query || !query.trim()) return { results: [], offset: 0, hasMore: false };
     const term = query.trim();
+    const cacheKey = `pf_clipart_${term.toLowerCase()}_${offset}`;
+    const cached = getFromCache(cacheKey);
+    if (cached) return cached;
+
     // Search Wikimedia Commons with origin=* and iiprop including mime
-    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(term + ' clipart')}&gsrnamespace=6&format=json&origin=*&prop=imageinfo&iiprop=url|thumburl|mime&iiurlwidth=320&gsrlimit=24`;
+    const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(term + ' clipart')}&gsrnamespace=6&format=json&origin=*&prop=imageinfo&iiprop=url|thumburl|mime&iiurlwidth=320&gsrlimit=24&gsroffset=${offset}`;
 
     try {
       const res = await fetch(url);
       if (!res.ok) throw new Error(`Wikimedia error: ${res.status}`);
       const data = await res.json();
-      if (!data.query || !data.query.pages) return [];
+      if (!data.query || !data.query.pages) {
+        const emptyResult = { results: [], offset, hasMore: false };
+        saveToCache(cacheKey, emptyResult);
+        return emptyResult;
+      }
 
       const results = [];
       const pages = Object.values(data.query.pages);
@@ -80,10 +122,16 @@ window.MediaAPIs = (() => {
           }
         }
       }
-      return results;
+      const output = {
+        results,
+        offset,
+        hasMore: !!data.continue
+      };
+      saveToCache(cacheKey, output);
+      return output;
     } catch (e) {
       console.warn('[MediaAPIs] Wikimedia clipart search failed:', e);
-      return [];
+      return { results: [], offset, hasMore: false };
     }
   }
 
@@ -150,48 +198,96 @@ window.MediaAPIs = (() => {
   }
 
   // ── 5. Pixabay API Search ───────────────────────────────────
-  async function searchPixabay(query, customKey = null) {
+  let lastPixabayRateLimit = { limit: 100, remaining: 100, reset: 60 };
+
+  async function searchPixabay(query, customKey = null, page = 1, imageType = 'all') {
     const key = customKey || getPixabayKey();
     if (!key) throw new Error('Pixabay API Key is required.');
-    if (!query || !query.trim()) return [];
+    if (!query || !query.trim()) return { results: [], page: 1, totalHits: 0, hasMore: false };
 
-    const url = `https://pixabay.com/api/?key=${encodeURIComponent(key)}&q=${encodeURIComponent(query.trim())}&image_type=all&safesearch=true&per_page=24`;
+    const type = imageType || 'all';
+    const cacheKey = `pf_pixabay_${key.slice(0, 8)}_${query.trim().toLowerCase()}_${type}_${page}`;
+    const cached = getFromCache(cacheKey);
+    if (cached) return cached;
+
+    const url = `https://pixabay.com/api/?key=${encodeURIComponent(key)}&q=${encodeURIComponent(query.trim())}&image_type=${encodeURIComponent(type)}&safesearch=true&per_page=24&page=${page}`;
 
     const res = await fetch(url);
+
+    // Read rate limit headers if present
+    const remaining = res.headers.get('X-RateLimit-Remaining');
+    const reset = res.headers.get('X-RateLimit-Reset');
+    if (remaining !== null) lastPixabayRateLimit.remaining = parseInt(remaining, 10);
+    if (reset !== null) lastPixabayRateLimit.reset = parseInt(reset, 10);
+
     if (!res.ok) {
       if (res.status === 429) {
-        throw new Error('Pixabay rate limit reached (too many searches). Please wait a moment and try again.');
+        const waitMsg = lastPixabayRateLimit.reset ? ` Resets in ${lastPixabayRateLimit.reset}s.` : ' Please wait a moment.';
+        throw new Error(`Pixabay rate limit reached (100 requests/min).${waitMsg}`);
       } else if (res.status === 400 || res.status === 403) {
         throw new Error('Invalid Pixabay API Key. Please verify your key.');
       }
       throw new Error(`Pixabay error (${res.status})`);
     }
     const data = await res.json();
-    if (!data.hits) return [];
+    if (!data.hits) return { results: [], page, totalHits: 0, hasMore: false };
 
-    return data.hits.map(hit => ({
+    const results = data.hits.map(hit => ({
       id: hit.id,
       title: hit.tags,
       thumb: hit.previewURL,
       full: hit.webformatURL,
       source: 'Pixabay'
     }));
+
+    const totalHits = data.totalHits || 0;
+    const output = {
+      results,
+      page,
+      totalHits,
+      total: data.total || 0,
+      hasMore: (page * 24) < totalHits
+    };
+    saveToCache(cacheKey, output);
+    return output;
   }
 
   // ── 6. Unsplash API Search ──────────────────────────────────
-  async function searchUnsplash(query, customKey = null) {
+  let lastUnsplashRateLimit = { limit: 50, remaining: 50 };
+
+  async function searchUnsplash(query, customKey = null, page = 1) {
     const key = customKey || getUnsplashKey();
     if (!key) throw new Error('Unsplash Access Key is required.');
-    if (!query || !query.trim()) return [];
+    if (!query || !query.trim()) return { results: [], page: 1, totalPages: 0, hasMore: false };
 
-    const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query.trim())}&client_id=${encodeURIComponent(key)}&per_page=24`;
+    const cacheKey = `pf_unsplash_${key.slice(0, 8)}_${query.trim().toLowerCase()}_${page}`;
+    const cached = getFromCache(cacheKey);
+    if (cached) return cached;
+
+    // content_filter=high strictly filters mature/unsafe images for kids
+    const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query.trim())}&client_id=${encodeURIComponent(key)}&per_page=24&page=${page}&content_filter=high`;
 
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`Unsplash error (${res.status})`);
-    const data = await res.json();
-    if (!data.results) return [];
 
-    return data.results.map(photo => ({
+    // Read rate limit headers if present
+    const limit = res.headers.get('X-Ratelimit-Limit');
+    const remaining = res.headers.get('X-Ratelimit-Remaining');
+    if (limit !== null) lastUnsplashRateLimit.limit = parseInt(limit, 10);
+    if (remaining !== null) lastUnsplashRateLimit.remaining = parseInt(remaining, 10);
+
+    if (!res.ok) {
+      if (res.status === 403 || res.status === 429) {
+        throw new Error('Unsplash hourly rate limit reached (50 requests/hour limit for free demo keys). Window resets at the top of the hour. You can use Pixabay or Clipart in the meantime.');
+      } else if (res.status === 401) {
+        throw new Error('Invalid Unsplash Access Key. Please check your key.');
+      }
+      throw new Error(`Unsplash error (${res.status})`);
+    }
+
+    const data = await res.json();
+    if (!data.results) return { results: [], page, totalPages: 0, hasMore: false };
+
+    const results = data.results.map(photo => ({
       id: photo.id,
       title: photo.alt_description || photo.description || 'Photo',
       thumb: photo.urls.small,
@@ -199,6 +295,17 @@ window.MediaAPIs = (() => {
       downloadLocation: photo.links ? photo.links.download_location : null,
       source: 'Unsplash'
     }));
+
+    const totalPages = data.total_pages || 1;
+    const output = {
+      results,
+      page,
+      total: data.total || 0,
+      totalPages,
+      hasMore: page < totalPages
+    };
+    saveToCache(cacheKey, output);
+    return output;
   }
 
   async function trackUnsplashDownload(downloadLocation, customKey = null) {
@@ -211,6 +318,13 @@ window.MediaAPIs = (() => {
     } catch (e) {
       console.warn('[MediaAPIs] Unsplash download tracking ping failed:', e);
     }
+  }
+
+  function getRateLimitStatus() {
+    return {
+      pixabay: { ...lastPixabayRateLimit },
+      unsplash: { ...lastUnsplashRateLimit }
+    };
   }
 
   // ── 7. Microphone Voice Recorder (HTML5 MediaRecorder) ──────
@@ -333,6 +447,7 @@ window.MediaAPIs = (() => {
     searchPixabay,
     searchUnsplash,
     trackUnsplashDownload,
+    getRateLimitStatus,
     MicrophoneRecorder
   };
 })();

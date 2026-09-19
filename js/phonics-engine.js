@@ -19,7 +19,8 @@
   // ── Phonics Target Sound Highlight Helper ──────────────────
   function highlightTargetSound(word, targetSoundStr, levelId) {
     if (!word || !targetSoundStr) return word;
-    if (levelId === 'L1') return word;
+    // In Smart Phonics L1 single-letter cards (e.g. "Aa", "Bb"), don't highlight single case letter pairs
+    if (levelId === 'L1' && /^[A-Z][a-z]$/.test(word)) return word;
 
     const rawTargets = targetSoundStr.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
     if (rawTargets.length === 0) return word;
@@ -30,7 +31,8 @@
     // Highlight both the vowel and final silent 'e'
     let isL3Split = false;
     let l3Vowel = '';
-    if (levelId === 'L3' && lowerWord.endsWith('e')) {
+    const isL3OrMagicE = /(?:^|_)L3(?:_|$)/i.test(levelId) || targetSoundStr.includes('_e') || targetSoundStr.includes('-e');
+    if (isL3OrMagicE && lowerWord.endsWith('e')) {
       if (rawTargets.length === 2 && rawTargets[1] === 'e') {
         isL3Split = true;
         l3Vowel = rawTargets[0];
@@ -74,7 +76,7 @@
   // ── Target Sound Blanking Helper ───────────────────────────
   function getBlankedWord(word, targetSoundStr, levelId) {
     if (!word) return word;
-    if (levelId === 'L1') {
+    if (/(?:^|_)L1(?:_|$)/i.test(levelId) && /^[A-Z][a-z]$/.test(word)) {
       return `<span class="sound-blank">_</span><span class="sound-blank">_</span>`;
     }
     if (!targetSoundStr) return word;
@@ -87,7 +89,8 @@
     // Level 3 Magic E / Split Digraph: e.g. targetSound 'a, e', 'a_e', 'a-e' -> b _ k _
     let isL3BlankSplit = false;
     let l3BlankVowel = '';
-    if (levelId === 'L3' && lowerWord.endsWith('e')) {
+    const isL3OrMagicE = /(?:^|_)L3(?:_|$)/i.test(levelId) || targetSoundStr.includes('_e') || targetSoundStr.includes('-e');
+    if (isL3OrMagicE && lowerWord.endsWith('e')) {
       if (rawTargets.length === 2 && rawTargets[1] === 'e') {
         isL3BlankSplit = true;
         l3BlankVowel = rawTargets[0];
@@ -138,18 +141,22 @@
     let correctSound = '';
     let distractor = '';
 
-    if (levelId === 'L1') {
+    const isL1 = /(?:^|_)L1(?:_|$)/i.test(levelId);
+    const isL2 = /(?:^|_)L2(?:_|$)/i.test(levelId);
+    const isL3 = /(?:^|_)L3(?:_|$)/i.test(levelId);
+
+    if (isL1 && /^[A-Z][a-z]$/.test(word)) {
       const baseChar = word.charAt(0).toUpperCase();
       correctSound = baseChar;
       const allL1 = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
       const candidates = allL1.filter(l => l !== correctSound);
       distractor = candidates[Math.floor(Math.random() * candidates.length)];
-    } else if (levelId === 'L3' && ((rawTargets.length === 2 && rawTargets[1] === 'e') || (rawTargetStr.length === 3 && (rawTargetStr[1] === '_' || rawTargetStr[1] === '-') && rawTargetStr[2].toLowerCase() === 'e')) && lowerWord.endsWith('e')) {
+    } else if ((isL3 || rawTargetStr.includes('_e') || rawTargetStr.includes('-e')) && ((rawTargets.length === 2 && rawTargets[1] === 'e') || (rawTargetStr.length === 3 && (rawTargetStr[1] === '_' || rawTargetStr[1] === '-') && rawTargetStr[2].toLowerCase() === 'e')) && lowerWord.endsWith('e')) {
       const vowel = rawTargets.length === 2 ? rawTargets[0] : rawTargetStr[0].toLowerCase();
       correctSound = `${vowel}_e`;
       const allL3 = ['a_e', 'i_e', 'o_e', 'u_e'].filter(s => s !== correctSound);
       distractor = allL3[Math.floor(Math.random() * allL3.length)];
-    } else if (levelId === 'L2') {
+    } else if (isL2) {
       const sortedTargets = [...rawTargets].sort((a, b) => b.length - a.length);
       correctSound = sortedTargets.find(t => lowerWord.includes(t)) || rawTargets[0] || 'a';
       const allL2 = ['a', 'e', 'i', 'o', 'u'].filter(s => s !== correctSound);
@@ -174,7 +181,14 @@
             });
           });
         }
-        distractor = levelSounds.length > 0 ? levelSounds[Math.floor(Math.random() * levelSounds.length)] : 'th';
+        if (levelSounds.length > 0) {
+          distractor = levelSounds[Math.floor(Math.random() * levelSounds.length)];
+        } else {
+          // Priority 3: Common phonics sounds fallback
+          const commonFallbacks = ['sh', 'ch', 'th', 'ee', 'oa', 'ai', 'ay', 'oo', 'ar', 'or', 'er', 'igh'];
+          const filtered = commonFallbacks.filter(s => s !== correctSound);
+          distractor = filtered[Math.floor(Math.random() * filtered.length)] || 'sh';
+        }
       }
     }
 
@@ -193,7 +207,7 @@
     const rawWords = isExtra ? (unit.extraWords || []) : (unit.words || []);
     if (!rawWords || rawWords.length === 0) return [];
 
-    const isL1 = unit.levelId === 'L1' || (unit.id && unit.id.startsWith('L1'));
+    const isL1 = /(?:^|_)L1(?:_|$)/i.test(unit.levelId || '') || (unit.id && /(?:^|_)L1(?:_|$)/i.test(unit.id));
 
     let words = rawWords.map(w => ({ ...w, isExtra }));
 

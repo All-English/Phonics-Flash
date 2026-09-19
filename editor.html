@@ -108,9 +108,10 @@
       <!-- Empty State (when no unit is selected) -->
       <div class="editor-empty-state" id="editor-empty-state">
         <div class="empty-icon-wrap">📖</div>
-        <h2>Select or Create a Unit</h2>
-        <p>Choose a unit from the left sidebar to edit words, images, and audio, or create a brand new level and unit for this book.</p>
-        <div class="empty-quick-actions">
+        <h2 id="empty-state-title">Select or Create a Unit</h2>
+        <p id="empty-state-desc">Choose a unit from the left sidebar to edit words, images, and audio, or create a brand new level and unit for this book.</p>
+        <div class="empty-quick-actions" id="empty-quick-actions">
+          <button type="button" id="empty-add-unit-btn" class="btn btn-primary hidden">+ Add Unit to Level</button>
           <button type="button" id="empty-add-level-btn" class="btn btn-primary">+ Add New Level</button>
           <button type="button" id="empty-clone-smart-btn" class="btn btn-secondary">Clone Smart Phonics as Template</button>
         </div>
@@ -127,7 +128,8 @@
 
           <div class="meta-field flex-2">
             <label for="unit-target-sound-input">Target Sound(s) / Letters</label>
-            <input type="text" id="unit-target-sound-input" class="form-input" placeholder="e.g. a,b,c or short a">
+            <input type="text" id="unit-target-sound-input" class="form-input" placeholder="e.g. a or a,b,c or a_e (sound in word)">
+            <span class="field-hint">Exact letters to highlight in words (e.g. <code>a</code>, <code>ch</code>, <code>ee</code>). Avoid descriptive text like "short a".</span>
           </div>
 
           <div class="meta-field flex-1">
@@ -354,9 +356,12 @@
             </div>
           </div>
         </div>
-        <div class="modal-actions">
-          <button type="submit" class="btn btn-primary">Save Level</button>
-          <button type="button" class="btn btn-secondary" id="level-modal-cancel-btn">Cancel</button>
+        <div class="modal-actions modal-actions-split">
+          <button type="button" class="btn btn-danger btn-sm hidden" id="level-modal-delete-btn">Delete Level</button>
+          <div class="modal-actions-right">
+            <button type="submit" class="btn btn-primary">Save Level</button>
+            <button type="button" class="btn btn-secondary" id="level-modal-cancel-btn">Cancel</button>
+          </div>
         </div>
       </form>
     </div>
@@ -371,12 +376,12 @@
       </div>
       <form id="batch-words-form" class="modal-body">
         <div class="form-group">
-          <label for="batch-words-textarea">Enter Words (Comma or Line Separated)</label>
+          <label for="batch-words-textarea" id="batch-words-label">Enter Words (Comma or Line Separated)</label>
           <textarea id="batch-words-textarea" class="form-textarea" rows="6" placeholder="cat, bat, hat, mat, rat&#10;or&#10;apple&#10;ant&#10;alligator" required></textarea>
-          <span class="field-hint">Cards will be created immediately with automatic TTS enabled. You can assign images afterward.</span>
+          <span class="field-hint" id="batch-words-hint">Cards will be created immediately with automatic TTS enabled. You can assign images afterward.</span>
         </div>
         <div class="modal-actions">
-          <button type="submit" class="btn btn-primary">Add Word Cards</button>
+          <button type="submit" class="btn btn-primary" id="batch-words-submit-btn">Add Word Cards</button>
           <button type="button" class="btn btn-secondary" id="batch-words-cancel-btn">Cancel</button>
         </div>
       </form>
@@ -492,8 +497,8 @@
   <script src="js/shared-class-sync.js?v=1.1"></script>
   <script src="js/media-db.js?v=1.1"></script>
   <script src="js/editor-store.js?v=1.1"></script>
-  <script src="js/media-apis.js?v=1.1"></script>
-  <script src="js/image-picker.js?v=1.1"></script>
+  <script src="js/media-apis.js?v=1.2"></script>
+  <script src="js/image-picker.js?v=1.2"></script>
 
   <!-- Audio playback module for testing voices (loaded before audio-picker) -->
   <script src="js/audio.js?v=1.1"></script>

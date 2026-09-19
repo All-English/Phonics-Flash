@@ -16,8 +16,8 @@
   --bg-tertiary: light-dark(#ffffff, #1a1f4a);
 
   --text-primary: light-dark(#1a1a2e, #ffffff);
-  --text-secondary: light-dark(rgba(26, 26, 46, 0.6), rgba(255, 255, 255, 0.65));
-  --text-muted: light-dark(rgba(26, 26, 46, 0.38), rgba(255, 255, 255, 0.4));
+  --text-secondary: light-dark(#475569, rgba(255, 255, 255, 0.75));
+  --text-muted: light-dark(#64748b, rgba(255, 255, 255, 0.5));
 
   --accent: #FF6B6B;
   --accent-hover: #FF8E8E;
@@ -106,10 +106,12 @@ html, body {
   height: 100%;
   width: 100%;
   overflow: hidden;
+  background-color: light-dark(#f0f2f7, #0a0e27);
 }
 
 body {
   font-family: var(--font-ui);
+  background-color: light-dark(#f0f2f7, #0a0e27);
   background: linear-gradient(160deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -133,6 +135,7 @@ body {
   overflow-x: hidden;
   padding: 2rem 1.5rem 4rem;
   z-index: 100;
+  background-color: light-dark(#f0f2f7, #0a0e27);
   background: linear-gradient(160deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
 }
 
@@ -177,8 +180,8 @@ body {
 .activity-segmented-bar {
   display: inline-flex;
   align-items: center;
-  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.05));
-  border: 1px solid light-dark(rgba(0, 0, 0, 0.09), rgba(255, 255, 255, 0.1));
+  background: light-dark(#e2e8f0, rgba(255, 255, 255, 0.05));
+  border: 1px solid light-dark(#cbd5e1, rgba(255, 255, 255, 0.1));
   border-radius: 9999px;
   padding: 5px;
   gap: 4px;
@@ -200,7 +203,7 @@ body {
   font-family: var(--font-ui);
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--text-secondary);
+  color: light-dark(#334155, rgba(255, 255, 255, 0.85));
   cursor: pointer;
   user-select: none;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
@@ -211,22 +214,29 @@ body {
   white-space: nowrap;
 }
 
-.activity-tab:hover:not(.active) {
-  color: var(--text-primary);
-  background: light-dark(rgba(0, 0, 0, 0.04), rgba(255, 255, 255, 0.08));
+.activity-tab:hover:not(.active):not(:disabled) {
+  color: light-dark(#0f172a, #ffffff);
+  background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.08));
 }
 
 .activity-tab.active {
-  background: light-dark(#ffffff, #4338ca);
-  color: light-dark(#4338ca, #ffffff);
-  border-color: light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.15));
-  box-shadow: light-dark(0 3px 12px rgba(0, 0, 0, 0.09), 0 4px 16px rgba(67, 56, 202, 0.45));
+  background: light-dark(#dcfce7, rgba(61, 170, 92, 0.25));
+  color: light-dark(#14532d, #4ade80);
+  border-color: light-dark(#16a34a, #3DAA5C);
+  box-shadow: light-dark(0 2px 10px rgba(22, 163, 74, 0.2), 0 0 14px rgba(61, 170, 92, 0.3));
   font-weight: 800;
   transform: scale(1.02);
 }
 
 .activity-tab:active {
   transform: scale(0.97);
+}
+
+.activity-tab:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 /* ---------- Options Bar ---------- */
@@ -245,8 +255,8 @@ body {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1.25rem;
-  background: light-dark(rgba(0, 0, 0, 0.03), var(--glass-bg));
-  border: 1px solid light-dark(rgba(0, 0, 0, 0.07), var(--glass-border));
+  background: light-dark(#edf2f7, var(--glass-bg));
+  border: 1px solid light-dark(#cbd5e1, var(--glass-border));
   border-radius: var(--radius-md);
   backdrop-filter: blur(var(--glass-blur));
   cursor: pointer;
@@ -255,13 +265,15 @@ body {
   font-family: var(--font-ui);
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: light-dark(#334155, rgba(255, 255, 255, 0.85));
+  box-shadow: light-dark(0 1px 3px rgba(0, 0, 0, 0.04), none);
 }
 
 .option-btn:hover:not(:disabled) {
-  background: light-dark(rgba(0, 0, 0, 0.05), var(--glass-bg-hover));
-  border-color: light-dark(rgba(0, 0, 0, 0.15), var(--glass-border-hover));
-  color: var(--text-secondary);
+  background: light-dark(#e2e8f0, var(--glass-bg-hover));
+  border-color: light-dark(#94a3b8, var(--glass-border-hover));
+  color: light-dark(#0f172a, #ffffff);
+  box-shadow: light-dark(0 2px 6px rgba(0, 0, 0, 0.06), 0 0 10px rgba(255, 255, 255, 0.05));
 }
 
 .option-btn span {
@@ -269,16 +281,17 @@ body {
 }
 
 .option-btn.active {
-  background: light-dark(rgba(61, 170, 92, 0.08), rgba(61, 170, 92, 0.12));
-  border-color: light-dark(#2e7d32, #3DAA5C);
-  color: light-dark(#1b5e20, var(--text-primary));
-  box-shadow: light-dark(0 2px 8px rgba(61, 170, 92, 0.15), 0 0 12px rgba(61, 170, 92, 0.25));
+  background: light-dark(#dcfce7, rgba(61, 170, 92, 0.2));
+  border-color: light-dark(#16a34a, #3DAA5C);
+  color: light-dark(#14532d, #4ade80);
+  box-shadow: light-dark(0 2px 8px rgba(22, 163, 74, 0.18), 0 0 12px rgba(61, 170, 92, 0.25));
+  font-weight: 700;
 }
 
 .option-btn.active:hover:not(:disabled) {
-  background: light-dark(rgba(61, 170, 92, 0.12), rgba(61, 170, 92, 0.18));
-  border-color: light-dark(#1b5e20, #4ecb71);
-  color: light-dark(#0d3c12, var(--text-primary));
+  background: light-dark(#bbf7d0, rgba(61, 170, 92, 0.28));
+  border-color: light-dark(#15803d, #86efac);
+  color: light-dark(#0d3c12, #ffffff);
 }
 
 .option-btn:active:not(:disabled) {
@@ -347,12 +360,12 @@ body {
   font-family: var(--font-word);
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--text-muted);
+  color: light-dark(#334155, rgba(255, 255, 255, 0.8));
   transition: all var(--transition-fast);
 }
 
 .case-btn:hover {
-  color: var(--text-secondary);
+  color: light-dark(#0f172a, #ffffff);
   background: light-dark(rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.08));
 }
 

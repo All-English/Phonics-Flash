@@ -24,6 +24,7 @@
   const options = {
     includeExtras: false,
     includeSightWords: false,
+    sightWordsOnly: false,
     highlightSounds: true,
     includeImages: false,
     letterCase: 'both',
@@ -276,6 +277,7 @@
       startSlideshow(urlConfig.unitIds, {
         includeExtras: urlConfig.extras,
         includeSightWords: urlConfig.sightWords,
+        sightWordsOnly: urlConfig.sightWordsOnly,
         highlightSounds: urlConfig.highlightSounds,
         includeImages: urlConfig.images,
         letterCase: urlConfig.letterCase,
@@ -300,6 +302,7 @@
     localStorage.removeItem('phonics-flash-selected-units');
     localStorage.setItem('phonics-flash-extras', 'false');
     localStorage.setItem('phonics-flash-sight', 'false');
+    localStorage.setItem('phonics-flash-sight-only', 'false');
     localStorage.setItem('phonics-flash-highlight-sounds', 'true');
     localStorage.setItem('phonics-flash-images', 'false');
     localStorage.setItem('phonics-flash-letter-case', 'both');
@@ -313,6 +316,7 @@
     // Reset options in memory
     options.includeExtras = false;
     options.includeSightWords = false;
+    options.sightWordsOnly = false;
     options.highlightSounds = true;
     options.includeImages = false;
     options.letterCase = 'both';
@@ -346,7 +350,7 @@
 
     // Sync button states in UI
     syncOptionButton('toggle-extras', false);
-    syncOptionButton('toggle-sight', false);
+    syncSightButton();
     syncOptionButton('toggle-images', false);
     syncCaseButtons('both');
     syncOptionButton('toggle-mix', false);
@@ -370,6 +374,7 @@
     if (cls.options) {
       options.includeExtras = !!cls.options.includeExtras;
       options.includeSightWords = !!cls.options.includeSightWords;
+      options.sightWordsOnly = !!cls.options.sightWordsOnly;
       options.highlightSounds = true;
       options.includeImages = cls.options.includeImages !== false;
       options.letterCase = normalizeLetterCase(cls.options.letterCase || 'both');
@@ -383,10 +388,12 @@
       if (options.quizMode || options.dictationMode || options.pictureQuizMode) {
         options.includeExtras = false;
         options.includeSightWords = false;
+        options.sightWordsOnly = false;
         options.includeImages = true;
       } else if (options.soundQuizMode) {
         options.includeExtras = false;
         options.includeSightWords = false;
+        options.sightWordsOnly = false;
         options.includeImages = cls.options?.includeImages !== false;
       } else if (options.wordChart) {
         options.includeImages = false;
@@ -395,6 +402,7 @@
 
       localStorage.setItem('phonics-flash-extras', options.includeExtras);
       localStorage.setItem('phonics-flash-sight', options.includeSightWords);
+      localStorage.setItem('phonics-flash-sight-only', options.sightWordsOnly);
       localStorage.setItem('phonics-flash-highlight-sounds', 'true');
       localStorage.setItem('phonics-flash-images', options.includeImages);
       localStorage.setItem('phonics-flash-letter-case', options.letterCase);
@@ -502,7 +510,8 @@
       chartLevel: chartLevel,
       unitIds: unitIds,
       extras: params.get('extras') === '1',
-      sightWords: params.get('sight') === '1' || params.get('sightwords') === '1',
+      sightWords: params.get('sight') === '1' || params.get('sightwords') === '1' || params.get('sight') === 'only' || params.get('sightwords') === 'only' || params.get('sightonly') === '1',
+      sightWordsOnly: params.get('sight') === 'only' || params.get('sightwords') === 'only' || params.get('sightonly') === '1',
       highlightSounds: true,
       images: params.get('images') !== '0', // default true
       letterCase: caseParam ? normalizeLetterCase(caseParam) : (options.letterCase || 'both'),
@@ -525,7 +534,11 @@
     }
     params.set('units', unitIds.join(','));
     if (opts.includeExtras) params.set('extras', '1');
-    if (opts.includeSightWords) params.set('sight', '1');
+    if (opts.sightWordsOnly) {
+      params.set('sight', 'only');
+    } else if (opts.includeSightWords) {
+      params.set('sight', '1');
+    }
     if (opts.highlightSounds) params.set('highlight', '1');
     if (!opts.includeImages) params.set('images', '0');
     if (opts.letterCase && opts.letterCase !== 'both') params.set('case', opts.letterCase);
@@ -544,6 +557,26 @@
     const btn = document.getElementById(btnId);
     if (btn) {
       btn.classList.toggle('active', isActive);
+    }
+  }
+
+  // Helper to sync 3-way sight button state, label, and title
+  function syncSightButton() {
+    const btn = document.getElementById('toggle-sight');
+    if (!btn) return;
+    const span = btn.querySelector('span') || btn;
+    if (options.sightWordsOnly) {
+      btn.classList.add('active');
+      span.textContent = 'Sight Words Only';
+      btn.title = 'Practicing sight words only (Click to turn off)';
+    } else if (options.includeSightWords) {
+      btn.classList.add('active');
+      span.textContent = 'Sight Words';
+      btn.title = 'Sight words included with core words (Click for Sight Words Only)';
+    } else {
+      btn.classList.remove('active');
+      span.textContent = 'Sight Words';
+      btn.title = 'Include sight words with selected units';
     }
   }
 
@@ -587,103 +620,176 @@
     const imagesBtn = document.getElementById('toggle-images');
     const mixBtn = document.getElementById('toggle-mix');
 
-    if (options.wordChart) {
-      // Word Chart disables Images and All-in-One Deck
+    const quizTab = document.getElementById('mode-word-quiz');
+    const soundQuizTab = document.getElementById('mode-sound-quiz');
+    const picQuizTab = document.getElementById('mode-picture-quiz');
+    const dictationTab = document.getElementById('mode-dictation');
+    const flashcardsTab = document.getElementById('mode-flashcards');
+    const wordChartTab = document.getElementById('mode-word-chart');
+
+    if (options.sightWordsOnly) {
+      // Sight Words Only: Quiz and Dictation modes are unavailable
+      // If currently in a quiz or dictation mode, revert to flashcards
+      if (options.quizMode || options.soundQuizMode || options.pictureQuizMode || options.dictationMode) {
+        options.quizMode = false;
+        options.soundQuizMode = false;
+        options.pictureQuizMode = false;
+        options.dictationMode = false;
+        localStorage.setItem('phonics-flash-quiz', 'false');
+        localStorage.setItem('phonics-flash-sound-quiz', 'false');
+        localStorage.setItem('phonics-flash-picture-quiz', 'false');
+        localStorage.setItem('phonics-flash-dictation', 'false');
+      }
+
+      // Disable quiz and dictation activity tabs
+      [quizTab, soundQuizTab, picQuizTab, dictationTab].forEach(tab => {
+        if (tab) {
+          tab.disabled = true;
+          tab.title = 'Unavailable in Sight Words Only mode';
+        }
+      });
+      if (flashcardsTab) {
+        flashcardsTab.disabled = false;
+        flashcardsTab.title = 'Full screen flashcards';
+      }
+      if (wordChartTab) {
+        wordChartTab.disabled = false;
+        wordChartTab.title = 'Full screen interactive word grid';
+      }
+
+      // Extras and Images are unavailable for Sight Words Only
+      options.includeExtras = false;
       options.includeImages = false;
-      options.mixMode = false;
-
+      localStorage.setItem('phonics-flash-extras', 'false');
       localStorage.setItem('phonics-flash-images', 'false');
-      localStorage.setItem('phonics-flash-mix', 'false');
 
-      if (imagesBtn) {
-        imagesBtn.disabled = true;
-        imagesBtn.title = 'Images unavailable in Word Chart';
-      }
-      if (mixBtn) {
-        mixBtn.disabled = true;
-        mixBtn.title = 'All-in-One Deck unavailable in Word Chart';
-      }
       if (extrasBtn) {
-        extrasBtn.disabled = false;
-        extrasBtn.title = 'Include extra words in the review';
+        extrasBtn.disabled = true;
+        extrasBtn.title = 'Extra words unavailable in Sight Words Only mode';
       }
       if (sightBtn) {
         sightBtn.disabled = false;
-        sightBtn.title = 'Include sight words with selected units';
-      }
-    } else if (options.soundQuizMode) {
-      // Extra words and sight words cannot be enabled in Sound Quiz (focus on target phonics blends/vowels)
-      options.includeExtras = false;
-      options.includeSightWords = false;
-
-      localStorage.setItem('phonics-flash-extras', 'false');
-      localStorage.setItem('phonics-flash-sight', 'false');
-
-      if (extrasBtn) {
-        extrasBtn.disabled = true;
-        extrasBtn.title = 'Extra words unavailable in Sound Quiz';
-      }
-      if (sightBtn) {
-        sightBtn.disabled = true;
-        sightBtn.title = 'Sight words unavailable in Sound Quiz';
-      }
-      if (imagesBtn) {
-        imagesBtn.disabled = false;
-        imagesBtn.title = 'Show or hide pictures in Sound Quiz';
-      }
-      if (mixBtn) {
-        mixBtn.disabled = false;
-        mixBtn.title = 'Interleave words from selected units';
-      }
-    } else if (options.quizMode || options.dictationMode || options.pictureQuizMode) {
-      const modeName = options.pictureQuizMode ? 'Picture Quiz' : (options.quizMode ? 'Word Quiz' : 'Dictation Mode');
-      // Extra words and sight words cannot be enabled (no pictures)
-      options.includeExtras = false;
-      options.includeSightWords = false;
-      // Images are required for Word Quiz, Picture Quiz, and Dictation modes and cannot be disabled
-      options.includeImages = true;
-
-      localStorage.setItem('phonics-flash-extras', 'false');
-      localStorage.setItem('phonics-flash-sight', 'false');
-      localStorage.setItem('phonics-flash-images', 'true');
-
-      if (extrasBtn) {
-        extrasBtn.disabled = true;
-        extrasBtn.title = `Extra words unavailable in ${modeName} (no pictures)`;
-      }
-      if (sightBtn) {
-        sightBtn.disabled = true;
-        sightBtn.title = `Sight words unavailable in ${modeName} (no pictures)`;
       }
       if (imagesBtn) {
         imagesBtn.disabled = true;
-        imagesBtn.title = `Images are required for ${modeName} and cannot be disabled`;
+        imagesBtn.title = 'Images unavailable in Sight Words Only mode';
       }
       if (mixBtn) {
-        mixBtn.disabled = false;
-        mixBtn.title = 'Interleave words from selected units';
+        mixBtn.disabled = !!options.wordChart;
+        mixBtn.title = options.wordChart ? 'All-in-One Deck unavailable in Word Chart' : 'Interleave words from selected units';
       }
     } else {
-      if (extrasBtn) {
-        extrasBtn.disabled = false;
-        extrasBtn.title = 'Include extra words in the review';
-      }
-      if (sightBtn) {
-        sightBtn.disabled = false;
-        sightBtn.title = 'Include sight words with selected units';
-      }
-      if (imagesBtn) {
-        imagesBtn.disabled = false;
-        imagesBtn.title = 'Show images with words';
-      }
-      if (mixBtn) {
-        mixBtn.disabled = false;
-        mixBtn.title = 'Interleave words from selected units';
+      // Re-enable all activity tabs
+      [quizTab, soundQuizTab, picQuizTab, dictationTab, flashcardsTab, wordChartTab].forEach(tab => {
+        if (tab) tab.disabled = false;
+      });
+      if (quizTab) quizTab.title = 'Show picture with two word choices';
+      if (soundQuizTab) soundQuizTab.title = 'Show picture with blanked sound and two sound choices';
+      if (picQuizTab) picQuizTab.title = 'Show target sound with two picture choices';
+      if (dictationTab) dictationTab.title = 'Show image first, reveal word text';
+      if (flashcardsTab) flashcardsTab.title = 'Full screen flashcards';
+      if (wordChartTab) wordChartTab.title = 'Full screen interactive word grid';
+
+      if (options.wordChart) {
+        // Word Chart disables Images and All-in-One Deck
+        options.includeImages = false;
+        options.mixMode = false;
+
+        localStorage.setItem('phonics-flash-images', 'false');
+        localStorage.setItem('phonics-flash-mix', 'false');
+
+        if (imagesBtn) {
+          imagesBtn.disabled = true;
+          imagesBtn.title = 'Images unavailable in Word Chart';
+        }
+        if (mixBtn) {
+          mixBtn.disabled = true;
+          mixBtn.title = 'All-in-One Deck unavailable in Word Chart';
+        }
+        if (extrasBtn) {
+          extrasBtn.disabled = false;
+          extrasBtn.title = 'Include extra words in the review';
+        }
+        if (sightBtn) {
+          sightBtn.disabled = false;
+        }
+      } else if (options.soundQuizMode) {
+        // Extra words and sight words cannot be enabled in Sound Quiz (focus on target phonics blends/vowels)
+        options.includeExtras = false;
+        options.includeSightWords = false;
+        options.sightWordsOnly = false;
+
+        localStorage.setItem('phonics-flash-extras', 'false');
+        localStorage.setItem('phonics-flash-sight', 'false');
+        localStorage.setItem('phonics-flash-sight-only', 'false');
+
+        if (extrasBtn) {
+          extrasBtn.disabled = true;
+          extrasBtn.title = 'Extra words unavailable in Sound Quiz';
+        }
+        if (sightBtn) {
+          sightBtn.disabled = true;
+          sightBtn.title = 'Sight words unavailable in Sound Quiz';
+        }
+        if (imagesBtn) {
+          imagesBtn.disabled = false;
+          imagesBtn.title = 'Show or hide pictures in Sound Quiz';
+        }
+        if (mixBtn) {
+          mixBtn.disabled = false;
+          mixBtn.title = 'Interleave words from selected units';
+        }
+      } else if (options.quizMode || options.dictationMode || options.pictureQuizMode) {
+        const modeName = options.pictureQuizMode ? 'Picture Quiz' : (options.quizMode ? 'Word Quiz' : 'Dictation Mode');
+        // Extra words and sight words cannot be enabled (no pictures)
+        options.includeExtras = false;
+        options.includeSightWords = false;
+        options.sightWordsOnly = false;
+        // Images are required for Word Quiz, Picture Quiz, and Dictation modes and cannot be disabled
+        options.includeImages = true;
+
+        localStorage.setItem('phonics-flash-extras', 'false');
+        localStorage.setItem('phonics-flash-sight', 'false');
+        localStorage.setItem('phonics-flash-sight-only', 'false');
+        localStorage.setItem('phonics-flash-images', 'true');
+
+        if (extrasBtn) {
+          extrasBtn.disabled = true;
+          extrasBtn.title = `Extra words unavailable in ${modeName} (no pictures)`;
+        }
+        if (sightBtn) {
+          sightBtn.disabled = true;
+          sightBtn.title = `Sight words unavailable in ${modeName} (no pictures)`;
+        }
+        if (imagesBtn) {
+          imagesBtn.disabled = true;
+          imagesBtn.title = `Images are required for ${modeName} and cannot be disabled`;
+        }
+        if (mixBtn) {
+          mixBtn.disabled = false;
+          mixBtn.title = 'Interleave words from selected units';
+        }
+      } else {
+        if (extrasBtn) {
+          extrasBtn.disabled = false;
+          extrasBtn.title = 'Include extra words in the review';
+        }
+        if (sightBtn) {
+          sightBtn.disabled = false;
+        }
+        if (imagesBtn) {
+          imagesBtn.disabled = false;
+          imagesBtn.title = 'Show images with words';
+        }
+        if (mixBtn) {
+          mixBtn.disabled = false;
+          mixBtn.title = 'Interleave words from selected units';
+        }
       }
     }
 
     syncOptionButton('toggle-extras', options.includeExtras);
-    syncOptionButton('toggle-sight', options.includeSightWords);
+    syncSightButton();
     syncOptionButton('toggle-images', options.includeImages);
     syncOptionButton('toggle-mix', options.mixMode);
     syncActivityTabs();
@@ -710,15 +816,27 @@
 
     document.getElementById('toggle-sight').addEventListener('click', (e) => {
       if (options.quizMode || options.dictationMode || options.soundQuizMode || options.pictureQuizMode) return;
-      options.includeSightWords = !options.includeSightWords;
-      syncOptionButton('toggle-sight', options.includeSightWords);
+      // 3-way cycle: Off -> Include -> Only -> Off
+      if (!options.includeSightWords) {
+        options.includeSightWords = true;
+        options.sightWordsOnly = false;
+      } else if (options.includeSightWords && !options.sightWordsOnly) {
+        options.includeSightWords = true;
+        options.sightWordsOnly = true;
+      } else {
+        options.includeSightWords = false;
+        options.sightWordsOnly = false;
+      }
       localStorage.setItem('phonics-flash-sight', options.includeSightWords);
+      localStorage.setItem('phonics-flash-sight-only', options.sightWordsOnly);
+      syncSightButton();
+      syncModeOptionDependencies();
       saveCurrentOptionsToActiveClass();
       updateStartButton();
     });
 
     document.getElementById('toggle-images').addEventListener('click', (e) => {
-      if (options.quizMode || options.dictationMode || options.pictureQuizMode || options.wordChart) return;
+      if (options.quizMode || options.dictationMode || options.pictureQuizMode || options.wordChart || options.sightWordsOnly) return;
       options.includeImages = !options.includeImages;
       syncOptionButton('toggle-images', options.includeImages);
       localStorage.setItem('phonics-flash-images', options.includeImages);
@@ -732,12 +850,14 @@
       syncOptionButton('toggle-mix', options.mixMode);
       localStorage.setItem('phonics-flash-mix', options.mixMode);
       saveCurrentOptionsToActiveClass();
+      updateStartButton();
     });
 
     // Wire up activity segmented tabs
     const activityTabs = document.querySelectorAll('.activity-tab');
     activityTabs.forEach(tab => {
       tab.addEventListener('click', () => {
+        if (tab.disabled) return;
         const activity = tab.dataset.activity;
         if (activity) {
           setActiveActivity(activity);
@@ -1062,7 +1182,8 @@
       if (btn.childNodes[0]) {
         btn.childNodes[0].nodeValue = `${actionText}\n        `;
       }
-      if (countSpan) countSpan.textContent = `${selectedIds.length} unit${selectedIds.length > 1 ? 's' : ''} · ${count} words`;
+      const wordType = options.sightWordsOnly ? 'sight words' : 'words';
+      if (countSpan) countSpan.textContent = `${selectedIds.length} unit${selectedIds.length > 1 ? 's' : ''} · ${count} ${wordType}`;
       btn.title = `${actionText} (Enter)`;
     }
   }
@@ -1095,13 +1216,15 @@
       for (const unit of (level?.units || [])) {
         if (unitIds.includes(unit.id)) {
           const unitWithLevel = { ...unit, levelId: level.id, levelName: level.name };
-          const mainWords = prepareUnitWords(unitWithLevel, false, options);
-          count += mainWords.length;
-          if (options.includeExtras && unit.extraWords) {
-            const extraWords = prepareUnitWords(unitWithLevel, true, options);
-            count += extraWords.length;
+          if (!options.sightWordsOnly) {
+            const mainWords = prepareUnitWords(unitWithLevel, false, options);
+            count += mainWords.length;
+            if (options.includeExtras && unit.extraWords) {
+              const extraWords = prepareUnitWords(unitWithLevel, true, options);
+              count += extraWords.length;
+            }
           }
-          if (options.includeSightWords && unit.sightWords) {
+          if ((options.includeSightWords || options.sightWordsOnly) && unit.sightWords) {
             const sightWords = prepareUnitSightWords(unitWithLevel);
             if (options.mixMode) {
               selectedSightWords.push(...sightWords);
@@ -1113,7 +1236,7 @@
       }
     }
 
-    if (options.includeSightWords && options.mixMode && selectedSightWords.length > 0) {
+    if ((options.includeSightWords || options.sightWordsOnly) && options.mixMode && selectedSightWords.length > 0) {
       // Deduplicate sight words across selected units in Mix Mode
       const seen = new Set();
       const uniqueSight = selectedSightWords.filter(sw => {
@@ -1146,10 +1269,12 @@
     if (opts.quizMode || opts.dictationMode || opts.pictureQuizMode) {
       opts.includeExtras = false;
       opts.includeSightWords = false;
+      opts.sightWordsOnly = false;
       opts.includeImages = true;
     } else if (opts.soundQuizMode) {
       opts.includeExtras = false;
       opts.includeSightWords = false;
+      opts.sightWordsOnly = false;
       // opts.includeImages is optional for Sound Quiz
     }
 
@@ -1246,28 +1371,38 @@
     container.appendChild(createIntroSlide(units, opts));
 
     units.forEach(unit => {
+      let words = [];
+
+      if (opts.sightWordsOnly) {
+        if (unit.sightWords && unit.sightWords.length > 0) {
+          words = prepareUnitSightWords(unit);
+          shuffleArray(words);
+        }
+      } else {
+        // Main words (shuffled)
+        const mainWords = prepareUnitWords(unit, false, opts);
+        shuffleArray(mainWords);
+
+        // Extra words (shuffled)
+        let extraWords = [];
+        if (opts.includeExtras && unit.extraWords && unit.extraWords.length > 0) {
+          extraWords = prepareUnitWords(unit, true, opts);
+          shuffleArray(extraWords);
+        }
+
+        // Sight words (shuffled) placed at the end of the unit
+        let sightWords = [];
+        if (opts.includeSightWords && unit.sightWords && unit.sightWords.length > 0) {
+          sightWords = prepareUnitSightWords(unit);
+          shuffleArray(sightWords);
+        }
+
+        words = [...mainWords, ...extraWords, ...sightWords];
+      }
+
+      if (words.length === 0) return;
+
       const unitSection = document.createElement('section');
-
-      // Main words (shuffled)
-      const mainWords = prepareUnitWords(unit, false, opts);
-      shuffleArray(mainWords);
-
-      // Extra words (shuffled)
-      let extraWords = [];
-      if (opts.includeExtras && unit.extraWords && unit.extraWords.length > 0) {
-        extraWords = prepareUnitWords(unit, true, opts);
-        shuffleArray(extraWords);
-      }
-
-      // Sight words (shuffled) placed at the end of the unit
-      let sightWords = [];
-      if (opts.includeSightWords && unit.sightWords && unit.sightWords.length > 0) {
-        sightWords = prepareUnitSightWords(unit);
-        shuffleArray(sightWords);
-      }
-
-      const words = [...mainWords, ...extraWords, ...sightWords];
-
       words.forEach((wordData, index) => {
         const wordSection = createWordSlide(wordData, unit, index, words.length, opts);
         unitSection.appendChild(wordSection);
@@ -1281,6 +1416,42 @@
   function buildMixModeSlides(container, units, opts) {
     // Prepend welcome intro slide
     container.appendChild(createIntroSlide(units, opts));
+
+    if (opts.sightWordsOnly) {
+      // Prepare sight words (deduplicated across all selected units)
+      const allSightWords = [];
+      units.forEach(unit => {
+        if (unit.sightWords && unit.sightWords.length > 0) {
+          const sws = prepareUnitSightWords(unit);
+          sws.forEach(sw => {
+            allSightWords.push({ wordData: sw, unit });
+          });
+        }
+      });
+
+      // Deduplicate sight words across selected units by word string (case-insensitive)
+      const seen = new Set();
+      const uniqueSightItems = allSightWords.filter(item => {
+        const key = (item.wordData.word || '').toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      shuffleArray(uniqueSightItems);
+
+      uniqueSightItems.forEach((item, index) => {
+        const wordSection = createWordSlide(
+          item.wordData,
+          item.unit,
+          index,
+          uniqueSightItems.length,
+          opts
+        );
+        container.appendChild(wordSection);
+      });
+      return;
+    }
 
     // Prepare main words queues per unit (shuffled)
     const mainQueues = units.map(unit => {
@@ -1426,7 +1597,8 @@
     if (opts && opts.quizMode) modeTags.push('Word Quiz');
     if (opts && opts.soundQuizMode) modeTags.push('Sound Quiz');
     if (opts && opts.pictureQuizMode) modeTags.push('Picture Quiz');
-    if (opts && opts.includeSightWords) modeTags.push('Sight Words');
+    if (opts && opts.sightWordsOnly) modeTags.push('Sight Words Only');
+    else if (opts && opts.includeSightWords) modeTags.push('Sight Words');
     if (opts && opts.includeExtras) modeTags.push('Extra Words');
 
     const modeBadgesHTML = modeTags.length > 0

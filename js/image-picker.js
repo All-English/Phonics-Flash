@@ -12,6 +12,12 @@ window.ImagePicker = (() => {
   let activeTab = 'clipart';
   const activeObjectUrls = new Set();
 
+  const searchStates = {
+    clipart: { query: '', offset: 0, hasMore: false, loading: false },
+    pixabay: { query: '', page: 1, type: 'all', hasMore: false, loading: false },
+    unsplash: { query: '', page: 1, hasMore: false, loading: false }
+  };
+
   function trackObjectUrl(url) {
     if (url && typeof url === 'string' && url.startsWith('blob:')) {
       activeObjectUrls.add(url);
@@ -112,6 +118,12 @@ window.ImagePicker = (() => {
               <input type="text" id="pixabay-search-input" class="search-input" placeholder="Search Pixabay photos & illustrations...">
               <button type="button" id="pixabay-search-btn" class="btn btn-primary">Search</button>
             </div>
+            <div class="search-filter-pills" id="pixabay-type-filters">
+              <button type="button" class="filter-pill active" data-type="all">All</button>
+              <button type="button" class="filter-pill" data-type="illustration">Illustrations</button>
+              <button type="button" class="filter-pill" data-type="vector">Vectors</button>
+              <button type="button" class="filter-pill" data-type="photo">Photos</button>
+            </div>
             <div class="search-results-container" id="pixabay-results">
               <div class="empty-state">Enter a Pixabay API key above to search millions of royalty-free images.</div>
             </div>
@@ -126,6 +138,10 @@ window.ImagePicker = (() => {
             <div class="search-bar-row">
               <input type="text" id="unsplash-search-input" class="search-input" placeholder="Search Unsplash photos...">
               <button type="button" id="unsplash-search-btn" class="btn btn-primary">Search</button>
+            </div>
+            <div class="api-limit-hint" id="unsplash-hint">
+              <span>High safety filter active (kid-safe).</span>
+              <span id="unsplash-quota-hint">Demo limit: 50 req/hr</span>
             </div>
             <div class="search-results-container" id="unsplash-results">
               <div class="empty-state">Enter an Unsplash Access Key above to search photos.</div>
@@ -199,6 +215,7 @@ window.ImagePicker = (() => {
         activeTab = btn.dataset.tab;
         const target = modalEl.querySelector(`#tab-${activeTab}`);
         if (target) target.classList.add('active');
+        if (activeTab === 'unsplash') updateUnsplashQuotaHint();
       });
     });
 
@@ -236,6 +253,20 @@ window.ImagePicker = (() => {
       if (e.key === 'Enter') runPixabaySearch(pixabayInput.value);
     });
 
+    // Pixabay filter pills
+    const pixabayFilters = modalEl.querySelectorAll('#pixabay-type-filters .filter-pill');
+    pixabayFilters.forEach(pill => {
+      pill.addEventListener('click', () => {
+        pixabayFilters.forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        const type = pill.dataset.type || 'all';
+        searchStates.pixabay.type = type;
+        if (pixabayInput && pixabayInput.value.trim()) {
+          runPixabaySearch(pixabayInput.value.trim(), 1, type);
+        }
+      });
+    });
+
     // Unsplash search & key (non-blocking visual confirmation - M4)
     const unsplashKeyInput = modalEl.querySelector('#unsplash-key-input');
     const saveUnsplashBtn = modalEl.querySelector('#save-unsplash-key-btn');
@@ -244,6 +275,7 @@ window.ImagePicker = (() => {
       const orig = saveUnsplashBtn.textContent;
       saveUnsplashBtn.textContent = '✓ Saved!';
       setTimeout(() => { saveUnsplashBtn.textContent = orig; }, 2000);
+      updateUnsplashQuotaHint();
     });
     const unsplashBtn = modalEl.querySelector('#unsplash-search-btn');
     const unsplashInput = modalEl.querySelector('#unsplash-search-input');
@@ -251,6 +283,20 @@ window.ImagePicker = (() => {
     unsplashInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') runUnsplashSearch(unsplashInput.value);
     });
+
+    // Infinite scroll listeners
+    function attachScrollListener(containerId, loadMoreFn) {
+      const el = modalEl.querySelector(containerId);
+      if (!el) return;
+      el.addEventListener('scroll', () => {
+        if (el.scrollTop + el.clientHeight >= el.scrollHeight - 70) {
+          loadMoreFn();
+        }
+      });
+    }
+    attachScrollListener('#clipart-results', loadMoreClipart);
+    attachScrollListener('#pixabay-results', loadMorePixabay);
+    attachScrollListener('#unsplash-results', loadMoreUnsplash);
 
     // Upload file
     const dropZone = modalEl.querySelector('#image-drop-zone');
@@ -293,38 +339,114 @@ window.ImagePicker = (() => {
   // ── Actions ──────────────────────────────────────────────────
   async function runClipartSearch(query) {
     const container = modalEl.querySelector('#clipart-results');
+    const trimmed = (query || '').trim();
+    if (!trimmed) {
+      container.innerHTML = '<div class="empty-state">Enter a search keyword above.</div>';
+      return;
+    }
+    searchStates.clipart = { query: trimmed, offset: 0, hasMore: false, loading: false };
     container.innerHTML = '<div class="loading-spinner-box">Searching free clipart...</div>';
 
     try {
-      const results = await MediaAPIs.searchClipart(query);
-      if (results.length === 0) {
-        container.innerHTML = '<div class="empty-state">No clipart found for "' + escapeHtml(query) + '". Try a different keyword.</div>';
+      const res = await MediaAPIs.searchClipart(trimmed, 0);
+      container.innerHTML = '';
+      if (!res.results || res.results.length === 0) {
+        container.innerHTML = '<div class="empty-state">No clipart found for "' + escapeHtml(trimmed) + '". Try a different keyword.</div>';
         return;
       }
-      renderImageGrid(results, container);
+      appendImageCards(res.results, container);
+      searchStates.clipart.hasMore = res.hasMore;
+      if (!res.hasMore) showEndOfResults(container);
     } catch (e) {
       container.innerHTML = `<div class="error-msg">Clipart search failed: ${e.message}</div>`;
     }
   }
 
-  async function runPixabaySearch(query) {
+  async function loadMoreClipart() {
+    const state = searchStates.clipart;
+    if (!state.hasMore || state.loading) return;
+    const container = modalEl.querySelector('#clipart-results');
+    state.loading = true;
+    showInfiniteLoader(container);
+
+    try {
+      state.offset += 24;
+      const res = await MediaAPIs.searchClipart(state.query, state.offset);
+      removeInfiniteLoader(container);
+      if (res.results && res.results.length > 0) {
+        appendImageCards(res.results, container);
+      }
+      state.hasMore = res.hasMore && res.results.length > 0;
+      if (!state.hasMore) showEndOfResults(container);
+    } catch (e) {
+      removeInfiniteLoader(container);
+      console.warn('[Clipart] Load more error:', e);
+    } finally {
+      state.loading = false;
+    }
+  }
+
+  async function runPixabaySearch(query, page = 1, type = null) {
     const container = modalEl.querySelector('#pixabay-results');
     const key = MediaAPIs.getPixabayKey();
     if (!key) {
       container.innerHTML = '<div class="empty-state">Please enter your free Pixabay API key above to search.</div>';
       return;
     }
+    const trimmed = (query || '').trim();
+    if (!trimmed) {
+      container.innerHTML = '<div class="empty-state">Enter a keyword to search Pixabay.</div>';
+      return;
+    }
 
+    const currentType = type || searchStates.pixabay.type || 'all';
+    searchStates.pixabay = { query: trimmed, page: 1, type: currentType, hasMore: false, loading: false };
     container.innerHTML = '<div class="loading-spinner-box">Searching Pixabay...</div>';
+
     try {
-      const results = await MediaAPIs.searchPixabay(query, key);
-      if (results.length === 0) {
-        container.innerHTML = '<div class="empty-state">No results found for "' + escapeHtml(query) + '".</div>';
+      const res = await MediaAPIs.searchPixabay(trimmed, key, 1, currentType);
+      container.innerHTML = '';
+      if (!res.results || res.results.length === 0) {
+        container.innerHTML = '<div class="empty-state">No results found on Pixabay for "' + escapeHtml(trimmed) + '".</div>';
         return;
       }
-      renderImageGrid(results, container);
+      appendImageCards(res.results, container);
+      searchStates.pixabay.hasMore = res.hasMore;
+      if (!res.hasMore) showEndOfResults(container);
     } catch (e) {
       container.innerHTML = `<div class="error-msg">Pixabay error: ${e.message}</div>`;
+    }
+  }
+
+  async function loadMorePixabay() {
+    const state = searchStates.pixabay;
+    if (!state.hasMore || state.loading) return;
+    const key = MediaAPIs.getPixabayKey();
+    if (!key) return;
+
+    const container = modalEl.querySelector('#pixabay-results');
+    state.loading = true;
+    showInfiniteLoader(container);
+
+    try {
+      state.page += 1;
+      const res = await MediaAPIs.searchPixabay(state.query, key, state.page, state.type);
+      removeInfiniteLoader(container);
+      if (res.results && res.results.length > 0) {
+        appendImageCards(res.results, container);
+      }
+      state.hasMore = res.hasMore && res.results.length > 0;
+      if (!state.hasMore) showEndOfResults(container);
+    } catch (e) {
+      removeInfiniteLoader(container);
+      const errEl = document.createElement('div');
+      errEl.className = 'error-msg';
+      errEl.style.margin = '8px 0';
+      errEl.textContent = `Could not load more: ${e.message}`;
+      container.appendChild(errEl);
+      setTimeout(() => errEl.remove(), 4000);
+    } finally {
+      state.loading = false;
     }
   }
 
@@ -332,20 +454,67 @@ window.ImagePicker = (() => {
     const container = modalEl.querySelector('#unsplash-results');
     const key = MediaAPIs.getUnsplashKey();
     if (!key) {
-      container.innerHTML = '<div class="empty-state">Please enter your Unsplash Access Key above to search.</div>';
+      container.innerHTML = '<div class="empty-state">Please enter your Unsplash Access Key above to search photos.</div>';
+      return;
+    }
+    const trimmed = (query || '').trim();
+    if (!trimmed) {
+      container.innerHTML = '<div class="empty-state">Enter a keyword to search Unsplash photos.</div>';
       return;
     }
 
+    searchStates.unsplash = { query: trimmed, page: 1, hasMore: false, loading: false };
     container.innerHTML = '<div class="loading-spinner-box">Searching Unsplash...</div>';
+
     try {
-      const results = await MediaAPIs.searchUnsplash(query, key);
-      if (results.length === 0) {
-        container.innerHTML = '<div class="empty-state">No results found for "' + escapeHtml(query) + '".</div>';
+      const res = await MediaAPIs.searchUnsplash(trimmed, key, 1);
+      container.innerHTML = '';
+      if (!res.results || res.results.length === 0) {
+        container.innerHTML = '<div class="empty-state">No results found on Unsplash for "' + escapeHtml(trimmed) + '".</div>';
+        updateUnsplashQuotaHint();
         return;
       }
-      renderImageGrid(results, container);
+      appendImageCards(res.results, container);
+      searchStates.unsplash.hasMore = res.hasMore;
+      updateUnsplashQuotaHint();
+      if (!res.hasMore) showEndOfResults(container);
     } catch (e) {
       container.innerHTML = `<div class="error-msg">Unsplash error: ${e.message}</div>`;
+      updateUnsplashQuotaHint();
+    }
+  }
+
+  async function loadMoreUnsplash() {
+    const state = searchStates.unsplash;
+    if (!state.hasMore || state.loading) return;
+    const key = MediaAPIs.getUnsplashKey();
+    if (!key) return;
+
+    const container = modalEl.querySelector('#unsplash-results');
+    state.loading = true;
+    showInfiniteLoader(container);
+
+    try {
+      state.page += 1;
+      const res = await MediaAPIs.searchUnsplash(state.query, key, state.page);
+      removeInfiniteLoader(container);
+      if (res.results && res.results.length > 0) {
+        appendImageCards(res.results, container);
+      }
+      state.hasMore = res.hasMore && res.results.length > 0;
+      updateUnsplashQuotaHint();
+      if (!state.hasMore) showEndOfResults(container);
+    } catch (e) {
+      removeInfiniteLoader(container);
+      const errEl = document.createElement('div');
+      errEl.className = 'error-msg';
+      errEl.style.margin = '8px 0';
+      errEl.textContent = `Could not load more: ${e.message}`;
+      container.appendChild(errEl);
+      setTimeout(() => errEl.remove(), 4000);
+      updateUnsplashQuotaHint();
+    } finally {
+      state.loading = false;
     }
   }
 
@@ -501,10 +670,14 @@ window.ImagePicker = (() => {
     actions.classList.remove('hidden');
   }
 
-  function renderImageGrid(items, container) {
-    container.innerHTML = '';
-    const grid = document.createElement('div');
-    grid.className = 'image-results-grid';
+  function appendImageCards(items, container) {
+    if (!items || !items.length) return;
+    let grid = container.querySelector('.image-results-grid');
+    if (!grid) {
+      grid = document.createElement('div');
+      grid.className = 'image-results-grid';
+      container.appendChild(grid);
+    }
 
     items.forEach(item => {
       const card = document.createElement('div');
@@ -515,6 +688,10 @@ window.ImagePicker = (() => {
           <span class="image-select-label">Select</span>
         </div>
       `;
+      const img = card.querySelector('img');
+      if (img) {
+        img.onerror = () => card.remove();
+      }
       card.addEventListener('click', () => {
         if (item.source === 'Unsplash' && item.downloadLocation) {
           MediaAPIs.trackUnsplashDownload(item.downloadLocation);
@@ -523,8 +700,49 @@ window.ImagePicker = (() => {
       });
       grid.appendChild(card);
     });
+  }
 
-    container.appendChild(grid);
+  function renderImageGrid(items, container) {
+    container.innerHTML = '';
+    appendImageCards(items, container);
+  }
+
+  function showInfiniteLoader(container) {
+    removeInfiniteLoader(container);
+    removeEndOfResults(container);
+    const loader = document.createElement('div');
+    loader.className = 'infinite-loader';
+    loader.innerHTML = '<span class="infinite-spinner"></span> Loading more images...';
+    container.appendChild(loader);
+  }
+
+  function removeInfiniteLoader(container) {
+    const existing = container.querySelector('.infinite-loader');
+    if (existing) existing.remove();
+  }
+
+  function showEndOfResults(container) {
+    removeInfiniteLoader(container);
+    removeEndOfResults(container);
+    const endEl = document.createElement('div');
+    endEl.className = 'end-of-results';
+    endEl.textContent = 'All available images loaded.';
+    container.appendChild(endEl);
+  }
+
+  function removeEndOfResults(container) {
+    const existing = container.querySelector('.end-of-results');
+    if (existing) existing.remove();
+  }
+
+  function updateUnsplashQuotaHint() {
+    if (!modalEl) return;
+    const hintEl = modalEl.querySelector('#unsplash-quota-hint');
+    if (!hintEl) return;
+    const status = MediaAPIs.getRateLimitStatus();
+    if (status && status.unsplash) {
+      hintEl.textContent = `Limit: ${status.unsplash.remaining}/${status.unsplash.limit} req left`;
+    }
   }
 
   function selectImage(imageUriOrUrl) {
@@ -590,6 +808,33 @@ window.ImagePicker = (() => {
     if (fileInput) fileInput.value = '';
 
     modalEl.classList.remove('hidden');
+
+    // Reset pagination search states
+    searchStates.clipart = { query: '', offset: 0, hasMore: false, loading: false };
+    searchStates.pixabay = { query: '', page: 1, type: 'all', hasMore: false, loading: false };
+    searchStates.unsplash = { query: '', page: 1, hasMore: false, loading: false };
+
+    // Reset Pixabay filter pills to 'all'
+    const pixabayPills = modalEl.querySelectorAll('#pixabay-type-filters .filter-pill');
+    pixabayPills.forEach(p => p.classList.toggle('active', p.dataset.type === 'all'));
+
+    // Reset results containers
+    const pixabayResults = modalEl.querySelector('#pixabay-results');
+    if (pixabayResults) {
+      const pKey = MediaAPIs.getPixabayKey();
+      pixabayResults.innerHTML = pKey
+        ? '<div class="empty-state">Click Search to find images on Pixabay.</div>'
+        : '<div class="empty-state">Enter a Pixabay API key above to search millions of royalty-free images.</div>';
+    }
+    const unsplashResults = modalEl.querySelector('#unsplash-results');
+    if (unsplashResults) {
+      const uKey = MediaAPIs.getUnsplashKey();
+      unsplashResults.innerHTML = uKey
+        ? '<div class="empty-state">Click Search to find photos on Unsplash.</div>'
+        : '<div class="empty-state">Enter an Unsplash Access Key above to search photos.</div>';
+    }
+
+    updateUnsplashQuotaHint();
 
     // Auto search clipart on open if word exists
     if (currentWord && activeTab === 'clipart') {

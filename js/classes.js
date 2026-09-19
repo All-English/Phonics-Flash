@@ -89,6 +89,7 @@ window.ClassesManager = (() => {
               options: {
                 includeExtras: false,
                 includeSightWords: true,
+                sightWordsOnly: false,
                 includeImages: true,
                 letterCase: 'both',
                 mixMode: false,
@@ -430,6 +431,7 @@ window.ClassesManager = (() => {
         options: {
           includeExtras: !!classObj.options?.includeExtras,
           includeSightWords: !!classObj.options?.includeSightWords,
+          sightWordsOnly: !!classObj.options?.sightWordsOnly,
           includeImages: classObj.options?.includeImages !== false,
           letterCase: classObj.options?.letterCase || 'both',
           mixMode: !!classObj.options?.mixMode,
@@ -488,6 +490,7 @@ window.ClassesManager = (() => {
       cls.options = {
         includeExtras: !!currentOptions.includeExtras,
         includeSightWords: !!currentOptions.includeSightWords,
+        sightWordsOnly: !!currentOptions.sightWordsOnly,
         includeImages: currentOptions.includeImages !== false,
         letterCase: currentOptions.letterCase || 'both',
         mixMode: !!currentOptions.mixMode,
