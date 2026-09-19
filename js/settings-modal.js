@@ -32,7 +32,7 @@
 
     const sortedClasses = [...classes].sort((a, b) => a.name.localeCompare(b.name));
 
-    classSelect.innerHTML = `<option value="">General (No Class)</option>`;
+    classSelect.innerHTML = `<option value="">No Class</option>`;
     sortedClasses.forEach(c => {
       const opt = document.createElement('option');
       opt.value = c.id;
