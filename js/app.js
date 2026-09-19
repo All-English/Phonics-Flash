@@ -1706,10 +1706,10 @@
                  onerror="if(this.src) this.style.display='none'">`
             : ''}
           <div class="word-display-container">
-            <div class="word-text ${isDictation ? 'dictation-hide' : ''}">${wordDisplay}</div>
-            ${isDictation ? `<div class="dictation-hint-text hidden">${blankedWordDisplay}</div>` : ''}
+            <div class="word-text ${isDictation ? 'dictation-hide' : ''}" data-len="${wordData.word.length}">${wordDisplay}</div>
+            ${isDictation ? `<div class="dictation-hint-text hidden" data-len="${wordData.word.length}">${blankedWordDisplay}</div>` : ''}
+            ${isDictation ? `<button class="dictation-hint-btn" type="button" title="Show Hint (H)">Hint</button>` : ''}
           </div>
-          ${isDictation ? `<button class="dictation-hint-btn" type="button" title="Show Hint (H)">💡 Hint</button>` : ''}
         </div>
       `;
     }
