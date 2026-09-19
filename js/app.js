@@ -1592,8 +1592,8 @@
                  onerror="if(this.src) this.style.display='none'">`
             : ''}
           <div class="quiz-options-container">
-            <button class="quiz-option-btn" data-word="${choices[0]}">${choice0Display}</button>
-            <button class="quiz-option-btn" data-word="${choices[1]}">${choice1Display}</button>
+            <button class="quiz-option-btn" data-word="${choices[0]}" data-len="${choices[0].length}">${choice0Display}</button>
+            <button class="quiz-option-btn" data-word="${choices[1]}" data-len="${choices[1].length}">${choice1Display}</button>
           </div>
         </div>
       `;
@@ -1627,7 +1627,7 @@
                  onerror="if(this.src) this.style.display='none'">`
             : ''}
           <div class="sound-quiz-word-row">
-            <div class="sound-quiz-blanked-word" data-full-word="${encodeURIComponent(fullWordDisplay)}">${blankedWordDisplay}</div>
+            <div class="sound-quiz-blanked-word" data-full-word="${encodeURIComponent(fullWordDisplay)}" data-len="${wordData.word.length}">${blankedWordDisplay}</div>
           </div>
           <div class="quiz-options-container">
             <button class="quiz-option-btn sound-option-btn" data-sound="${choices[0]}">${choices[0]}</button>
@@ -1672,7 +1672,7 @@
           <button class="picture-option-card" data-correct="${c.isCorrect ? 'true' : 'false'}" data-word="${c.word}" type="button">
             <span class="picture-card-status-badge" aria-hidden="true"></span>
             <img ${cIsMedia ? `data-media-uri="${c.image}" style="display:none;"` : `src="${c.image || ''}"`} alt="${c.word}" class="picture-card-img word-image" onerror="if(this.src) this.style.display='none'">
-            <div class="picture-card-word">${cDisplay}</div>
+            <div class="picture-card-word" data-len="${c.word.length}">${cDisplay}</div>
           </button>
         `;
       }).join('');
