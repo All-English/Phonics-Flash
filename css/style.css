@@ -1470,15 +1470,15 @@ body {
    QUIZ MODE
    ============================================================ */
 .quiz-mode-layout {
-  gap: 1.5rem;
+  gap: 1.25rem;
   width: 100%;
   max-width: 1200px;
-  padding-top: 2rem !important; /* ensures clear breathing room below #chrome-audio */
+  padding-top: 1.25rem !important; /* ensures clear breathing room below #chrome-audio */
 }
 
 .quiz-image {
-  max-height: 28vh !important;
-  max-width: 60vw !important;
+  max-height: 37vh !important;
+  max-width: 65vw !important;
   margin: 0 auto !important;
 }
 
