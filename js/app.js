@@ -1756,6 +1756,8 @@
         ? highlightTargetSound(choices[1], targetSound, unit.levelId)
         : choices[1];
 
+      const maxLen = Math.max(choices[0].length, choices[1].length);
+
       section.innerHTML = `
         <div class="slide-center quiz-mode-layout">
           ${isSightWord ? '<div class="sight-word-badge">Sight Word</div>' : ''}
@@ -1763,9 +1765,9 @@
             ? `<img ${isMediaUri ? `data-media-uri="${wordData.image}" style="display:none;"` : `src="${wordData.image}"`} alt="Quiz Image" class="word-image quiz-image"
                  onerror="if(this.src) this.style.display='none'">`
             : ''}
-          <div class="quiz-options-container">
-            <button class="quiz-option-btn" data-word="${choices[0]}" data-len="${choices[0].length}">${choice0Display}</button>
-            <button class="quiz-option-btn" data-word="${choices[1]}" data-len="${choices[1].length}">${choice1Display}</button>
+          <div class="quiz-options-container" data-max-len="${maxLen}">
+            <button class="quiz-option-btn" data-word="${choices[0]}" data-len="${maxLen}">${choice0Display}</button>
+            <button class="quiz-option-btn" data-word="${choices[1]}" data-len="${maxLen}">${choice1Display}</button>
           </div>
         </div>
       `;
@@ -1833,6 +1835,8 @@
       ];
       shuffleArray(choices);
 
+      const maxCardWordLen = Math.max((choices[0].word || '').length, (choices[1].word || '').length);
+
       const cardsHTML = choices.map((c) => {
         const cTargetSound = c.unit.targetSound || c.unit.sound || '';
         const cDisplay = (opts && opts.highlightSounds)
@@ -1844,7 +1848,7 @@
           <button class="picture-option-card" data-correct="${c.isCorrect ? 'true' : 'false'}" data-word="${c.word}" type="button">
             <span class="picture-card-status-badge" aria-hidden="true"></span>
             <img ${cIsMedia ? `data-media-uri="${c.image}" style="display:none;"` : `src="${c.image || ''}"`} alt="${c.word}" class="picture-card-img word-image" onerror="if(this.src) this.style.display='none'">
-            <div class="picture-card-word" data-len="${c.word.length}">${cDisplay}</div>
+            <div class="picture-card-word" data-len="${maxCardWordLen}">${cDisplay}</div>
           </button>
         `;
       }).join('');
