@@ -1618,7 +1618,7 @@ body {
    SOUND QUIZ MODE (Target Sound / Missing Sound Quiz)
    ============================================================ */
 .sound-quiz-layout {
-  gap: 1.5rem;
+  gap: 1.1rem;
   width: 100%;
   max-width: 1000px;
 }
@@ -1628,33 +1628,50 @@ body {
   align-items: center;
   justify-content: center;
   gap: 1.25rem;
-  margin-top: 0.25rem;
+  margin-top: 0.15rem;
 }
 
-.sound-quiz-blanked-word {
+/* Synchronized typography: blanked word and sound options share identical font scale */
+.sound-quiz-blanked-word,
+.sound-option-btn {
   font-family: var(--font-word);
-  font-size: clamp(5rem, 15vw, 10rem);
-  font-weight: 800;
-  color: var(--text-primary);
-  letter-spacing: 0.01em;
+  font-size: clamp(4.2rem, 10.5vw, 7.8rem) !important;
+  font-weight: 800 !important;
   line-height: 1.15;
   text-align: center;
-  user-select: none;
-  cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color var(--transition-fast);
 }
 
-.sound-quiz-blanked-word[data-len="5"] {
-  font-size: clamp(4.2rem, 12vw, 8.5rem);
+.sound-quiz-blanked-word[data-len="5"],
+.sound-option-btn[data-len="5"],
+.sound-quiz-layout[data-len="5"] .sound-quiz-blanked-word,
+.sound-quiz-layout[data-len="5"] .sound-option-btn {
+  font-size: clamp(3.8rem, 9.2vw, 7.0rem) !important;
 }
 
-.sound-quiz-blanked-word[data-len="6"] {
-  font-size: clamp(3.6rem, 10vw, 7.5rem);
+.sound-quiz-blanked-word[data-len="6"],
+.sound-option-btn[data-len="6"],
+.sound-quiz-layout[data-len="6"] .sound-quiz-blanked-word,
+.sound-quiz-layout[data-len="6"] .sound-option-btn {
+  font-size: clamp(3.2rem, 7.8vw, 5.9rem) !important;
 }
 
 .sound-quiz-blanked-word[data-len="7"],
-.sound-quiz-blanked-word[data-len="8"] {
-  font-size: clamp(3rem, 8vw, 6.2rem);
+.sound-quiz-blanked-word[data-len="8"],
+.sound-option-btn[data-len="7"],
+.sound-option-btn[data-len="8"],
+.sound-quiz-layout[data-len="7"] .sound-quiz-blanked-word,
+.sound-quiz-layout[data-len="7"] .sound-option-btn,
+.sound-quiz-layout[data-len="8"] .sound-quiz-blanked-word,
+.sound-quiz-layout[data-len="8"] .sound-option-btn {
+  font-size: clamp(2.8rem, 6.5vw, 5.0rem) !important;
+}
+
+.sound-quiz-blanked-word {
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+  user-select: none;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color var(--transition-fast);
 }
 
 .sound-quiz-blanked-word:hover {
@@ -1665,59 +1682,68 @@ body {
   animation: soundWordPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Sound Quiz with images (prevent vertical clipping on 1080p and smaller screens) */
+.sound-option-btn {
+  flex: 1;
+  max-width: 260px;
+  min-width: 170px;
+  letter-spacing: 0.02em;
+  padding: 0.5rem 2.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg, 18px);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sound-option-btn[data-len="5"] {
+  min-width: 160px;
+  padding: 0.45rem 2rem;
+}
+
+.sound-option-btn[data-len="6"] {
+  min-width: 150px;
+  padding: 0.4rem 1.8rem;
+}
+
+.sound-option-btn[data-len="7"],
+.sound-option-btn[data-len="8"] {
+  min-width: 135px;
+  padding: 0.35rem 1.6rem;
+}
+
+/* Sound Quiz with images */
 .sound-quiz-layout:not(.no-image) {
-  gap: 1.25rem !important;
-  padding-top: 2.5rem !important; /* leaves clear space below #chrome-audio */
+  gap: 1.1rem !important;
+  padding-top: 1rem !important; /* audio button removed, clean top margin */
 }
 
 .sound-quiz-layout:not(.no-image) .quiz-image {
-  max-height: 24vh !important;
-  max-width: 48vw !important;
+  max-height: 33vh !important;
+  max-width: 50vw !important;
   margin: 0 !important;
+  cursor: pointer;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.12));
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sound-quiz-layout:not(.no-image) .quiz-image:hover {
+  transform: scale(1.02);
 }
 
 .sound-quiz-layout:not(.no-image) .sound-quiz-word-row {
   margin-top: 0 !important;
 }
 
-.sound-quiz-layout:not(.no-image) .sound-quiz-blanked-word {
-  font-size: clamp(5rem, 15vw, 10rem) !important;
-  line-height: 1.15 !important;
-}
-
-.sound-quiz-layout:not(.no-image) .sound-quiz-blanked-word[data-len="5"] {
-  font-size: clamp(4.2rem, 12vw, 8.5rem) !important;
-}
-
-.sound-quiz-layout:not(.no-image) .sound-quiz-blanked-word[data-len="6"] {
-  font-size: clamp(3.6rem, 10vw, 7.5rem) !important;
-}
-
-.sound-quiz-layout:not(.no-image) .sound-quiz-blanked-word[data-len="7"],
-.sound-quiz-layout:not(.no-image) .sound-quiz-blanked-word[data-len="8"] {
-  font-size: clamp(3rem, 8vw, 6.2rem) !important;
-}
-
-.sound-quiz-layout:not(.no-image) .quiz-options-container {
-  margin-top: 0.25rem !important;
+.sound-quiz-layout .quiz-options-container {
+  max-width: 560px !important;
+  margin: 0.25rem auto 0 !important;
   gap: 1.5rem !important;
-}
-
-.sound-quiz-layout:not(.no-image) .sound-option-btn {
-  font-size: clamp(3.2rem, 8vw, 6rem) !important;
-  padding: 0.8rem 2.5rem !important;
-  min-width: 180px !important;
 }
 
 /* Sound Quiz without images (Audio-first mode) */
 .sound-quiz-layout.no-image {
-  gap: 3.5rem;
+  gap: 2.5rem;
   padding: 2.5rem 1rem;
-}
-
-.sound-quiz-layout.no-image .sound-quiz-blanked-word {
-  font-size: clamp(5rem, 15vw, 10rem);
 }
 
 @keyframes soundWordPop {
@@ -1726,18 +1752,11 @@ body {
   100% { transform: scale(1); }
 }
 
-.sound-option-btn {
-  font-size: clamp(3.2rem, 8vw, 6rem) !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.03em;
-  min-width: 180px;
-  padding: 0.8rem 2.5rem;
-}
-
 .word-slide[data-answered="true"] .sound-option-btn:not(.correct) {
-  font-size: clamp(2.5rem, 6vw, 4.5rem) !important;
-  opacity: 0.75 !important;
+  opacity: 0.55 !important;
   transform: scale(0.95) !important;
+  box-shadow: none !important;
+  filter: grayscale(0.4);
 }
 
 /* ============================================================

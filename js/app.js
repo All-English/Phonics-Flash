@@ -1794,18 +1794,18 @@
         : wordData.word;
 
       section.innerHTML = `
-        <div class="slide-center sound-quiz-layout ${!hasSoundQuizImage ? 'no-image' : ''}">
+        <div class="slide-center sound-quiz-layout ${!hasSoundQuizImage ? 'no-image' : ''}" data-len="${wordData.word.length}">
           ${isSightWord ? '<div class="sight-word-badge">Sight Word</div>' : ''}
           ${hasSoundQuizImage
             ? `<img ${isMediaUri ? `data-media-uri="${wordData.image}" style="display:none;"` : `src="${wordData.image}"`} alt="Sound Quiz Image" class="word-image quiz-image"
                  onerror="if(this.src) this.style.display='none'">`
             : ''}
           <div class="sound-quiz-word-row">
-            <div class="sound-quiz-blanked-word" data-full-word="${encodeURIComponent(fullWordDisplay)}" data-len="${wordData.word.length}">${blankedWordDisplay}</div>
+            <div class="sound-quiz-blanked-word" data-full-word="${encodeURIComponent(fullWordDisplay)}" data-len="${wordData.word.length}" title="Click to hear sound">${blankedWordDisplay}</div>
           </div>
           <div class="quiz-options-container">
-            <button class="quiz-option-btn sound-option-btn" data-sound="${choices[0]}">${choices[0]}</button>
-            <button class="quiz-option-btn sound-option-btn" data-sound="${choices[1]}">${choices[1]}</button>
+            <button class="quiz-option-btn sound-option-btn" data-len="${wordData.word.length}" data-sound="${choices[0]}">${choices[0]}</button>
+            <button class="quiz-option-btn sound-option-btn" data-len="${wordData.word.length}" data-sound="${choices[1]}">${choices[1]}</button>
           </div>
         </div>
       `;
@@ -1978,10 +1978,12 @@
     const audioBtn = document.getElementById('chrome-audio');
     if (audioBtn) {
       // Word Quiz and Picture Quiz hide audio until answered so students don't hear the word prematurely.
-      // Sound Quiz allows audio before answering so students can hear the word to identify the missing sound.
+      // Sound Quiz hides the top audio button completely to maximize vertical space for a larger illustration;
+      // students can click the word/picture or use keyboard shortcuts (Shift / Space) anytime to hear audio.
       const isWordOrPicQuiz = slide.dataset.quizMode === 'true' || slide.dataset.pictureQuizMode === 'true';
+      const isSoundQuiz = slide.dataset.soundQuizMode === 'true';
       const isAnswered = slide.dataset.answered === 'true';
-      const hideAudio = isIntro || (isWordOrPicQuiz && !isAnswered);
+      const hideAudio = isIntro || isSoundQuiz || (isWordOrPicQuiz && !isAnswered);
       audioBtn.classList.toggle('hidden', hideAudio);
     }
   }
@@ -2303,8 +2305,8 @@
 
     // Sound Quiz Mode Interaction
     if (currentSlide.dataset.soundQuizMode === 'true') {
-      const clickedBlankedWord = e.target.closest('.sound-quiz-blanked-word');
-      if (clickedBlankedWord) {
+      const clickedAudioTarget = e.target.closest('.sound-quiz-blanked-word, .sound-quiz-layout .quiz-image');
+      if (clickedAudioTarget) {
         e.preventDefault();
         e.stopPropagation();
         playCurrentSlideAudio();
