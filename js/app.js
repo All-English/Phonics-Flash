@@ -1793,7 +1793,8 @@
       section.dataset.correctSound = correctSound;
 
       const choices = [correctSound, distractor];
-      shuffleArray(choices);
+      // Keep possible answer choices in alphabetical order for consistency
+      choices.sort((a, b) => (a || '').localeCompare(b || '', undefined, { sensitivity: 'base' }) || (a || '').localeCompare(b || ''));
 
       const targetSound = unit.targetSound || unit.sound || '';
       const blankedWordDisplay = getBlankedWord(wordData.word, targetSound, unit.levelId);
