@@ -9,6 +9,14 @@
   let phonicsData = null;
   let revealInstance = null;
   let slideshowKeydownHandler = null;
+  let slideshowResizeHandler = null;
+
+  function getRevealDimensions() {
+    const isPortrait = window.innerHeight > window.innerWidth;
+    return isPortrait
+      ? { width: 700, height: 1200, margin: 0.04 }
+      : { width: 960, height: 700, margin: 0.04 };
+  }
 
   function normalizeLetterCase(val) {
     if (!val) return 'both';
@@ -1996,12 +2004,23 @@
       revealInstance = null;
     }
 
+    if (slideshowResizeHandler) {
+      window.removeEventListener('resize', slideshowResizeHandler);
+      window.removeEventListener('orientationchange', slideshowResizeHandler);
+      slideshowResizeHandler = null;
+    }
+
     // Build the persistent chrome overlay
     initSlideChrome();
 
     const deck = document.querySelector('#slideshow-screen .reveal');
+    const dims = getRevealDimensions();
 
     revealInstance = new Reveal(deck, {
+      width: dims.width,
+      height: dims.height,
+      margin: dims.margin,
+
       // Navigation — linear in mix mode, grid (synced) or default in normal mode
       navigationMode: isMixMode ? 'linear' : (options.syncSlides ? 'grid' : 'default'),
       controls: true,
@@ -2048,6 +2067,7 @@
       // so swipe navigation and controls work properly
       scrollActivationWidth: 0,
     });
+    window.revealInstance = revealInstance;
 
     revealInstance.initialize().then(() => {
       // Update chrome after reveal.js has set up the .present classes
@@ -2057,6 +2077,27 @@
         playCurrentSlideAudio();
       }
     });
+
+    // Dynamic responsive layout updates for orientation / window resize
+    let resizeTimer = null;
+    slideshowResizeHandler = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (!revealInstance) return;
+        const currentDims = getRevealDimensions();
+        const cfg = revealInstance.getConfig();
+        if (cfg.width !== currentDims.width || cfg.height !== currentDims.height) {
+          revealInstance.configure({
+            width: currentDims.width,
+            height: currentDims.height,
+            margin: currentDims.margin
+          });
+          revealInstance.layout();
+        }
+      }, 150);
+    };
+    window.addEventListener('resize', slideshowResizeHandler);
+    window.addEventListener('orientationchange', slideshowResizeHandler);
 
     // Wire up sync button click
     const syncBtn = document.getElementById('toggle-sync');
@@ -2430,6 +2471,12 @@
     if (slideshowKeydownHandler) {
       window.removeEventListener('keydown', slideshowKeydownHandler);
       slideshowKeydownHandler = null;
+    }
+
+    if (slideshowResizeHandler) {
+      window.removeEventListener('resize', slideshowResizeHandler);
+      window.removeEventListener('orientationchange', slideshowResizeHandler);
+      slideshowResizeHandler = null;
     }
 
     if (revealInstance) {
