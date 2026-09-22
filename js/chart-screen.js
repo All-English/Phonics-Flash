@@ -489,6 +489,7 @@
     if (!grid || !targetUnits) return;
     grid.innerHTML = '';
 
+    const phonicsData = context.getPhonicsData();
     const options = context.getOptions();
     const uniqueLevels = [...new Set(targetUnits.map(u => u.levelId || 'L1'))];
     const isOnlyLevel1 = uniqueLevels.length === 1 && uniqueLevels[0] === 'L1';
