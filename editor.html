@@ -72,6 +72,7 @@
           <span>Export</span>
         </button>
         <div class="dropdown-menu hidden" id="export-dropdown" role="menu">
+          <button type="button" class="dropdown-item" id="export-master-curriculum-btn" role="menuitem">🌐 Export Master "curriculum.json"</button>
           <button type="button" class="dropdown-item" id="export-book-json-btn" role="menuitem">⬇️ Export Active Book (.json)</button>
           <button type="button" class="dropdown-item" id="export-words-json-btn" role="menuitem">⬇️ Export as "words.json" (Dev Format)</button>
         </div>
@@ -494,7 +495,8 @@
   <script src="js/config.js"></script>
 
   <!-- Storage, Sync and APIs -->
-  <script src="js/shared-class-sync.js?v=1.1"></script>
+  <script src="https://all-english-media.netlify.app/shared/class-sync.js?v=2.0"></script>
+  <script>window.SharedClassSync || document.write('<script src="js/shared-class-sync.js"><\/script>');</script>
   <script src="js/media-db.js?v=1.1"></script>
   <script src="js/editor-store.js?v=1.1"></script>
   <script src="js/media-apis.js?v=1.2"></script>

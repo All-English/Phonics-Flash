@@ -1,6 +1,7 @@
 /**
- * shared-class-sync.js
- * Universal schedule parsing, time-matching, and unit translation
+ * class-sync.js (v2.0)
+ * Universal schedule parsing, time-matching, unit translation,
+ * and canonical curriculum adapter/loader.
  * Shared across Phonics Flash, Word-Tac-Toe, MatchMaker, and Treasure Hunt.
  */
 (function (root, factory) {
@@ -21,6 +22,20 @@
   const SHARED_CLASS_PROFILES_KEY = 'shared_class_profiles';
   const UPSTASH_URL_KEY = 'upstash_redis_url';
   const UPSTASH_TOKEN_KEY = 'upstash_redis_token';
+  const UPSTASH_SHARED_CURRICULUM_KEY = 'shared_phonics_curriculum';
+  
+  function getMediaBase() {
+    if (typeof window !== 'undefined') {
+      if (window.ALL_ENGLISH_MEDIA_BASE) return window.ALL_ENGLISH_MEDIA_BASE;
+      if (typeof localStorage !== 'undefined') {
+        const stored = localStorage.getItem('all_english_media_base');
+        if (stored) return stored;
+      }
+    }
+    return 'https://all-english-media.netlify.app';
+  }
+
+  const DEFAULT_MEDIA_BASE = getMediaBase();
 
   // ── 1. Schedule Parsing from Class Name ────────────────────────
   const DAY_PATTERNS = [
@@ -55,44 +70,33 @@
     }
 
     // 2. Extract Start Time
-    // Matches patterns like "3:00", "4:00", "6:50", "7:45", "14:30"
     const timeMatch = className.match(/(\d{1,2}):(\d{2})/);
     let startHour = 15;
     let startMin = 0;
 
     if (timeMatch) {
-      let h = parseInt(timeMatch[1], 10);
-      const m = parseInt(timeMatch[2], 10);
-      // Academy / hagwon hours 1..7 are PM (13:00 to 19:00)
-      if (h >= 1 && h <= 7) {
-        h += 12;
+      startHour = parseInt(timeMatch[1], 10);
+      startMin = parseInt(timeMatch[2], 10);
+      // Auto-convert single-digit or early morning afternoon times (e.g. 3:00 -> 15:00)
+      if (startHour >= 1 && startHour <= 8) {
+        startHour += 12;
       }
-      startHour = h;
-      startMin = m;
     }
 
-    const startMinutesTotal = startHour * 60 + startMin;
-    // Standard default duration: 60 minutes
-    const endMinutesTotal = startMinutesTotal + 60;
+    const pad = n => String(n).padStart(2, '0');
+    const startTime = `${pad(startHour)}:${pad(startMin)}`;
 
-    const endH = Math.floor(endMinutesTotal / 60) % 24;
-    const endM = endMinutesTotal % 60;
+    // Default 50-60 min session length
+    const totalStartMinutes = startHour * 60 + startMin;
+    const totalEndMinutes = totalStartMinutes + 50;
+    const endHour = Math.floor(totalEndMinutes / 60);
+    const endMin = totalEndMinutes % 60;
+    const endTime = `${pad(endHour)}:${pad(endMin)}`;
 
-    const formatTime = (h, m) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-
-    return {
-      days: matchedDays,
-      startTime: formatTime(startHour, startMin),
-      endTime: formatTime(endH, endM)
-    };
+    return { days: matchedDays, startTime, endTime };
   }
 
   // ── 2. Strict In-Session Time Matching ─────────────────────────
-  /**
-   * Finds the active scheduled class strictly during its in-session window:
-   * startTime <= currentTime < endTime.
-   * Never activates before startTime. No post-class grace bleed.
-   */
   function findActiveScheduledClass(classProfiles, date = new Date()) {
     if (!classProfiles || typeof classProfiles !== 'object') return null;
 
@@ -114,72 +118,58 @@
       const startMin = (startParts[0] || 0) * 60 + (startParts[1] || 0);
       let endMin = (endParts[0] || 0) * 60 + (endParts[1] || 0);
       if (endMin <= startMin) {
-        endMin = startMin + 60; // 60 min default
+        endMin = startMin + 60;
       }
 
-      // Strictly in-session check
       if (currentMinutes >= startMin && currentMinutes < endMin) {
-        candidates.push({
-          className,
-          profile,
-          startMin,
-          endMin
-        });
+        candidates.push({ className, profile, startMin, endMin });
       }
     }
 
     if (candidates.length === 0) return null;
-
-    // If multiple overlap on a boundary, pick the most recent start time
     candidates.sort((a, b) => b.startMin - a.startMin);
     return candidates[0];
   }
 
   // ── 3. Universal Smart Phonics Unit Translators ────────────────
-  /**
-   * Normalizes any app's unit string to a canonical object:
-   * { level: 2, unit: 3, id: "L2U3" }
-   *
-   * Handles:
-   * - "L2U3", "L2U03" (Phonics Flash)
-   * - "Book2|Unit3" (Word-Tac-Toe)
-   * - "SmartPhonics|2|3" (MatchMaker)
-   * - "level2:unit3" (Treasure Hunt)
-   */
   function toCanonicalUnit(unitStr) {
-    if (!unitStr || typeof unitStr !== 'string') return null;
+    if (!unitStr) return null;
+    if (typeof unitStr === 'object') {
+      const level = parseInt(unitStr.level || unitStr.book, 10);
+      const unit = parseInt(unitStr.unit || (typeof unitStr.unitName === 'string' ? unitStr.unitName.match(/Unit\s+(\d+)/i)?.[1] : null), 10);
+      if (!isNaN(level) && !isNaN(unit)) {
+        const series = unitStr.series || 'SmartPhonics';
+        return { series, level, unit, id: `L${level}U${unit}` };
+      }
+      return null;
+    }
+    if (typeof unitStr !== 'string') return null;
     const str = unitStr.trim();
 
     // 1. Phonics Flash: L2U3
     let m = str.match(/L(\d+)U(\d+)/i);
     if (m) {
-      const level = parseInt(m[1], 10);
-      const unit = parseInt(m[2], 10);
-      return { level, unit, id: `L${level}U${unit}` };
+      return { series: 'SmartPhonics', level: parseInt(m[1], 10), unit: parseInt(m[2], 10), id: `L${m[1]}U${m[2]}` };
     }
 
     // 2. Word-Tac-Toe: Book2|Unit3
     m = str.match(/Book(\d+)\|Unit(\d+)/i);
     if (m) {
-      const level = parseInt(m[1], 10);
-      const unit = parseInt(m[2], 10);
-      return { level, unit, id: `L${level}U${unit}` };
+      return { series: 'SmartPhonics', level: parseInt(m[1], 10), unit: parseInt(m[2], 10), id: `L${m[1]}U${m[2]}` };
     }
 
-    // 3. MatchMaker: SmartPhonics|2|3
-    m = str.match(/(?:SmartPhonics|SP)\|(\d+)\|(\d+)/i);
+    // 3. MatchMaker: SmartPhonics|2|3 or LetsSmile|2|3 or LS|2|3
+    m = str.match(/(?:SmartPhonics|SP|LetsSmile|LS)\|(\d+)\|(\d+)/i);
     if (m) {
-      const level = parseInt(m[1], 10);
-      const unit = parseInt(m[2], 10);
-      return { level, unit, id: `L${level}U${unit}` };
+      const isLS = /^(?:LetsSmile|LS)/i.test(str);
+      const series = isLS ? 'LetsSmile' : 'SmartPhonics';
+      return { series, level: parseInt(m[1], 10), unit: parseInt(m[2], 10), id: `L${m[1]}U${m[2]}` };
     }
 
     // 4. Treasure Hunt: level2:unit3
     m = str.match(/level(\d+):unit(\d+)/i);
     if (m) {
-      const level = parseInt(m[1], 10);
-      const unit = parseInt(m[2], 10);
-      return { level, unit, id: `L${level}U${unit}` };
+      return { series: 'SmartPhonics', level: parseInt(m[1], 10), unit: parseInt(m[2], 10), id: `L${m[1]}U${m[2]}` };
     }
 
     return null;
@@ -200,7 +190,8 @@
   function toMatchMaker(canonical) {
     if (!canonical) return null;
     const c = typeof canonical === 'string' ? toCanonicalUnit(canonical) : canonical;
-    return c ? `SmartPhonics|${c.level}|${c.unit}` : null;
+    const prefix = c.series === 'LetsSmile' ? 'LetsSmile' : 'SmartPhonics';
+    return c ? `${prefix}|${c.level}|${c.unit}` : null;
   }
 
   function toTreasureHunt(canonical) {
@@ -209,19 +200,11 @@
     return c ? `level${c.level}:unit${c.unit}` : null;
   }
 
-  /**
-   * For single-select dropdowns (like Treasure Hunt),
-   * returns the highest level and unit from an array of units.
-   */
   function getHighestUnit(unitsArray) {
     if (!Array.isArray(unitsArray) || unitsArray.length === 0) return null;
-    const parsed = unitsArray
-      .map(toCanonicalUnit)
-      .filter(Boolean);
-
+    const parsed = unitsArray.map(toCanonicalUnit).filter(Boolean);
     if (parsed.length === 0) return null;
 
-    // Sort descending: highest level first, then highest unit
     parsed.sort((a, b) => {
       if (b.level !== a.level) return b.level - a.level;
       return b.unit - a.unit;
@@ -257,7 +240,7 @@
     if (!url || !token) return null;
 
     try {
-      const res = await fetch(`${url}/get/${key}`, {
+      const res = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) return null;
@@ -284,7 +267,7 @@
 
     try {
       const payload = typeof value === 'string' ? value : JSON.stringify(value);
-      const res = await fetch(`${url}/set/${key}`, {
+      const res = await fetch(`${url}/set/${encodeURIComponent(key)}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -300,15 +283,10 @@
   }
 
   // ── 5. Unified Profile Loader & Manager ────────────────────────
-  /**
-   * Merges rosters from shared_player_sets and profiles from shared_class_profiles.
-   * Auto-generates initial schedule if missing.
-   */
   async function loadAllClasses() {
     let playerSets = {};
     let classProfiles = {};
 
-    // 1. Try local storage first
     if (typeof localStorage !== 'undefined') {
       try {
         const localSets = localStorage.getItem(SHARED_SETS_KEY);
@@ -320,7 +298,6 @@
       }
     }
 
-    // 2. Fetch from Upstash
     const cloudSets = await fetchUpstash(SHARED_SETS_KEY);
     if (cloudSets && typeof cloudSets === 'object') {
       playerSets = cloudSets;
@@ -337,7 +314,6 @@
       }
     }
 
-    // 3. Ensure every class in playerSets has a valid profile
     let profilesChanged = false;
     for (const className of Object.keys(playerSets)) {
       if (!classProfiles[className]) {
@@ -363,9 +339,6 @@
     return { playerSets, classProfiles };
   }
 
-  /**
-   * Save units for a specific class and push to Upstash
-   */
   async function saveClassUnits(className, canonicalUnitsArray, curriculumId) {
     if (!className) return false;
     let profiles = {};
@@ -396,12 +369,240 @@
     return syncUpstash(SHARED_CLASS_PROFILES_KEY, profiles);
   }
 
+  // ── 6. Canonical Curriculum Adapter ───────────────────────────
+  const CurriculumAdapter = {
+    /**
+     * Defensive Normalizer: accepts Canonical v2, EditorStore v1, or raw words.json
+     * Returns a valid Canonical v2 structure: { version: 2, updatedAt, mediaBase, series: [...] }
+     */
+    normalize(data) {
+      if (!data) return null;
+      if (Array.isArray(data.series)) {
+        return {
+          version: data.version || 2,
+          updatedAt: data.updatedAt || Date.now(),
+          mediaBase: (data.mediaBase || DEFAULT_MEDIA_BASE).replace(/\/$/, ''),
+          series: data.series
+        };
+      }
+      // Legacy EditorStore format (has curricula[])
+      if (Array.isArray(data.curricula)) {
+        return {
+          version: 2,
+          updatedAt: data.updatedAt || Date.now(),
+          mediaBase: (data.mediaBase || DEFAULT_MEDIA_BASE).replace(/\/$/, ''),
+          series: data.curricula.map(c => ({
+            id: c.id,
+            name: c.name,
+            levels: c.levels || []
+          }))
+        };
+      }
+      // Raw words.json format (has levels[])
+      if (Array.isArray(data.levels)) {
+        return {
+          version: 2,
+          updatedAt: 0,
+          mediaBase: DEFAULT_MEDIA_BASE,
+          series: [
+            {
+              id: 'smart-phonics',
+              name: 'Smart Phonics',
+              levels: data.levels
+            }
+          ]
+        };
+      }
+      return null;
+    },
+
+    resolveUrl(path, base) {
+      if (!path) return '';
+      if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:') || path.startsWith('blob:')) {
+        return path;
+      }
+      const cleanPath = path.replace(/^(\.\/|data\/|media\/)/, '');
+      const cleanBase = (base || getMediaBase()).replace(/\/$/, '');
+      return `${cleanBase}/${cleanPath}`;
+    },
+
+    /**
+     * Adapts canonical curriculum for Phonics Flash ({ levels: [...] })
+     */
+    toPhonicsFlash(data, mediaBase) {
+      const norm = this.normalize(data);
+      if (!norm || !norm.series || norm.series.length === 0) return { levels: [] };
+      const sp = norm.series.find(s => s.id === 'smart-phonics') || norm.series[0];
+      const activeBase = mediaBase || (getMediaBase() !== 'https://all-english-media.netlify.app' ? getMediaBase() : (norm.mediaBase || getMediaBase()));
+
+      return {
+        levels: (sp.levels || []).map(lvl => ({
+          ...lvl,
+          units: (lvl.units || []).map(unit => ({
+            ...unit,
+            words: (unit.words || []).map(w => ({
+              ...w,
+              image: this.resolveUrl(w.image, activeBase),
+              audio: this.resolveUrl(w.audio, activeBase)
+            }))
+          }))
+        }))
+      };
+    },
+
+    /**
+     * Adapts canonical curriculum for MatchMaker ({ 1: { "Unit 1: abc": [...] } })
+     */
+    toMatchMaker(data, mediaBase) {
+      const norm = this.normalize(data);
+      if (!norm || !norm.series || norm.series.length === 0) return {};
+      const sp = norm.series.find(s => s.id === 'smart-phonics') || norm.series[0];
+      const activeBase = mediaBase || (getMediaBase() !== 'https://all-english-media.netlify.app' ? getMediaBase() : (norm.mediaBase || getMediaBase()));
+      const bookMap = {};
+
+      for (const lvl of sp.levels || []) {
+        const bookNum = lvl.bookNumber || parseInt(String(lvl.id).replace(/\D/g, ''), 10) || 1;
+        bookMap[bookNum] = {};
+
+        for (const unit of lvl.units || []) {
+          const cardList = [];
+          if (unit.targetLetters && unit.targetLetters.length) {
+            const tl = Array.isArray(unit.targetLetters) ? unit.targetLetters.join(', ') : unit.targetLetters;
+            cardList.push({ targetLetters: tl });
+          }
+
+          for (const w of unit.words || []) {
+            const card = {
+              word: w.word,
+              image: this.resolveUrl(w.image, activeBase),
+              sound: this.resolveUrl(w.audio, activeBase)
+            };
+            if (w.imageAudio) {
+              card.imageSound = this.resolveUrl(w.imageAudio, activeBase);
+            }
+            cardList.push(card);
+          }
+          bookMap[bookNum][unit.name] = cardList;
+        }
+      }
+      return bookMap;
+    },
+
+    /**
+     * Adapts canonical curriculum for Sunken Treasure & Tic-Tac-Toe ({ level1: { unit1: {...} } })
+     */
+    toWordBank(data) {
+      const norm = this.normalize(data);
+      if (!norm || !norm.series || norm.series.length === 0) return {};
+      const sp = norm.series.find(s => s.id === 'smart-phonics') || norm.series[0];
+      const bank = {};
+
+      for (const lvl of sp.levels || []) {
+        const bookNum = lvl.bookNumber || parseInt(String(lvl.id).replace(/\D/g, ''), 10) || 1;
+        const levelKey = `level${bookNum}`;
+        bank[levelKey] = {};
+
+        for (const unit of lvl.units || []) {
+          const unitNum = unit.unitNumber || (String(unit.id).match(/\d+$/)?.[0]) || '1';
+          const unitKey = `unit${unitNum}`;
+
+          let title = unit.unitTitle;
+          if (!title && unit.name) {
+            title = unit.name.replace(/^Unit\s+\d+:\s*/i, '');
+          }
+          if (bookNum === 1 && unit.targetLetters && unit.targetLetters.length) {
+            title = unit.targetLetters.join('').toUpperCase();
+          }
+
+          let words = [];
+          let extraWords = [];
+
+          if (bookNum === 1 && unit.targetLetters && unit.targetLetters.length) {
+            for (const l of unit.targetLetters) {
+              words.push(l.toUpperCase(), l.toLowerCase());
+              extraWords.push(l.toUpperCase() + l.toLowerCase());
+            }
+          } else {
+            words = [...new Set((unit.words || []).map(w => typeof w === 'string' ? w : w.word))];
+            extraWords = (unit.extraWords || []).map(w => typeof w === 'string' ? w : (w.word || ''));
+          }
+
+          bank[levelKey][unitKey] = {
+            targetSound: unit.targetSound || '',
+            unitTitle: title || `Unit ${unitNum}`,
+            words,
+            extraWords
+          };
+        }
+      }
+      return bank;
+    }
+  };
+
+  // ── 7. Unified Curriculum Loader ──────────────────────────────
+  const CurriculumLoader = {
+    cachedCurriculum: null,
+
+    /**
+     * 3-Tier Load Chain: Upstash -> CDN -> Local Fallback
+     */
+    async load({ cdnBase = null, fallbackData = null, forceRefresh = false } = {}) {
+      if (this.cachedCurriculum && !forceRefresh) {
+        return this.cachedCurriculum;
+      }
+
+      // 1. Check Upstash live edits if credentials exist
+      try {
+        const cloudData = await fetchUpstash(UPSTASH_SHARED_CURRICULUM_KEY);
+        if (cloudData) {
+          const normalized = CurriculumAdapter.normalize(cloudData);
+          if (normalized) {
+            this.cachedCurriculum = normalized;
+            return normalized;
+          }
+        }
+      } catch (e) {
+        console.warn('[CurriculumLoader] Upstash check skipped/failed:', e);
+      }
+
+      // 2. Fetch from CDN curriculum.json with cache buster
+      try {
+        const cleanCdn = (cdnBase || getMediaBase()).replace(/\/$/, '');
+        const res = await fetch(`${cleanCdn}/curriculum.json?v=2.0`);
+        if (res.ok) {
+          const cdnJson = await res.json();
+          const normalized = CurriculumAdapter.normalize(cdnJson);
+          if (normalized) {
+            this.cachedCurriculum = normalized;
+            return normalized;
+          }
+        }
+      } catch (e) {
+        console.warn('[CurriculumLoader] CDN fetch failed, falling back to local bundle:', e);
+      }
+
+      // 3. Bundled offline fallback
+      if (fallbackData) {
+        const normalized = CurriculumAdapter.normalize(fallbackData);
+        if (normalized) {
+          this.cachedCurriculum = normalized;
+          return normalized;
+        }
+      }
+
+      return null;
+    }
+  };
+
   return {
     SHARED_SETS_KEY,
     SHARED_ACTIVE_PLAYERS_KEY,
     SHARED_CLASS_PROFILES_KEY,
     UPSTASH_URL_KEY,
     UPSTASH_TOKEN_KEY,
+    UPSTASH_SHARED_CURRICULUM_KEY,
+    DEFAULT_MEDIA_BASE,
+    getMediaBase,
     parseScheduleFromName,
     findActiveScheduledClass,
     toCanonicalUnit,
@@ -414,6 +615,8 @@
     fetchUpstash,
     syncUpstash,
     loadAllClasses,
-    saveClassUnits
+    saveClassUnits,
+    CurriculumAdapter,
+    CurriculumLoader
   };
 });

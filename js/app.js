@@ -459,10 +459,27 @@
     if (typeof EditorStore !== 'undefined') {
       await EditorStore.init();
       const activeCurriculum = EditorStore.getActiveCurriculum();
-      if (activeCurriculum && Array.isArray(activeCurriculum.levels) && activeCurriculum.levels.length > 0) {
+      // If a user has an active custom curriculum, use it
+      if (activeCurriculum && activeCurriculum.isCustom && Array.isArray(activeCurriculum.levels) && activeCurriculum.levels.length > 0) {
         return activeCurriculum;
       }
     }
+
+    // Try central CurriculumLoader (Upstash live -> CDN -> words.json)
+    if (typeof SharedClassSync !== 'undefined' && SharedClassSync.CurriculumLoader) {
+      try {
+        const loaded = await SharedClassSync.CurriculumLoader.load();
+        if (loaded) {
+          const adapted = SharedClassSync.CurriculumAdapter.toPhonicsFlash(loaded);
+          if (adapted && adapted.levels && adapted.levels.length > 0) {
+            return adapted;
+          }
+        }
+      } catch (err) {
+        console.warn('[PhonicsFlash] CurriculumLoader fallback:', err);
+      }
+    }
+
     const response = await fetch('data/words.json');
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();

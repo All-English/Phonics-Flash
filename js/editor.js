@@ -1282,6 +1282,17 @@ RULES:
         await EditorStore.exportWordsJsonFormat(workingBook.id);
       }
     });
+
+    const exportMasterBtn = document.getElementById('export-master-curriculum-btn');
+    if (exportMasterBtn) {
+      exportMasterBtn.addEventListener('click', async () => {
+        if (workingBook && isDirty) {
+          EditorStore.saveCurriculum(workingBook);
+          setDirty(false);
+        }
+        await EditorStore.exportMasterCurriculumJson();
+      });
+    }
   }
 
   // ── 11. Modal Bindings ──────────────────────────────────────

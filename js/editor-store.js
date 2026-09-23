@@ -118,11 +118,21 @@ window.EditorStore = (() => {
 
     const maxLocalUpdate = curricula.reduce((max, c) => Math.max(max, c.updatedAt || 0), Date.now());
 
+    // Canonical v2 format for cross-game compatibility
+    const mediaBase = (typeof SharedClassSync !== 'undefined' && SharedClassSync.DEFAULT_MEDIA_BASE) || 'https://all-english-media.netlify.app';
     const payload = {
-      version: 1,
+      version: 2,
       updatedAt: maxLocalUpdate,
+      mediaBase,
       activeCurriculumId,
       hideBuiltIn,
+      series: curricula.map(c => ({
+        id: c.id,
+        name: c.name,
+        description: c.description || '',
+        levels: c.levels || []
+      })),
+      // Retain curricula for backward compatibility
       curricula
     };
 
@@ -175,7 +185,8 @@ window.EditorStore = (() => {
         return false;
       }
 
-      if (remote && Array.isArray(remote.curricula) && remote.curricula.length > 0) {
+      const remoteList = remote && (Array.isArray(remote.series) ? remote.series : remote.curricula);
+      if (remoteList && Array.isArray(remoteList) && remoteList.length > 0) {
         // Timestamp check: only replace if remote is genuinely newer than local data
         const localMaxUpdate = curricula.reduce((max, c) => Math.max(max, c.updatedAt || 0), 0);
         if (remote.updatedAt && remote.updatedAt <= localMaxUpdate) {
@@ -183,7 +194,7 @@ window.EditorStore = (() => {
           return false;
         }
 
-        curricula = remote.curricula;
+        curricula = remoteList;
         if (remote.activeCurriculumId) activeCurriculumId = remote.activeCurriculumId;
         if (typeof remote.hideBuiltIn === 'boolean') hideBuiltIn = remote.hideBuiltIn;
         await saveToStorage();
@@ -831,6 +842,40 @@ window.EditorStore = (() => {
     setTimeout(() => URL.revokeObjectURL(a.href), 60000);
   }
 
+  async function exportMasterCurriculumJson() {
+    // Process all books in curricula and embed any media: blobs for portability
+    const exportSeries = await Promise.all(curricula.map(async book => {
+      const exportLevels = await _embedBlobsForExport(book.levels);
+      return {
+        id: book.id,
+        name: book.name,
+        description: book.description || '',
+        levels: exportLevels
+      };
+    }));
+
+    const mediaBase = (typeof SharedClassSync !== 'undefined' && SharedClassSync.DEFAULT_MEDIA_BASE) || 'https://all-english-media.netlify.app';
+
+    const exportObj = {
+      $schema: "./schema.json",
+      version: 2,
+      updatedAt: Date.now(),
+      mediaBase,
+      series: exportSeries
+    };
+
+    const str = JSON.stringify(exportObj, null, 2);
+    const blob = new Blob([str], { type: 'application/json' });
+
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'curriculum.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  }
+
   async function importBookJSON(parsedJson) {
     if (!parsedJson || (!parsedJson.levels && !Array.isArray(parsedJson))) {
       throw new Error('Invalid curriculum JSON: Missing "levels" array');
@@ -905,6 +950,7 @@ window.EditorStore = (() => {
     reorderUnits,
     exportBookJSON,
     exportWordsJsonFormat,
+    exportMasterCurriculumJson,
     importBookJSON,
     saveToStorage,
     debouncedPushToUpstash,
