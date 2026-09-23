@@ -470,7 +470,34 @@
       try {
         const loaded = await SharedClassSync.CurriculumLoader.load();
         if (loaded) {
-          const adapted = SharedClassSync.CurriculumAdapter.toPhonicsFlash(loaded);
+          if (typeof EditorStore !== 'undefined') {
+            const allCurricula = typeof SharedClassSync.CurriculumAdapter.toPhonicsFlashAll === 'function'
+              ? SharedClassSync.CurriculumAdapter.toPhonicsFlashAll(loaded)
+              : [SharedClassSync.CurriculumAdapter.toPhonicsFlash(loaded)];
+
+            for (const book of allCurricula) {
+              const existing = EditorStore.getCurriculum(book.id);
+              if (!existing) {
+                EditorStore.saveCurriculum({
+                  id: book.id,
+                  name: book.name,
+                  isCustom: false,
+                  description: book.description || '',
+                  levels: book.levels || [],
+                  updatedAt: loaded.updatedAt || 0
+                }, { skipPush: true });
+              } else if (!existing.isCustom && (loaded.updatedAt || 0) > (existing.updatedAt || 0)) {
+                EditorStore.saveCurriculum({
+                  ...existing,
+                  name: book.name,
+                  levels: book.levels || [],
+                  updatedAt: loaded.updatedAt || 0
+                }, { skipPush: true });
+              }
+            }
+          }
+          const activeCurId = typeof EditorStore !== 'undefined' ? EditorStore.getActiveCurriculumId() : null;
+          const adapted = SharedClassSync.CurriculumAdapter.toPhonicsFlash(loaded, null, activeCurId);
           if (adapted && adapted.levels && adapted.levels.length > 0) {
             return adapted;
           }
@@ -1055,7 +1082,8 @@
     const units = Array.isArray(level.units) ? level.units : [];
 
     // Check if any units in this level are saved/checked
-    const checkedUnitsInLevel = units.filter(u => savedUnits.includes(u.id));
+    const isUnitChecked = (uid) => savedUnits.includes(uid) || savedUnits.some(s => s === uid || (typeof SharedClassSync !== 'undefined' && SharedClassSync.toPhonicsFlash(s) === uid));
+    const checkedUnitsInLevel = units.filter(u => isUnitChecked(u.id));
     const hasSelected = checkedUnitsInLevel.length > 0;
     const allChecked = units.length > 0 && checkedUnitsInLevel.length === units.length;
 
@@ -1093,7 +1121,7 @@
         ` : ''}
         <div class="units-grid">
           ${units.length > 0 ? units.map(unit => {
-            const isChecked = savedUnits.includes(unit.id);
+            const isChecked = isUnitChecked(unit.id);
             return createUnitCheckboxHTML(unit, level.id, isChecked);
           }).join('') : '<p style="padding:1rem;color:var(--text-muted);font-size:0.85rem;">No units in this level yet.</p>'}
         </div>

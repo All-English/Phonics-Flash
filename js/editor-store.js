@@ -409,17 +409,17 @@ window.EditorStore = (() => {
     return true;
   }
 
-  function saveCurriculum(updatedBook) {
+  function saveCurriculum(updatedBook, { skipPush = false } = {}) {
     if (!updatedBook || !updatedBook.id) return false;
     const idx = curricula.findIndex(c => c.id === updatedBook.id);
-    updatedBook.updatedAt = Date.now();
+    if (!updatedBook.updatedAt) updatedBook.updatedAt = Date.now();
     if (idx !== -1) {
       curricula[idx] = updatedBook;
     } else {
       curricula.push(updatedBook);
     }
     saveToStorage();
-    debouncedPushToUpstash();
+    if (!skipPush) debouncedPushToUpstash();
     notifyChange();
     return true;
   }
