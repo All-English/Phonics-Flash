@@ -1593,7 +1593,7 @@ body {
   font-size: clamp(2.3rem, 5.4vw, 4.2rem) !important;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px) and (orientation: portrait) {
   .quiz-mode-layout {
     gap: 1.8rem;
     width: 100%;
@@ -1656,6 +1656,15 @@ body {
   justify-content: center;
   gap: 1.25rem;
   margin-top: 0.15rem;
+}
+
+.sound-quiz-interactive-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  width: 100%;
 }
 
 /* Synchronized typography: blanked word and sound options share identical font scale */
@@ -1786,7 +1795,7 @@ body {
   filter: grayscale(0.4);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px) and (orientation: portrait) {
   .sound-quiz-layout {
     gap: 1.6rem;
     width: 100%;
@@ -2037,7 +2046,7 @@ body {
   animation: shake 0.4s ease-in-out;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px) and (orientation: portrait) {
   .picture-quiz-layout {
     gap: 1.6rem;
     width: 100%;
@@ -3857,5 +3866,330 @@ body {
   color: light-dark(#4338ca, #e0e7ff);
   border-color: light-dark(rgba(99, 102, 241, 0.35), rgba(129, 140, 248, 0.45));
 }
+
+/* ============================================================
+   LANDSCAPE SIDE-BY-SIDE SPLIT LAYOUT
+   (Flashcards, Word Quiz, Sound Quiz, Dictation Mode)
+   Applies across Desktop, Tablets, and Mobile Phones in Landscape
+   ============================================================ */
+@media (orientation: landscape) {
+  /* Sight word badge: float to top-center without breaking 2-column flex */
+  .reveal .slides section[data-has-image="true"] .sight-word-badge {
+    position: absolute !important;
+    top: 1rem !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    margin-bottom: 0 !important;
+    z-index: 10 !important;
+  }
+
+  /* ------------------------------------------------------------
+     1. FLASHCARDS SPLIT LAYOUT (Picture Left, Word Right)
+     ------------------------------------------------------------ */
+  .reveal .slides section:not([data-quiz-mode="true"]):not([data-sound-quiz-mode="true"]):not([data-picture-quiz-mode="true"]):not([data-dictation-mode="true"])[data-has-image="true"] .slide-center {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: clamp(1.5rem, 4vw, 4rem) !important;
+    width: 92vw !important;
+    max-width: 1200px !important;
+    height: 82vh !important;
+    max-height: 600px !important;
+    box-sizing: border-box !important;
+    margin: 0 auto !important;
+    padding-top: 0 !important;
+  }
+
+  .reveal .slides section:not([data-quiz-mode="true"]):not([data-sound-quiz-mode="true"]):not([data-picture-quiz-mode="true"]):not([data-dictation-mode="true"])[data-has-image="true"] .word-image {
+    flex: 1 1 50% !important;
+    max-width: min(48vw, 520px) !important;
+    max-height: 75vh !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+    margin: 0 !important;
+  }
+
+  .reveal .slides section:not([data-quiz-mode="true"]):not([data-sound-quiz-mode="true"]):not([data-picture-quiz-mode="true"]):not([data-dictation-mode="true"])[data-has-image="true"] .word-display-container {
+    flex: 1 1 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    max-width: min(48vw, 520px) !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .reveal .slides section:not([data-quiz-mode="true"]):not([data-sound-quiz-mode="true"]):not([data-picture-quiz-mode="true"]):not([data-dictation-mode="true"])[data-has-image="true"] .word-text {
+    font-size: clamp(4.5rem, 9.5vw, 8.5rem);
+    text-align: center;
+  }
+
+  .reveal .slides section:not([data-quiz-mode="true"]):not([data-sound-quiz-mode="true"]):not([data-picture-quiz-mode="true"]):not([data-dictation-mode="true"])[data-has-image="true"] .word-text[data-len="6"] {
+    font-size: clamp(3.8rem, 8vw, 7.2rem);
+  }
+
+  .reveal .slides section:not([data-quiz-mode="true"]):not([data-sound-quiz-mode="true"]):not([data-picture-quiz-mode="true"]):not([data-dictation-mode="true"])[data-has-image="true"] .word-text[data-len="7"],
+  .reveal .slides section:not([data-quiz-mode="true"]):not([data-sound-quiz-mode="true"]):not([data-picture-quiz-mode="true"]):not([data-dictation-mode="true"])[data-has-image="true"] .word-text[data-len="8"] {
+    font-size: clamp(3.2rem, 6.8vw, 6.0rem);
+  }
+
+  .reveal .slides section:not([data-quiz-mode="true"]):not([data-sound-quiz-mode="true"]):not([data-picture-quiz-mode="true"]):not([data-dictation-mode="true"])[data-has-image="true"] .word-text[data-len="9"],
+  .reveal .slides section:not([data-quiz-mode="true"]):not([data-sound-quiz-mode="true"]):not([data-picture-quiz-mode="true"]):not([data-dictation-mode="true"])[data-has-image="true"] .word-text[data-len="10"] {
+    font-size: clamp(2.8rem, 5.8vw, 5.0rem);
+  }
+
+  /* ------------------------------------------------------------
+     2. WORD QUIZ SPLIT LAYOUT (Picture Left, Choices Stacked Right)
+     ------------------------------------------------------------ */
+  .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-mode-layout {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: clamp(1.5rem, 4vw, 3.5rem) !important;
+    width: 92vw !important;
+    max-width: 1200px !important;
+    height: 82vh !important;
+    max-height: 580px !important;
+    box-sizing: border-box !important;
+    margin: 0 auto !important;
+    padding-top: 0 !important;
+  }
+
+  .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-mode-layout .word-image.quiz-image {
+    flex: 1 1 50% !important;
+    max-width: min(48vw, 500px) !important;
+    max-height: 75vh !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+    margin: 0 !important;
+  }
+
+  .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-options-container {
+    flex: 1 1 50% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: stretch !important;
+    gap: clamp(0.75rem, 2vh, 1.4rem) !important;
+    max-width: min(48vw, 480px) !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-option-btn {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    font-size: clamp(3.5rem, 6.5vw, 5.5rem) !important;
+    padding: clamp(0.6rem, 1.5vh, 1.1rem) 1.5rem !important;
+  }
+
+  .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-option-btn[data-len="5"] {
+    font-size: clamp(3.2rem, 5.8vw, 4.8rem) !important;
+  }
+
+  .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-option-btn[data-len="6"] {
+    font-size: clamp(2.8rem, 5.2vw, 4.2rem) !important;
+  }
+
+  .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-option-btn[data-len="7"],
+  .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-option-btn[data-len="8"] {
+    font-size: clamp(2.4rem, 4.5vw, 3.6rem) !important;
+  }
+
+  .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-option-btn[data-len="9"],
+  .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-option-btn[data-len="10"] {
+    font-size: clamp(2.0rem, 3.8vw, 3.0rem) !important;
+  }
+
+  /* ------------------------------------------------------------
+     3. SOUND QUIZ SPLIT LAYOUT (Picture Left, Word & Choices Right)
+     ------------------------------------------------------------ */
+  .reveal .slides section[data-sound-quiz-mode="true"][data-has-image="true"] .sound-quiz-layout:not(.no-image) {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: clamp(1.5rem, 4vw, 3.5rem) !important;
+    width: 92vw !important;
+    max-width: 1100px !important;
+    height: 82vh !important;
+    max-height: 580px !important;
+    box-sizing: border-box !important;
+    margin: 0 auto !important;
+    padding-top: 0 !important;
+  }
+
+  .reveal .slides section[data-sound-quiz-mode="true"][data-has-image="true"] .sound-quiz-layout:not(.no-image) .word-image.quiz-image {
+    flex: 1 1 50% !important;
+    max-width: min(48vw, 480px) !important;
+    max-height: 75vh !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+    margin: 0 !important;
+  }
+
+  .reveal .slides section[data-sound-quiz-mode="true"][data-has-image="true"] .sound-quiz-interactive-group {
+    flex: 1 1 50% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: clamp(1rem, 2.5vh, 2rem) !important;
+    max-width: min(48vw, 480px) !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .reveal .slides section[data-sound-quiz-mode="true"][data-has-image="true"] .sound-quiz-word-row {
+    margin: 0 !important;
+  }
+
+  .reveal .slides section[data-sound-quiz-mode="true"][data-has-image="true"] .sound-quiz-blanked-word {
+    font-size: clamp(3.8rem, 7.5vw, 6.5rem) !important;
+  }
+
+  .reveal .slides section[data-sound-quiz-mode="true"][data-has-image="true"] .quiz-options-container {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: clamp(0.75rem, 2vw, 1.5rem) !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .reveal .slides section[data-sound-quiz-mode="true"][data-has-image="true"] .sound-option-btn {
+    flex: 1 1 0 !important;
+    max-width: 180px !important;
+    min-width: 110px !important;
+    min-height: clamp(65px, 12vh, 100px) !important;
+    font-size: clamp(3.2rem, 6.5vw, 5.0rem) !important;
+    padding: 0.4rem 1.2rem !important;
+  }
+
+  /* ------------------------------------------------------------
+     4. DICTATION MODE SPLIT LAYOUT (Clue Picture Left, Word Right)
+     ------------------------------------------------------------ */
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .slide-center {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: clamp(1.5rem, 4vw, 4rem) !important;
+    width: 92vw !important;
+    max-width: 1200px !important;
+    height: 82vh !important;
+    max-height: 600px !important;
+    box-sizing: border-box !important;
+    margin: 0 auto !important;
+    padding-top: 0 !important;
+  }
+
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .word-image {
+    flex: 1 1 50% !important;
+    max-width: min(48vw, 500px) !important;
+    max-height: 75vh !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+    margin: 0 !important;
+  }
+
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .word-display-container {
+    flex: 1 1 50% !important;
+    display: grid !important;
+    place-items: center !important;
+    position: relative !important;
+    max-width: min(48vw, 480px) !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .dictation-hint-btn {
+    font-size: clamp(1.8rem, 3.5vw, 2.8rem) !important;
+    padding: clamp(0.6rem, 1.5vh, 1rem) clamp(1.8rem, 3vw, 2.8rem) !important;
+    border-radius: var(--radius-full) !important;
+  }
+
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .dictation-hint-text {
+    font-size: clamp(3.8rem, 7.5vw, 6.5rem) !important;
+  }
+
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .word-text {
+    font-size: clamp(4.2rem, 8.5vw, 7.5rem) !important;
+  }
+}
+
+/* ============================================================
+   COMPACT LANDSCAPE ADAPTATIONS (Phones / Small Height <= 500px)
+   ============================================================ */
+@media (max-height: 500px) and (orientation: landscape) {
+  /* General Slide Container */
+  .reveal .slides section[data-has-image="true"] .slide-center,
+  .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-mode-layout,
+  .reveal .slides section[data-sound-quiz-mode="true"][data-has-image="true"] .sound-quiz-layout:not(.no-image) {
+    gap: clamp(0.75rem, 3vw, 2rem) !important;
+    height: 86vh !important;
+    max-height: 380px !important;
+  }
+
+  /* Images */
+  .reveal .slides section[data-has-image="true"] .word-image,
+  .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .word-image.quiz-image,
+  .reveal .slides section[data-sound-quiz-mode="true"][data-has-image="true"] .word-image.quiz-image {
+    max-height: 72vh !important;
+    max-width: 44vw !important;
+  }
+
+  /* Flashcards */
+  .reveal .slides section:not([data-quiz-mode="true"]):not([data-sound-quiz-mode="true"]):not([data-picture-quiz-mode="true"]):not([data-dictation-mode="true"])[data-has-image="true"] .word-text {
+    font-size: clamp(2.8rem, 7vw, 4.2rem) !important;
+  }
+
+  /* Word Quiz */
+  .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-options-container {
+    gap: 0.6rem !important;
+  }
+
+  .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-option-btn {
+    padding: 0.45rem 1rem !important;
+    min-height: 48px !important;
+    font-size: clamp(2.2rem, 5vw, 3.2rem) !important;
+  }
+
+  /* Sound Quiz */
+  .reveal .slides section[data-sound-quiz-mode="true"][data-has-image="true"] .sound-quiz-blanked-word {
+    font-size: clamp(2.2rem, 5.5vw, 3.4rem) !important;
+  }
+
+  .reveal .slides section[data-sound-quiz-mode="true"][data-has-image="true"] .sound-quiz-interactive-group {
+    gap: 0.6rem !important;
+  }
+
+  .reveal .slides section[data-sound-quiz-mode="true"][data-has-image="true"] .sound-option-btn {
+    min-height: 52px !important;
+    font-size: clamp(2.0rem, 5vw, 3.0rem) !important;
+    padding: 0.3rem 0.8rem !important;
+    max-width: 140px !important;
+  }
+
+  /* Dictation Mode */
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .dictation-hint-btn {
+    font-size: clamp(1.3rem, 3.2vw, 1.8rem) !important;
+    padding: 0.4rem 1.4rem !important;
+  }
+
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .dictation-hint-text,
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .word-text {
+    font-size: clamp(2.4rem, 6vw, 3.8rem) !important;
+  }
+}
+
 
 

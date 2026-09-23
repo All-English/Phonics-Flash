@@ -1751,6 +1751,7 @@
     if (opts && opts.quizMode) {
       section.dataset.quizMode = "true";
       section.dataset.answered = "false";
+      section.dataset.hasImage = hasImage ? 'true' : 'false';
 
       const distractor = getDistractorWord(wordData, unit, opts);
       const choices = [wordData.word, distractor];
@@ -1809,12 +1810,14 @@
             ? `<img ${isMediaUri ? `data-media-uri="${wordData.image}" style="display:none;"` : `src="${wordData.image}"`} alt="Sound Quiz Image" class="word-image quiz-image"
                  onerror="if(this.src) this.style.display='none'">`
             : ''}
-          <div class="sound-quiz-word-row">
-            <div class="sound-quiz-blanked-word" data-full-word="${encodeURIComponent(fullWordDisplay)}" data-len="${wordData.word.length}" title="Click to hear sound">${blankedWordDisplay}</div>
-          </div>
-          <div class="quiz-options-container">
-            <button class="quiz-option-btn sound-option-btn" data-len="${wordData.word.length}" data-sound="${choices[0]}">${choices[0]}</button>
-            <button class="quiz-option-btn sound-option-btn" data-len="${wordData.word.length}" data-sound="${choices[1]}">${choices[1]}</button>
+          <div class="sound-quiz-interactive-group">
+            <div class="sound-quiz-word-row">
+              <div class="sound-quiz-blanked-word" data-full-word="${encodeURIComponent(fullWordDisplay)}" data-len="${wordData.word.length}" title="Click to hear sound">${blankedWordDisplay}</div>
+            </div>
+            <div class="quiz-options-container">
+              <button class="quiz-option-btn sound-option-btn" data-len="${wordData.word.length}" data-sound="${choices[0]}">${choices[0]}</button>
+              <button class="quiz-option-btn sound-option-btn" data-len="${wordData.word.length}" data-sound="${choices[1]}">${choices[1]}</button>
+            </div>
           </div>
         </div>
       `;
@@ -1873,6 +1876,9 @@
     } else {
       const showImages = opts ? opts.includeImages : false;
       const showImageInDictation = opts ? opts.dictationMode : false;
+      const slideHasImage = !!((showImages || showImageInDictation) && hasImage);
+      section.dataset.hasImage = slideHasImage ? 'true' : 'false';
+
       const targetSound = unit.targetSound || unit.sound || '';
       const wordDisplay = (opts && opts.highlightSounds && !isSightWord)
         ? highlightTargetSound(wordData.word, targetSound, unit.levelId)
