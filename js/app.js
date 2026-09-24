@@ -989,7 +989,12 @@
     const bookSelect = document.getElementById('book-select');
     if (!bookSelect || typeof EditorStore === 'undefined') return;
 
-    const curricula = EditorStore.getCurricula();
+    const allCurricula = EditorStore.getCurricula();
+    let curricula = allCurricula.filter(c => window.SharedClassSync ? !window.SharedClassSync.isBookHidden(c.id) : true);
+    if (curricula.length === 0 && allCurricula.length > 0) {
+      curricula = [allCurricula[0]];
+    }
+
     const activeId = EditorStore.getActiveCurriculumId();
 
     bookSelect.innerHTML = '';
@@ -1004,6 +1009,16 @@
       bookSelect.value = activeId;
     } else if (bookSelect.options.length > 0) {
       bookSelect.selectedIndex = 0;
+      if (activeId && !curricula.some(c => c.id === activeId)) {
+        EditorStore.setActiveCurriculum(bookSelect.value);
+        phonicsData = EditorStore.getActiveCurriculum();
+        if (typeof renderMenu === 'function') renderMenu();
+      }
+    }
+
+    const bookSelectGroup = bookSelect.closest('.book-select-group') || bookSelect.parentElement;
+    if (bookSelectGroup) {
+      bookSelectGroup.style.display = curricula.length > 1 ? '' : 'none';
     }
   }
 

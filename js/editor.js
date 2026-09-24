@@ -270,11 +270,13 @@ RULES:
 
     select.innerHTML = '';
     const books = EditorStore.getCurricula();
+    const hiddenBooks = window.SharedClassSync ? window.SharedClassSync.getHiddenBooks() : [];
 
     books.forEach(b => {
       const opt = document.createElement('option');
       opt.value = b.id;
-      opt.textContent = `${b.name}${b.isCustom ? ' (Custom)' : ' (Built-in)'}`;
+      const isHidden = window.SharedClassSync ? window.SharedClassSync.isBookHidden(b.id) : false;
+      opt.textContent = `${b.name}${b.isCustom ? ' (Custom)' : ' (Built-in)'}${isHidden ? ' [Hidden]' : ''}`;
       if (b.id === (workingBook ? workingBook.id : EditorStore.getActiveCurriculumId())) {
         opt.selected = true;
       }
@@ -1360,6 +1362,25 @@ RULES:
       }
     });
 
+    const visibilityToggle = document.getElementById('book-visibility-toggle');
+    if (visibilityToggle) {
+      visibilityToggle.addEventListener('change', async (e) => {
+        if (!workingBook) return;
+        let hidden = window.SharedClassSync ? [...window.SharedClassSync.getHiddenBooks()] : [];
+        const slug = window.SharedClassSync ? window.SharedClassSync.toSeriesSlug(workingBook.id) : workingBook.id;
+        if (e.target.checked) {
+          hidden = hidden.filter(s => s !== slug);
+        } else {
+          if (!hidden.includes(slug)) hidden.push(slug);
+        }
+        if (window.SharedClassSync) {
+          await window.SharedClassSync.setHiddenBooks(hidden);
+        }
+        showSaveToast(e.target.checked ? `"${workingBook.name}" is now visible in apps.` : `"${workingBook.name}" is now hidden from apps.`);
+        renderBookDropdown();
+      });
+    }
+
     // Level modal
     const levelModal = document.getElementById('level-modal');
     document.getElementById('level-modal-close-btn').addEventListener('click', () => levelModal.classList.add('hidden'));
@@ -1794,6 +1815,23 @@ RULES:
     const isSmart = workingBook.id === 'smart-phonics';
     document.getElementById('smart-phonics-reset-row').classList.toggle('hidden', !isSmart);
     document.getElementById('custom-book-delete-row').classList.toggle('hidden', isSmart);
+
+    // Book visibility toggle
+    const toggle = document.getElementById('book-visibility-toggle');
+    const warning = document.getElementById('book-visibility-warning');
+    if (toggle) {
+      const isHidden = window.SharedClassSync ? window.SharedClassSync.isBookHidden(workingBook.id) : false;
+      toggle.checked = !isHidden;
+
+      const allBooks = EditorStore.getCurricula() || [];
+      const visibleCount = allBooks.filter(b => window.SharedClassSync ? !window.SharedClassSync.isBookHidden(b.id) : true).length;
+      const isLastVisible = !isHidden && visibleCount <= 1;
+
+      toggle.disabled = isLastVisible;
+      if (warning) {
+        warning.style.display = isLastVisible ? 'block' : 'none';
+      }
+    }
 
     modal.classList.remove('hidden');
   }

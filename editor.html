@@ -305,6 +305,19 @@
           </div>
         </div>
 
+        <div class="form-group" style="margin-top: 1rem;">
+          <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+            <span style="font-weight: 600;">Visible in Apps</span>
+            <input type="checkbox" id="book-visibility-toggle" style="width: 18px; height: 18px; cursor: pointer;">
+          </label>
+          <p class="form-hint" style="font-size: 0.8rem; color: var(--color-text-secondary, #666); margin-top: 0.25rem;">
+            Uncheck to hide this book from dropdown selectors across all games.
+          </p>
+          <div id="book-visibility-warning" style="display: none; font-size: 0.8rem; color: var(--color-warning, #d97706); margin-top: 0.25rem;">
+            At least one book must remain visible.
+          </div>
+        </div>
+
         <hr class="modal-divider">
 
         <div class="danger-zone-box">
@@ -495,8 +508,8 @@
   <script src="js/config.js"></script>
 
   <!-- Storage, Sync and APIs -->
-  <script src="https://all-english-media.netlify.app/shared/class-sync.js?v=2.1"></script>
-  <script>window.SharedClassSync || document.write('<script src="js/shared-class-sync.js"><\/script>');</script>
+  <script src="js/shared-class-sync.js?v=2.2"></script>
+  <script>window.SharedClassSync?.getHiddenBooks || document.write('<script src="https://all-english-media.netlify.app/shared/class-sync.js?v=2.2"><\/script>');</script>
   <script src="js/media-db.js?v=1.1"></script>
   <script src="js/editor-store.js?v=1.1"></script>
   <script src="js/media-apis.js?v=1.2"></script>
