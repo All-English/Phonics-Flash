@@ -516,7 +516,8 @@ window.AudioPicker = (() => {
     // Prepopulate URL if current audio is an external URL
     const urlInput = modalEl.querySelector('#direct-audio-url-input');
     if (currentAudio && !MediaDB.isMediaId(currentAudio) && !currentAudio.startsWith('media/')) {
-      urlInput.value = currentAudio;
+      const mediaBase = typeof SharedClassSync !== 'undefined' ? SharedClassSync.getMediaBase() : 'https://all-english-media.allenglish.link';
+      urlInput.value = currentAudio.replace(/^https?:\/\/all-english-media\.netlify\.app\/?/, `${mediaBase}/`);
     } else {
       urlInput.value = '';
     }
