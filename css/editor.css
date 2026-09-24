@@ -271,7 +271,7 @@ html, body {
 .custom-select-wrapper::after {
   content: '▾';
   position: absolute;
-  right: 10px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
@@ -637,9 +637,10 @@ html, body {
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 16px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .meta-field {
@@ -647,8 +648,18 @@ html, body {
   flex-direction: column;
   gap: 6px;
 }
-.meta-field.flex-1 { flex: 1; }
-.meta-field.flex-2 { flex: 2; }
+.meta-field.flex-1 {
+  flex: 1;
+  min-width: 130px;
+  max-width: 180px;
+}
+.meta-field.flex-2 {
+  flex: 2;
+  min-width: 200px;
+}
+.meta-field-actions {
+  flex-shrink: 0;
+}
 
 .meta-field label {
   font-size: 0.78rem;
@@ -656,6 +667,12 @@ html, body {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.meta-label-spacer {
+  user-select: none;
+  visibility: hidden;
 }
 
 .form-input, .form-textarea {
@@ -673,6 +690,39 @@ html, body {
   border-color: var(--accent);
 }
 
+.meta-field .form-input,
+.meta-field .custom-select-wrapper .form-select {
+  height: 38px;
+  box-sizing: border-box;
+}
+
+.meta-field .custom-select-wrapper {
+  width: 100%;
+  position: relative;
+}
+
+.meta-field .custom-select-wrapper .form-select {
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.meta-field .custom-select-wrapper .form-select:hover {
+  border-color: var(--border-strong);
+}
+
+.meta-field .custom-select-wrapper .form-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 .form-textarea {
   padding: 12px 14px;
   line-height: 1.55;
@@ -683,7 +733,19 @@ html, body {
 .unit-meta-actions {
   display: flex;
   gap: 8px;
-  padding-bottom: 2px;
+  align-items: center;
+  height: 38px;
+}
+
+.unit-meta-actions .btn {
+  height: 38px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 /* Workspace Tabs */
@@ -2162,6 +2224,28 @@ html, body {
   }
   .template-options-group {
     grid-template-columns: 1fr;
+  }
+  .unit-meta-bar {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+  .meta-field.flex-1,
+  .meta-field.flex-2 {
+    flex: 1 1 100%;
+    max-width: 100%;
+    min-width: 100%;
+  }
+  .meta-field-actions {
+    width: 100%;
+  }
+  .meta-label-spacer {
+    display: none;
+  }
+  .unit-meta-actions {
+    width: 100%;
+  }
+  .unit-meta-actions .btn {
+    flex: 1;
   }
 }
 
