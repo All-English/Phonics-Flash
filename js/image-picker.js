@@ -775,6 +775,11 @@ window.ImagePicker = (() => {
     const urlActions = modalEl.querySelector('#url-actions-row');
     const urlInput = modalEl.querySelector('#direct-url-input');
 
+    if (urlPreview) {
+      urlPreview.innerHTML = '<div class="empty-state">Paste a URL above and click "Preview".</div>';
+    }
+    if (urlActions) urlActions.classList.add('hidden');
+
     const currentImage = typeof options.currentImage === 'string' ? options.currentImage.trim() : '';
     const isExternalUrl = currentImage &&
       (typeof MediaDB === 'undefined' || !MediaDB.isMediaId(currentImage)) &&
@@ -784,12 +789,7 @@ window.ImagePicker = (() => {
       const mediaBase = typeof SharedClassSync !== 'undefined' ? SharedClassSync.getMediaBase() : 'https://all-english-media.allenglish.link';
       const normalizedImage = currentImage.replace(/^https?:\/\/all-english-media\.netlify\.app\/?/, `${mediaBase}/`);
       if (urlInput) urlInput.value = normalizedImage;
-      previewDirectUrl(normalizedImage);
     } else {
-      if (urlPreview) {
-        urlPreview.innerHTML = '<div class="empty-state">Paste a URL above and click "Preview".</div>';
-      }
-      if (urlActions) urlActions.classList.add('hidden');
       if (urlInput) urlInput.value = '';
     }
 
