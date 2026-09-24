@@ -375,6 +375,8 @@ html, body {
 .sidebar-tree-container {
   flex: 1;
   overflow-y: auto;
+  min-height: 0;
+  overscroll-behavior-y: contain;
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -382,6 +384,7 @@ html, body {
 }
 
 .tree-level-item {
+  flex-shrink: 0;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: var(--bg-primary);
