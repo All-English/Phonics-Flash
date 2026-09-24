@@ -12,7 +12,15 @@ window.ClassesManager = (() => {
 
   // ── Helper: Get Upstash Credentials ─────────────────────────
   function getUpstashConfig() {
-    // 1. Check shared Upstash keys used across all apps
+    // 1. Check SharedClassSync if available
+    if (typeof window !== 'undefined' && window.SharedClassSync?.getCredentials) {
+      const creds = window.SharedClassSync.getCredentials();
+      if (creds && creds.url && creds.token) {
+        return { url: creds.url.trim(), token: creds.token.trim() };
+      }
+    }
+
+    // 2. Check shared Upstash keys used across all apps
     if (typeof localStorage !== 'undefined') {
       const sharedUrl = localStorage.getItem('upstash_redis_url');
       const sharedToken = localStorage.getItem('upstash_redis_token');
@@ -21,13 +29,13 @@ window.ClassesManager = (() => {
       }
     }
 
-    // 2. Check localStorage phonics-flash-upstash-config
+    // 3. Check localStorage phonics-flash-upstash-config
     try {
       const local = JSON.parse(localStorage.getItem(UPSTASH_LOCAL_KEY) || '{}');
       if (local.url && local.token) return local;
     } catch (e) { /* ignore */ }
 
-    // 3. Fall back to config.js if defined
+    // 4. Fall back to config.js if defined
     if (typeof UPSTASH_CONFIG !== 'undefined' && UPSTASH_CONFIG.url && UPSTASH_CONFIG.token) {
       return UPSTASH_CONFIG;
     }
@@ -38,11 +46,19 @@ window.ClassesManager = (() => {
   function setUpstashConfig(url, token) {
     if (!url && !token) {
       localStorage.removeItem(UPSTASH_LOCAL_KEY);
+      localStorage.removeItem('upstash_redis_url');
+      localStorage.removeItem('upstash_redis_token');
+      if (typeof window !== 'undefined' && window.SharedClassSync?.clearCredentials) {
+        window.SharedClassSync.clearCredentials();
+      }
     } else {
       localStorage.setItem(UPSTASH_LOCAL_KEY, JSON.stringify({ url: url.trim(), token: token.trim() }));
       // Also write to shared keys so all apps stay aligned
       localStorage.setItem('upstash_redis_url', url.trim());
       localStorage.setItem('upstash_redis_token', token.trim());
+      if (typeof window !== 'undefined' && window.SharedClassSync?.saveCredentials) {
+        window.SharedClassSync.saveCredentials(url, token);
+      }
     }
   }
 

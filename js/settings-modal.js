@@ -391,8 +391,16 @@
 
         if (newKey) {
           localStorage.setItem('phonics-flash-elevenlabs-key', newKey);
+          localStorage.setItem('elevenlabs_api_key', newKey);
+          if (typeof window !== 'undefined' && window.SharedClassSync?.setSharedApiKey) {
+            window.SharedClassSync.setSharedApiKey(newKey);
+          }
         } else {
           localStorage.removeItem('phonics-flash-elevenlabs-key');
+          localStorage.removeItem('elevenlabs_api_key');
+          if (typeof window !== 'undefined' && window.SharedClassSync?.setSharedApiKey) {
+            window.SharedClassSync.setSharedApiKey('');
+          }
         }
 
         if (voiceId) {
@@ -479,6 +487,10 @@
           return;
         }
         localStorage.removeItem('phonics-flash-elevenlabs-key');
+        localStorage.removeItem('elevenlabs_api_key');
+        if (typeof window !== 'undefined' && window.SharedClassSync?.setSharedApiKey) {
+          window.SharedClassSync.setSharedApiKey('');
+        }
         localStorage.removeItem('phonics-flash-elevenlabs-speed');
         if (keyInput) keyInput.value = '';
         if (speedInput) speedInput.value = '0.85';

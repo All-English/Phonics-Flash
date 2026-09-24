@@ -18,7 +18,11 @@ const AudioPlayer = (() => {
   const SPEED_STORAGE_KEY = 'phonics-flash-elevenlabs-speed';
 
   function getApiKey() {
-    return localStorage.getItem(STORAGE_KEY)?.trim() || null;
+    if (typeof window !== 'undefined' && window.SharedClassSync?.getSharedApiKey) {
+      const shared = window.SharedClassSync.getSharedApiKey();
+      if (shared) return shared;
+    }
+    return localStorage.getItem(STORAGE_KEY)?.trim() || localStorage.getItem('elevenlabs_api_key')?.trim() || null;
   }
 
   function getSelectedVoiceId() {
