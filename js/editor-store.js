@@ -119,7 +119,7 @@ window.EditorStore = (() => {
     const maxLocalUpdate = curricula.reduce((max, c) => Math.max(max, c.updatedAt || 0), Date.now());
 
     // Canonical v2 format for cross-game compatibility
-    const mediaBase = (typeof SharedClassSync !== 'undefined' && SharedClassSync.DEFAULT_MEDIA_BASE) || 'https://all-english-media.netlify.app';
+    const mediaBase = (typeof SharedClassSync !== 'undefined' && SharedClassSync.DEFAULT_MEDIA_BASE) || 'https://all-english-media.allenglish.link';
     const payload = {
       version: 2,
       updatedAt: maxLocalUpdate,
@@ -854,7 +854,7 @@ window.EditorStore = (() => {
       };
     }));
 
-    const mediaBase = (typeof SharedClassSync !== 'undefined' && SharedClassSync.DEFAULT_MEDIA_BASE) || 'https://all-english-media.netlify.app';
+    const mediaBase = (typeof SharedClassSync !== 'undefined' && SharedClassSync.DEFAULT_MEDIA_BASE) || 'https://all-english-media.allenglish.link';
 
     const exportObj = {
       $schema: "./schema.json",
