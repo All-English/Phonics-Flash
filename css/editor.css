@@ -1165,8 +1165,21 @@ html, body {
   flex-direction: column;
   overflow: hidden;
 }
-.modal-card.modal-sm { max-width: 420px; }
-.modal-card.image-picker-card, .modal-card.audio-picker-card { max-width: 720px; }
+.modal-card.modal-sm {
+  max-width: 420px;
+}
+
+.modal-card.image-picker-card {
+  max-width: 720px;
+  height: 620px;
+  max-height: calc(100dvh - 48px);
+}
+
+.modal-card.audio-picker-card {
+  max-width: 660px;
+  height: 520px;
+  max-height: calc(100dvh - 48px);
+}
 
 .modal-header {
   padding: 18px 24px;
@@ -1243,6 +1256,50 @@ html, body {
 .modal-tab-content.active {
   display: flex;
 }
+
+/* Image and Audio Picker Modal Heights & Flex Layout */
+.image-picker-body,
+.audio-picker-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.image-picker-body .modal-tab-content.active,
+.audio-picker-body .modal-tab-content.active {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.image-picker-body .search-results-container {
+  flex: 1;
+  min-height: 200px;
+  max-height: none;
+  overflow-y: auto;
+}
+
+.image-picker-body .ai-preview-container {
+  flex: 1;
+  min-height: 180px;
+}
+
+.image-picker-body #tab-upload .drop-zone,
+.audio-picker-body #tab-audio-upload .drop-zone {
+  flex: 1;
+  min-height: 200px;
+  justify-content: center;
+}
+
+.audio-picker-body .record-box {
+  flex: 1;
+  justify-content: center;
+  padding: 20px;
+}
+
 
 .modal-actions {
   display: flex;
@@ -2246,6 +2303,12 @@ html, body {
   }
   .unit-meta-actions .btn {
     flex: 1;
+  }
+  .modal-card.image-picker-card,
+  .modal-card.audio-picker-card {
+    height: 90vh;
+    height: 90dvh;
+    max-height: 90dvh;
   }
 }
 
