@@ -1220,6 +1220,7 @@
 
           let words = [];
           let extraWords = [];
+          let bonusWords = [];
 
           if (bookNum === 1 && unit.targetLetters && unit.targetLetters.length) {
             for (const l of unit.targetLetters) {
@@ -1229,13 +1230,15 @@
           } else {
             words = [...new Set((unit.words || []).map(w => typeof w === 'string' ? w : w.word))];
             extraWords = (unit.extraWords || []).map(w => typeof w === 'string' ? w : (w.word || ''));
+            bonusWords = (unit.bonusWords || []).map(w => typeof w === 'string' ? w : (w.word || ''));
           }
 
           bank[levelKey][unitKey] = {
             targetSound: unit.targetSound || '',
             unitTitle: title || `Unit ${unitNum}`,
             words,
-            extraWords
+            extraWords,
+            bonusWords
           };
         }
       }
