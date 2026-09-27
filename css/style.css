@@ -1064,14 +1064,50 @@ body {
     font-size: 2.2rem;
   }
 
-  .activity-segmented-bar,
-  .options-bar {
-    gap: 0.5rem;
+  .activity-section {
+    padding: 0 0.5rem;
+    box-sizing: border-box;
+  }
+
+  .activity-segmented-bar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    max-width: 480px;
+    border-radius: var(--radius-lg);
+    padding: 6px;
+    gap: 5px;
+    box-sizing: border-box;
   }
 
   .activity-tab {
-    padding: 0.55rem 0.95rem;
-    font-size: 0.85rem;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 0.6rem 0.25rem;
+    font-size: clamp(0.72rem, 2.5vw, 0.82rem);
+    font-weight: 700;
+    border-radius: 9999px;
+    justify-content: center;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .activity-tab span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .activity-tab.active {
+    transform: none;
+  }
+
+  .activity-tab.active:hover:not(:disabled) {
+    transform: none;
+  }
+
+  .options-bar {
+    gap: 0.5rem;
   }
 
   .option-btn {
