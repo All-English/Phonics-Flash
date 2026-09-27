@@ -1717,7 +1717,9 @@
           <button class="intro-start-cta" type="button" aria-label="Start Practice">
             <span>Let's Read! ▶</span>
           </button>
-          <p class="intro-hint">Press <kbd>Space</kbd>, <kbd>Enter</kbd>, <kbd>→</kbd> or click anywhere to begin</p>
+          <p class="intro-hint">
+            <span class="intro-hint-desktop">Press <kbd>Space</kbd>, <kbd>Enter</kbd>, <kbd>→</kbd> or click</span><span class="intro-hint-mobile">Tap</span> anywhere to begin
+          </p>
         </div>
       </div>
     `;
