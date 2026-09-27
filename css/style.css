@@ -497,15 +497,27 @@ body {
   transform: rotate(180deg);
 }
 
-/* ---------- Units Grid ---------- */
+/* ---------- Units Grid Accordion (CSS Grid) ---------- */
 .units-container {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height var(--transition-smooth);
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--transition-smooth);
 }
 
 .level-card.expanded .units-container {
-  max-height: 800px;
+  grid-template-rows: 1fr;
+}
+
+.units-content-wrapper {
+  overflow: hidden;
+  min-height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .units-container,
+  .level-chevron {
+    transition: none !important;
+  }
 }
 
 .units-grid {

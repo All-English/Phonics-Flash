@@ -1121,24 +1121,26 @@
         </div>
       </div>
       <div class="units-container">
-        ${level.id === 'L1' ? `
-          <div class="level-tools-bar">
-            <div class="case-selector-group" title="Select letter casing for Level 1">
-              <span class="case-label">Letter Case:</span>
-              <div class="case-btn-group">
-                <button class="case-btn ${options.letterCase === 'both' ? 'active' : ''}" data-case="both" title="Both side-by-side (Aa)">Aa</button>
-                <button class="case-btn ${options.letterCase === 'separate' ? 'active' : ''}" data-case="separate" title="Both independent slides (A & a)">A &amp; a</button>
-                <button class="case-btn ${options.letterCase === 'upper' ? 'active' : ''}" data-case="upper" title="Uppercase only (A)">A</button>
-                <button class="case-btn ${options.letterCase === 'lower' ? 'active' : ''}" data-case="lower" title="Lowercase only (a)">a</button>
+        <div class="units-content-wrapper">
+          ${level.id === 'L1' ? `
+            <div class="level-tools-bar">
+              <div class="case-selector-group" title="Select letter casing for Level 1">
+                <span class="case-label">Letter Case:</span>
+                <div class="case-btn-group">
+                  <button class="case-btn ${options.letterCase === 'both' ? 'active' : ''}" data-case="both" title="Both side-by-side (Aa)">Aa</button>
+                  <button class="case-btn ${options.letterCase === 'separate' ? 'active' : ''}" data-case="separate" title="Both independent slides (A & a)">A &amp; a</button>
+                  <button class="case-btn ${options.letterCase === 'upper' ? 'active' : ''}" data-case="upper" title="Uppercase only (A)">A</button>
+                  <button class="case-btn ${options.letterCase === 'lower' ? 'active' : ''}" data-case="lower" title="Lowercase only (a)">a</button>
+                </div>
               </div>
             </div>
+          ` : ''}
+          <div class="units-grid">
+            ${units.length > 0 ? units.map(unit => {
+              const isChecked = isUnitChecked(unit.id);
+              return createUnitCheckboxHTML(unit, level.id, isChecked);
+            }).join('') : '<p style="padding:1rem;color:var(--text-muted);font-size:0.85rem;">No units in this level yet.</p>'}
           </div>
-        ` : ''}
-        <div class="units-grid">
-          ${units.length > 0 ? units.map(unit => {
-            const isChecked = isUnitChecked(unit.id);
-            return createUnitCheckboxHTML(unit, level.id, isChecked);
-          }).join('') : '<p style="padding:1rem;color:var(--text-muted);font-size:0.85rem;">No units in this level yet.</p>'}
         </div>
       </div>
     `;
