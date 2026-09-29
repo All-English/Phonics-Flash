@@ -10,6 +10,7 @@
   let revealInstance = null;
   let slideshowKeydownHandler = null;
   let slideshowResizeHandler = null;
+  let isNavigatingHistory = false;
 
   function getRevealDimensions() {
     const isPortrait = window.innerHeight > window.innerWidth;
@@ -261,43 +262,61 @@
     // Check for URL parameters
     const urlConfig = parseURLParams();
     if (urlConfig) {
+      // Seed base menu state so browser back navigates to the main menu
+      try {
+        window.history.replaceState({ screen: 'menu' }, '', window.location.pathname);
+      } catch (e) {
+        console.warn('History replaceState failed:', e);
+      }
       if (urlConfig.isChart) {
         options.letterCase = urlConfig.letterCase;
         if (urlConfig.highlightSounds) options.highlightSounds = true;
         openChart(urlConfig.chartLevel || 'L1', urlConfig.unitIds.length > 0 ? urlConfig.unitIds : null);
         return;
       }
-
-      let qm = urlConfig.quiz;
-      let dm = urlConfig.dictation;
-      let sqm = urlConfig.soundQuiz;
-      let pqm = urlConfig.pictureQuiz;
-      if (pqm) {
-        qm = false;
-        dm = false;
-        sqm = false;
-      } else if (sqm && (qm || dm)) {
-        qm = false;
-        dm = false;
-      } else if (qm && dm) {
-        dm = false; // Word Quiz takes priority
-      }
-      startSlideshow(urlConfig.unitIds, {
-        includeExtras: urlConfig.extras,
-        includeSightWords: urlConfig.sightWords,
-        sightWordsOnly: urlConfig.sightWordsOnly,
-        highlightSounds: urlConfig.highlightSounds,
-        includeImages: urlConfig.images,
-        letterCase: urlConfig.letterCase,
-        mixMode: urlConfig.mix,
-        dictationMode: dm,
-        quizMode: qm,
-        soundQuizMode: sqm,
-        pictureQuizMode: pqm
-      });
+      launchSlideshowFromConfig(urlConfig);
     } else {
+      try {
+        if (!window.history.state || window.history.state.screen !== 'menu') {
+          window.history.replaceState({ screen: 'menu' }, '', window.location.pathname);
+        }
+      } catch (e) {
+        console.warn('History replaceState failed:', e);
+      }
       renderMenu();
     }
+  }
+
+  // ── Launch Slideshow From Config (URL / History) ────────────
+  function launchSlideshowFromConfig(urlConfig) {
+    if (!urlConfig) return;
+    let qm = urlConfig.quiz;
+    let dm = urlConfig.dictation;
+    let sqm = urlConfig.soundQuiz;
+    let pqm = urlConfig.pictureQuiz;
+    if (pqm) {
+      qm = false;
+      dm = false;
+      sqm = false;
+    } else if (sqm && (qm || dm)) {
+      qm = false;
+      dm = false;
+    } else if (qm && dm) {
+      dm = false; // Word Quiz takes priority
+    }
+    startSlideshow(urlConfig.unitIds, {
+      includeExtras: urlConfig.extras,
+      includeSightWords: urlConfig.sightWords,
+      sightWordsOnly: urlConfig.sightWordsOnly,
+      highlightSounds: urlConfig.highlightSounds,
+      includeImages: urlConfig.images,
+      letterCase: urlConfig.letterCase,
+      mixMode: urlConfig.mix,
+      dictationMode: dm,
+      quizMode: qm,
+      soundQuizMode: sqm,
+      pictureQuizMode: pqm
+    });
   }
 
   // ── Reset to Default Settings (No Class Selected) ───────────
@@ -601,7 +620,15 @@
     if (opts.pictureQuizMode) params.set('picturequiz', '1');
 
     const newURL = `${window.location.pathname}?${params.toString()}`;
-    window.history.replaceState({}, '', newURL);
+    try {
+      if (window.history.state?.screen !== 'slideshow') {
+        window.history.pushState({ screen: 'slideshow' }, '', newURL);
+      } else {
+        window.history.replaceState({ screen: 'slideshow' }, '', newURL);
+      }
+    } catch (e) {
+      console.warn('History navigation error:', e);
+    }
   }
 
   // Helper to sync option button class with state
@@ -980,6 +1007,46 @@
         showToast('All selections cleared', 'info', 2000);
       });
     }
+
+    // Browser Back / Forward button navigation (SPA history synchronization)
+    window.addEventListener('popstate', (e) => {
+      isNavigatingHistory = false;
+      const targetScreen = e.state?.screen || 'menu';
+      const slideshowScreen = document.getElementById('slideshow-screen');
+      const chartScreen = document.getElementById('chart-screen');
+      const isSlideshowOpen = slideshowScreen && !slideshowScreen.classList.contains('hidden');
+      const isChartOpen = chartScreen && !chartScreen.classList.contains('hidden');
+
+      if (targetScreen === 'menu') {
+        if (isSlideshowOpen) {
+          backToMenu(true);
+        } else if (isChartOpen && window.ChartScreen) {
+          window.ChartScreen.close(true);
+        }
+      } else if (targetScreen === 'slideshow') {
+        if (isChartOpen && window.ChartScreen) {
+          window.ChartScreen.close(true);
+        }
+        if (!isSlideshowOpen) {
+          const urlConfig = parseURLParams();
+          if (urlConfig && !urlConfig.isChart) {
+            launchSlideshowFromConfig(urlConfig);
+          }
+        }
+      } else if (targetScreen === 'chart') {
+        if (isSlideshowOpen) {
+          backToMenu(true);
+        }
+        if (!isChartOpen) {
+          const urlConfig = parseURLParams();
+          if (urlConfig && window.ChartScreen) {
+            options.letterCase = urlConfig.letterCase;
+            if (urlConfig.highlightSounds) options.highlightSounds = true;
+            window.ChartScreen.open(urlConfig.chartLevel || 'L1', urlConfig.unitIds.length > 0 ? urlConfig.unitIds : null);
+          }
+        }
+      }
+    });
   }
 
   // ── Book Series Dropdown ───────────────────────────────────
@@ -1432,7 +1499,7 @@
     }
 
     // Wire up back button
-    document.getElementById('back-btn').onclick = backToMenu;
+    document.getElementById('back-btn').onclick = () => backToMenu(false);
   }
 
   // ── Normal Mode: Horizontal = Units, Vertical = Words ─────
@@ -2562,7 +2629,17 @@
   }
 
   // ── Back to Menu ───────────────────────────────────────────
-  function backToMenu() {
+  function backToMenu(isFromPopState = false) {
+    if (isFromPopState !== true) {
+      if (isNavigatingHistory) return;
+      if (window.history.state?.screen === 'slideshow') {
+        isNavigatingHistory = true;
+        window.history.back();
+        return;
+      }
+    }
+    isNavigatingHistory = false;
+
     AudioPlayer.stop();
     AudioPlayer.clearCache();
     if (typeof MediaDB !== 'undefined') {
@@ -2603,9 +2680,13 @@
     // Repopulate menu (especially important if launched via bookmark URL)
     renderMenu();
 
-    // Clear URL params (theme is saved in localStorage, not needed in URL)
-    if (window.location.search) {
-      window.history.replaceState({}, '', window.location.pathname);
+    // Clear URL params and ensure base history state is menu
+    if (window.location.search || window.history.state?.screen !== 'menu') {
+      try {
+        window.history.replaceState({ screen: 'menu' }, '', window.location.pathname);
+      } catch (e) {
+        console.warn('History replaceState failed:', e);
+      }
     }
   }
 
@@ -2618,9 +2699,9 @@
 
   const openLetterChart = (customUnitIds = null) => openChart('L1', customUnitIds);
 
-  function closeChart() {
+  function closeChart(isFromPopState = false) {
     if (window.ChartScreen) {
-      ChartScreen.close();
+      ChartScreen.close(isFromPopState);
     }
   }
 

@@ -15,6 +15,7 @@
   let chartTypeAheadBuffer = '';
   let chartTypeAheadTimer = null;
   const TYPEAHEAD_TIMEOUT_MS = 1000;
+  let isNavigatingChartHistory = false;
 
   // External context hooks
   let context = {
@@ -100,7 +101,15 @@
       params.set('case', options.letterCase);
     }
     const newURL = `${window.location.pathname}?${params.toString()}`;
-    window.history.replaceState({}, '', newURL);
+    try {
+      if (window.history.state?.screen !== 'chart') {
+        window.history.pushState({ screen: 'chart' }, '', newURL);
+      } else {
+        window.history.replaceState({ screen: 'chart' }, '', newURL);
+      }
+    } catch (e) {
+      console.warn('Chart history navigation error:', e);
+    }
   }
 
   function openChart(levelId = null, customUnitIds = null) {
@@ -228,7 +237,7 @@
     // Wire up header buttons inside chart screen
     const backBtn = document.getElementById('chart-back-btn');
     if (backBtn) {
-      backBtn.onclick = closeChart;
+      backBtn.onclick = () => closeChart(false);
     }
 
     const randomBtn = document.getElementById('chart-random-btn');
@@ -754,7 +763,17 @@
     }
   }
 
-  function closeChart() {
+  function closeChart(isFromPopState = false) {
+    if (isFromPopState !== true) {
+      if (isNavigatingChartHistory) return;
+      if (window.history.state?.screen === 'chart') {
+        isNavigatingChartHistory = true;
+        window.history.back();
+        return;
+      }
+    }
+    isNavigatingChartHistory = false;
+
     if (typeof AudioPlayer !== 'undefined' && AudioPlayer.stop) {
       AudioPlayer.stop();
     }
@@ -780,8 +799,12 @@
 
     context.onClose();
 
-    if (window.location.search) {
-      window.history.replaceState({}, '', window.location.pathname);
+    if (window.location.search || window.history.state?.screen !== 'menu') {
+      try {
+        window.history.replaceState({ screen: 'menu' }, '', window.location.pathname);
+      } catch (e) {
+        console.warn('History replaceState failed:', e);
+      }
     }
   }
 
