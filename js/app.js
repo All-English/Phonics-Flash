@@ -1963,7 +1963,6 @@
           <div class="word-display-container">
             <div class="word-text ${isDictation ? 'dictation-hide' : ''}" data-len="${wordData.word.length}">${wordDisplay}</div>
             ${isDictation ? `<div class="dictation-hint-text hidden" data-len="${wordData.word.length}">${blankedWordDisplay}</div>` : ''}
-            ${isDictation ? `<button class="dictation-hint-btn" type="button" aria-label="Show Hint (H)" title="Show Hint (H)"><span class="dictation-hint-icon" aria-hidden="true">💡</span></button>` : ''}
           </div>
         </div>
       `;
@@ -2003,9 +2002,14 @@
         </button>
       </div>
 
-      <button class="audio-btn" id="chrome-audio" title="Play audio (Space / Enter)">
-        ${ICONS.speaker}
-      </button>
+      <div class="audio-controls-group" id="chrome-audio-group">
+        <button class="audio-btn" id="chrome-audio" title="Play audio (Space / Enter)">
+          ${ICONS.speaker}
+        </button>
+        <button class="dictation-hint-btn hidden" id="chrome-hint" type="button" aria-label="Show Hint (H)" title="Show Hint (H)">
+          <span class="dictation-hint-icon" aria-hidden="true">💡</span>
+        </button>
+      </div>
     `;
 
     // Wire up audio button click
@@ -2014,6 +2018,16 @@
       e.stopPropagation();
       playCurrentSlideAudio();
     });
+
+    // Wire up hint button click
+    const chromeHint = document.getElementById('chrome-hint');
+    if (chromeHint) {
+      chromeHint.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerDictationHint(getCurrentSlide());
+      });
+    }
   }
 
   /**
@@ -2064,6 +2078,18 @@
       const isAnswered = slide.dataset.answered === 'true';
       const hideAudio = isIntro || isSoundQuiz || (isWordOrPicQuiz && !isAnswered);
       audioBtn.classList.toggle('hidden', hideAudio);
+    }
+
+    // Dictation Hint button in chrome
+    const chromeHint = document.getElementById('chrome-hint');
+    if (chromeHint) {
+      const isDictation = slide.dataset.dictationMode === 'true';
+      const wordText = slide.querySelector('.word-text');
+      const hintText = slide.querySelector('.dictation-hint-text');
+      const isWordRevealed = !wordText || !wordText.classList.contains('dictation-hide');
+      const isHintRevealed = hintText && !hintText.classList.contains('hidden');
+      const showHint = isDictation && !isIntro && !isWordRevealed && !isHintRevealed;
+      chromeHint.classList.toggle('hidden', !showHint);
     }
   }
 
@@ -2286,12 +2312,14 @@
   function triggerDictationHint(slide) {
     if (!slide) return;
     const hintBtn = slide.querySelector('.dictation-hint-btn');
+    const chromeHint = document.getElementById('chrome-hint');
     const hintText = slide.querySelector('.dictation-hint-text');
     const wordText = slide.querySelector('.word-text');
 
     if (hintText && hintText.classList.contains('hidden')) {
       hintText.classList.remove('hidden');
       if (hintBtn) hintBtn.classList.add('hidden');
+      if (chromeHint) chromeHint.classList.add('hidden');
     } else if (wordText && wordText.classList.contains('dictation-hide')) {
       revealDictationWord(slide);
     }
@@ -2301,11 +2329,13 @@
     if (!slide) return;
     const wordText = slide.querySelector('.word-text');
     const hintBtn = slide.querySelector('.dictation-hint-btn');
+    const chromeHint = document.getElementById('chrome-hint');
     const hintText = slide.querySelector('.dictation-hint-text');
 
     if (wordText && wordText.classList.contains('dictation-hide')) {
       wordText.classList.remove('dictation-hide');
       if (hintBtn) hintBtn.classList.add('hidden');
+      if (chromeHint) chromeHint.classList.add('hidden');
       if (hintText) hintText.classList.add('hidden');
       playCurrentSlideAudio();
     }

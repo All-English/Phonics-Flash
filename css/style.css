@@ -891,36 +891,51 @@ body {
   animation: fadeInDown 0.4s ease-out;
 }
 
-/* ---------- Audio Button ---------- */
-.audio-btn {
+/* ---------- Audio & Dictation Chrome Controls Group ---------- */
+.audio-controls-group {
   position: absolute;
   top: 2rem;
   left: 50%;
   transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  z-index: 300;
+  pointer-events: none;
+}
+
+.audio-controls-group > * {
+  pointer-events: auto;
+}
+
+.audio-btn {
+  position: static;
+  transform: none;
   width: 64px;
   height: 64px;
   border-radius: 50%;
   border: 2px solid light-dark(rgba(0, 0, 0, 0.1), rgba(255, 255, 255, 0.15));
   background: light-dark(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.06));
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--transition-fast);
-  z-index: 300;
 }
 
 .audio-btn:hover {
   background: light-dark(rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.15));
   border-color: var(--accent);
   color: var(--accent);
-  transform: translateX(-50%) scale(1.08);
+  transform: scale(1.08);
 }
 
 .audio-btn:active {
-  transform: translateX(-50%) scale(0.95);
+  transform: scale(0.95);
 }
 
 .audio-btn svg {
@@ -1146,9 +1161,18 @@ body {
 }
 
 @media (max-width: 768px) and (orientation: portrait) {
-  .audio-btn {
+  .audio-controls-group {
     top: auto;
     bottom: 2rem;
+    gap: 0.5rem;
+  }
+
+  .dictation-hint-btn {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
+    font-size: 1.15rem;
   }
 }
 
@@ -1374,13 +1398,6 @@ body {
   place-self: center !important;
 }
 
-.word-slide[data-dictation-mode="true"] .word-display-container > .dictation-hint-btn {
-  grid-area: 1 / 1 !important;
-  align-self: end !important;
-  justify-self: center !important;
-  margin-bottom: clamp(-1.2rem, -2.5vh, -0.5rem) !important;
-}
-
 /* Blank underline slot for missing letters */
 .sound-blank {
   display: inline-block;
@@ -1394,29 +1411,29 @@ body {
   line-height: 1;
 }
 
-/* Dictation Mode Hint Button (Minimalist Icon Tucked Below) */
+/* Dictation Mode Hint Button (Placed under audio button) */
 .dictation-hint-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
   padding: 0;
   font-size: 1.25rem;
   line-height: 1;
   border-radius: var(--radius-full);
-  color: light-dark(rgba(0, 0, 0, 0.45), rgba(255, 255, 255, 0.55));
-  background: light-dark(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.08));
-  border: 1px solid light-dark(rgba(0, 0, 0, 0.08), rgba(255, 255, 255, 0.12));
+  color: light-dark(rgba(0, 0, 0, 0.5), rgba(255, 255, 255, 0.6));
+  background: light-dark(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.08));
+  border: 1.5px solid light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.16));
   cursor: pointer;
   box-shadow: none;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   margin: 0;
   user-select: none;
-  opacity: 0.55;
+  opacity: 0.65;
   transform: scale(1);
   visibility: visible;
   transition: opacity 0.25s cubic-bezier(0.2, 0, 0, 1),
@@ -1424,21 +1441,21 @@ body {
               background var(--transition-fast),
               border-color var(--transition-fast),
               color var(--transition-fast),
-              box-shadow var(--transition-fast),
-              visibility 0s 0s;
+              box-shadow var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .dictation-hint-btn:hover {
   opacity: 1;
-  color: light-dark(rgba(0, 0, 0, 0.85), #ffffff);
-  background: light-dark(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.2));
-  border-color: light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.28));
-  transform: scale(1.12);
+  color: light-dark(rgba(0, 0, 0, 0.9), #ffffff);
+  background: light-dark(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.22));
+  border-color: light-dark(rgba(0, 0, 0, 0.25), rgba(255, 255, 255, 0.3));
+  transform: scale(1.1);
   box-shadow: light-dark(0 4px 12px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.25));
 }
 
 .dictation-hint-btn:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 
 .dictation-hint-btn:focus-visible {
@@ -1450,23 +1467,22 @@ body {
 .dictation-hint-btn.hidden {
   display: inline-flex !important;
   opacity: 0 !important;
-  transform: scale(0.7) !important;
+  transform: scale(0.6) !important;
   pointer-events: none !important;
   visibility: hidden !important;
-  transition: opacity 0.25s cubic-bezier(0.2, 0, 0, 1),
-              transform 0.25s cubic-bezier(0.2, 0, 0, 1),
-              visibility 0s 0.25s !important;
-}
-
-@media (max-width: 768px) and (orientation: portrait) {
-  .dictation-hint-btn {
-    width: 68px !important;
-    height: 68px !important;
-    min-width: 68px !important;
-    min-height: 68px !important;
-    font-size: 2rem !important;
-    margin-bottom: -1.5rem !important;
-  }
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  border-width: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1),
+              transform 0.2s cubic-bezier(0.2, 0, 0, 1),
+              visibility 0s 0.2s,
+              height 0.2s cubic-bezier(0.2, 0, 0, 1),
+              min-height 0.2s cubic-bezier(0.2, 0, 0, 1),
+              margin 0.2s cubic-bezier(0.2, 0, 0, 1),
+              border-width 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
 }
 
 /* Dictation Mode Hint Text & Answer Word Typography & Smooth Transitions */
@@ -4328,15 +4344,6 @@ body {
     margin: 0 !important;
   }
 
-  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .dictation-hint-btn {
-    width: clamp(40px, 3.5vw, 50px) !important;
-    height: clamp(40px, 3.5vw, 50px) !important;
-    min-width: clamp(40px, 3.5vw, 50px) !important;
-    min-height: clamp(40px, 3.5vw, 50px) !important;
-    font-size: clamp(1.15rem, 1.8vw, 1.45rem) !important;
-    padding: 0 !important;
-    border-radius: var(--radius-full) !important;
-  }
 
   .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .dictation-hint-text {
     font-size: clamp(3.8rem, 7.5vw, 6.5rem) !important;
@@ -4400,15 +4407,6 @@ body {
     max-width: 140px !important;
   }
 
-  /* Dictation Mode */
-  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .dictation-hint-btn {
-    width: 36px !important;
-    height: 36px !important;
-    min-width: 36px !important;
-    min-height: 36px !important;
-    font-size: 1.05rem !important;
-    padding: 0 !important;
-  }
 
   .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .dictation-hint-text,
   .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .word-text {
