@@ -1963,7 +1963,7 @@
           <div class="word-display-container">
             <div class="word-text ${isDictation ? 'dictation-hide' : ''}" data-len="${wordData.word.length}">${wordDisplay}</div>
             ${isDictation ? `<div class="dictation-hint-text hidden" data-len="${wordData.word.length}">${blankedWordDisplay}</div>` : ''}
-            ${isDictation ? `<button class="dictation-hint-btn" type="button" title="Show Hint (H)">Hint</button>` : ''}
+            ${isDictation ? `<button class="dictation-hint-btn" type="button" aria-label="Show Hint (H)" title="Show Hint (H)"><span class="dictation-hint-icon" aria-hidden="true">💡</span></button>` : ''}
           </div>
         </div>
       `;
