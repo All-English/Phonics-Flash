@@ -4124,20 +4124,20 @@ body {
     flex-direction: row !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: clamp(1.5rem, 4vw, 4rem) !important;
-    width: 92vw !important;
-    max-width: 1200px !important;
-    height: 82vh !important;
-    max-height: 600px !important;
+    gap: clamp(1.5rem, 3vw, 3rem) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
     box-sizing: border-box !important;
     margin: 0 auto !important;
     padding-top: 0 !important;
   }
 
   .reveal .slides section:not([data-quiz-mode="true"]):not([data-sound-quiz-mode="true"]):not([data-picture-quiz-mode="true"]):not([data-dictation-mode="true"])[data-has-image="true"] .word-image {
-    flex: 1 1 50% !important;
-    max-width: min(48vw, 520px) !important;
-    max-height: 75vh !important;
+    flex: 1 1 0 !important;
+    max-width: calc(50% - 1.5rem) !important;
+    max-height: 100% !important;
     width: auto !important;
     height: auto !important;
     object-fit: contain !important;
@@ -4145,11 +4145,11 @@ body {
   }
 
   .reveal .slides section:not([data-quiz-mode="true"]):not([data-sound-quiz-mode="true"]):not([data-picture-quiz-mode="true"]):not([data-dictation-mode="true"])[data-has-image="true"] .word-display-container {
-    flex: 1 1 50% !important;
+    flex: 1 1 0 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    max-width: min(48vw, 520px) !important;
+    max-width: calc(50% - 1.5rem) !important;
     width: 100% !important;
     margin: 0 !important;
   }
@@ -4181,20 +4181,20 @@ body {
     flex-direction: row !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: clamp(1.5rem, 4vw, 3.5rem) !important;
-    width: 92vw !important;
-    max-width: 1200px !important;
-    height: 82vh !important;
-    max-height: 580px !important;
+    gap: clamp(1.5rem, 3vw, 2.5rem) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
     box-sizing: border-box !important;
     margin: 0 auto !important;
     padding-top: 0 !important;
   }
 
   .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-mode-layout .word-image.quiz-image {
-    flex: 1 1 50% !important;
-    max-width: min(48vw, 500px) !important;
-    max-height: 75vh !important;
+    flex: 1 1 0 !important;
+    max-width: calc(50% - 1.25rem) !important;
+    max-height: 100% !important;
     width: auto !important;
     height: auto !important;
     object-fit: contain !important;
@@ -4202,13 +4202,13 @@ body {
   }
 
   .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-options-container {
-    flex: 1 1 50% !important;
+    flex: 1 1 0 !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
     align-items: stretch !important;
-    gap: clamp(0.75rem, 2vh, 1.4rem) !important;
-    max-width: min(48vw, 480px) !important;
+    gap: clamp(0.75rem, 1.8vh, 1.4rem) !important;
+    max-width: calc(50% - 1.25rem) !important;
     width: 100% !important;
     margin: 0 !important;
   }
@@ -4217,26 +4217,26 @@ body {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
-    font-size: clamp(3.5rem, 6.5vw, 5.5rem) !important;
-    padding: clamp(0.6rem, 1.5vh, 1.1rem) 1.5rem !important;
+    font-size: clamp(3.2rem, 5.5vw, 4.8rem) !important;
+    padding: clamp(0.5rem, 1.2vh, 0.9rem) 1.2rem !important;
   }
 
   .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-option-btn[data-len="5"] {
-    font-size: clamp(3.2rem, 5.8vw, 4.8rem) !important;
+    font-size: clamp(2.9rem, 5.0vw, 4.3rem) !important;
   }
 
   .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-option-btn[data-len="6"] {
-    font-size: clamp(2.8rem, 5.2vw, 4.2rem) !important;
+    font-size: clamp(2.6rem, 4.4vw, 3.8rem) !important;
   }
 
   .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-option-btn[data-len="7"],
   .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-option-btn[data-len="8"] {
-    font-size: clamp(2.4rem, 4.5vw, 3.6rem) !important;
+    font-size: clamp(2.2rem, 3.8vw, 3.3rem) !important;
   }
 
   .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-option-btn[data-len="9"],
   .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-option-btn[data-len="10"] {
-    font-size: clamp(2.0rem, 3.8vw, 3.0rem) !important;
+    font-size: clamp(1.9rem, 3.2vw, 2.8rem) !important;
   }
 
   /* ------------------------------------------------------------
@@ -4247,20 +4247,20 @@ body {
     flex-direction: row !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: clamp(1.5rem, 4vw, 3.5rem) !important;
-    width: 92vw !important;
-    max-width: 1100px !important;
-    height: 82vh !important;
-    max-height: 580px !important;
+    gap: clamp(1.5rem, 3vw, 2.5rem) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
     box-sizing: border-box !important;
     margin: 0 auto !important;
     padding-top: 0 !important;
   }
 
   .reveal .slides section[data-sound-quiz-mode="true"][data-has-image="true"] .sound-quiz-layout:not(.no-image) .word-image.quiz-image {
-    flex: 1 1 50% !important;
-    max-width: min(48vw, 480px) !important;
-    max-height: 75vh !important;
+    flex: 1 1 0 !important;
+    max-width: calc(50% - 1.25rem) !important;
+    max-height: 100% !important;
     width: auto !important;
     height: auto !important;
     object-fit: contain !important;
@@ -4268,13 +4268,13 @@ body {
   }
 
   .reveal .slides section[data-sound-quiz-mode="true"][data-has-image="true"] .sound-quiz-interactive-group {
-    flex: 1 1 50% !important;
+    flex: 1 1 0 !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
     gap: clamp(1rem, 2.5vh, 2rem) !important;
-    max-width: min(48vw, 480px) !important;
+    max-width: calc(50% - 1.25rem) !important;
     width: 100% !important;
     margin: 0 !important;
   }
@@ -4314,20 +4314,20 @@ body {
     flex-direction: row !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: clamp(1.5rem, 4vw, 4rem) !important;
-    width: 92vw !important;
-    max-width: 1200px !important;
-    height: 82vh !important;
-    max-height: 600px !important;
+    gap: clamp(1.5rem, 3vw, 3rem) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
     box-sizing: border-box !important;
     margin: 0 auto !important;
     padding-top: 0 !important;
   }
 
   .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .word-image {
-    flex: 1 1 50% !important;
-    max-width: min(48vw, 500px) !important;
-    max-height: 75vh !important;
+    flex: 1 1 0 !important;
+    max-width: calc(50% - 1.5rem) !important;
+    max-height: 100% !important;
     width: auto !important;
     height: auto !important;
     object-fit: contain !important;
@@ -4335,11 +4335,11 @@ body {
   }
 
   .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .word-display-container {
-    flex: 1 1 50% !important;
+    flex: 1 1 0 !important;
     display: grid !important;
     place-items: center !important;
     position: relative !important;
-    max-width: min(48vw, 480px) !important;
+    max-width: calc(50% - 1.5rem) !important;
     width: 100% !important;
     margin: 0 !important;
   }
@@ -4362,17 +4362,19 @@ body {
   .reveal .slides section[data-has-image="true"] .slide-center,
   .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .quiz-mode-layout,
   .reveal .slides section[data-sound-quiz-mode="true"][data-has-image="true"] .sound-quiz-layout:not(.no-image) {
-    gap: clamp(0.75rem, 3vw, 2rem) !important;
-    height: 86vh !important;
-    max-height: 380px !important;
+    gap: clamp(0.75rem, 2.5vw, 1.5rem) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
   }
 
   /* Images */
   .reveal .slides section[data-has-image="true"] .word-image,
   .reveal .slides section[data-quiz-mode="true"][data-has-image="true"] .word-image.quiz-image,
   .reveal .slides section[data-sound-quiz-mode="true"][data-has-image="true"] .word-image.quiz-image {
-    max-height: 72vh !important;
-    max-width: 44vw !important;
+    max-height: 100% !important;
+    max-width: calc(50% - 1rem) !important;
   }
 
   /* Flashcards */
