@@ -66,6 +66,7 @@ window.ClassesManager = (() => {
   function loadLocalData() {
     let classes = [];
     let activeClassId = null;
+    let updatedAt = 0;
 
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -74,6 +75,7 @@ window.ClassesManager = (() => {
         if (parsed && Array.isArray(parsed.classes)) {
           classes = parsed.classes;
           activeClassId = parsed.activeClassId || null;
+          updatedAt = parsed.updatedAt || 0;
         }
       }
     } catch (e) {
@@ -88,8 +90,16 @@ window.ClassesManager = (() => {
         const sets = rawSets ? JSON.parse(rawSets) : {};
         const profiles = rawProfiles ? JSON.parse(rawProfiles) : {};
 
-        // Ensure all shared player sets exist as classes
-        for (const [setName, playerList] of Object.entries(sets)) {
+        const allSharedNames = new Set([
+          ...Object.keys(sets),
+          ...Object.keys(profiles),
+          ...classes.map(c => c.name).filter(Boolean)
+        ]);
+        let profilesDirty = false;
+
+        // Ensure all shared player sets and class profiles exist as classes
+        for (const setName of allSharedNames) {
+          const playerList = sets[setName];
           let existing = classes.find(c => c.name === setName);
           const prof = profiles[setName] || {};
           const sched = prof.schedule || SharedClassSync.parseScheduleFromName(setName);
@@ -117,24 +127,51 @@ window.ClassesManager = (() => {
                 highlightSounds: true
               },
               players: Array.isArray(playerList) ? playerList : [],
-              updatedAt: prof.updatedAt || Date.now()
+              updatedAt: prof.updatedAt || 0
             };
             classes.push(existing);
           } else {
-            // Keep schedule aligned with shared_class_profiles
-            if (sched) existing.schedule = sched;
-            if (!existing.curriculumId) existing.curriculumId = prof.curriculumId || 'smart-phonics';
-
-            // Adopt units from shared_class_profiles (universal cross-app curriculum state)
             const profTime = prof.updatedAt || 0;
             const localTime = existing.updatedAt || 0;
-            if (Array.isArray(prof.units) && (profTime >= localTime || !existing.selectedUnits || existing.selectedUnits.length === 0)) {
+
+            // Keep schedule aligned with shared_class_profiles if shared profile has one and is newer, or if local is missing
+            if (!existing.schedule && sched) {
+              existing.schedule = sched;
+            } else if (prof.schedule && profTime > localTime) {
+              existing.schedule = prof.schedule;
+            }
+
+            if (prof.curriculumId && (profTime > localTime || !existing.curriculumId)) {
+              existing.curriculumId = prof.curriculumId;
+            } else if (!existing.curriculumId) {
+              existing.curriculumId = 'smart-phonics';
+            }
+
+            // Adopt units from shared_class_profiles when shared profile is newer
+            if (Array.isArray(prof.units) && (profTime > localTime || ((!existing.selectedUnits || existing.selectedUnits.length === 0) && prof.units.length > 0))) {
               existing.selectedUnits = [...prof.units];
-              existing.updatedAt = profTime || Date.now();
+              existing.updatedAt = profTime || localTime;
+            } else if (localTime > profTime && Array.isArray(existing.selectedUnits) && existing.selectedUnits.length > 0) {
+              // Local Phonics Flash class is newer than shared_class_profiles: propagate to shared_class_profiles
+              const canonicals = existing.selectedUnits
+                .map(u => SharedClassSync.toCanonicalUnit(u)?.id)
+                .filter(Boolean);
+              profiles[setName] = {
+                ...prof,
+                schedule: existing.schedule || sched,
+                curriculumId: existing.curriculumId || 'smart-phonics',
+                units: canonicals,
+                updatedAt: localTime
+              };
+              profilesDirty = true;
             }
 
             if (Array.isArray(playerList)) existing.players = playerList;
           }
+        }
+
+        if (profilesDirty) {
+          localStorage.setItem(SharedClassSync.SHARED_CLASS_PROFILES_KEY, JSON.stringify(profiles));
         }
       } catch (err) {
         console.warn('[ClassesManager] Error merging shared sets:', err);
@@ -144,7 +181,7 @@ window.ClassesManager = (() => {
     return {
       classes,
       activeClassId,
-      updatedAt: Date.now()
+      updatedAt
     };
   }
 
@@ -424,11 +461,25 @@ window.ClassesManager = (() => {
       return store.classes.find(c => c.id === store.activeClassId) || null;
     },
 
+    getActiveClassId() {
+      return loadLocalData().activeClassId || null;
+    },
+
     setActiveClassId(classId) {
       const store = loadLocalData();
       store.activeClassId = classId || null;
       saveLocalData(store);
       debouncedPushToUpstash(store);
+
+      if (typeof SharedClassSync !== 'undefined') {
+        const cls = classId ? store.classes.find(c => c.id === classId) : null;
+        if (cls && cls.name) {
+          try {
+            localStorage.setItem(SharedClassSync.SHARED_ACTIVE_CLASS_KEY, cls.name);
+          } catch {}
+          SharedClassSync.writeSharedSyncCookie?.({ actClass: cls.name });
+        }
+      }
       return store;
     },
 
@@ -465,6 +516,21 @@ window.ClassesManager = (() => {
       store.activeClassId = newClass.id;
       saveLocalData(store);
       debouncedPushToUpstash(store);
+
+      if (typeof SharedClassSync !== 'undefined') {
+        try {
+          const profiles = JSON.parse(localStorage.getItem(SharedClassSync.SHARED_CLASS_PROFILES_KEY) || '{}');
+          profiles[newClass.name] = {
+            ...(profiles[newClass.name] || {}),
+            schedule: newClass.schedule,
+            curriculumId: newClass.curriculumId,
+            updatedAt: newClass.updatedAt
+          };
+          localStorage.setItem(SharedClassSync.SHARED_CLASS_PROFILES_KEY, JSON.stringify(profiles));
+        } catch {}
+        SharedClassSync.saveClassUnits(newClass.name, newClass.selectedUnits, newClass.curriculumId);
+      }
+
       return newClass;
     },
 
@@ -479,9 +545,25 @@ window.ClassesManager = (() => {
         updatedAt: Date.now()
       };
 
+      const updated = store.classes[idx];
       saveLocalData(store);
       debouncedPushToUpstash(store);
-      return store.classes[idx];
+
+      if (typeof SharedClassSync !== 'undefined') {
+        try {
+          const profiles = JSON.parse(localStorage.getItem(SharedClassSync.SHARED_CLASS_PROFILES_KEY) || '{}');
+          profiles[updated.name] = {
+            ...(profiles[updated.name] || {}),
+            schedule: updated.schedule,
+            curriculumId: updated.curriculumId || 'smart-phonics',
+            updatedAt: updated.updatedAt
+          };
+          localStorage.setItem(SharedClassSync.SHARED_CLASS_PROFILES_KEY, JSON.stringify(profiles));
+          SharedClassSync.syncUpstash(SharedClassSync.SHARED_CLASS_PROFILES_KEY, profiles);
+        } catch {}
+      }
+
+      return updated;
     },
 
     deleteClass(classId) {
@@ -497,12 +579,29 @@ window.ClassesManager = (() => {
 
     saveCurrentToActiveClass(selectedUnits, currentOptions) {
       const store = loadLocalData();
-      if (!store.activeClassId) return null;
+      const activeCurId = (typeof EditorStore !== 'undefined' && EditorStore.getActiveCurriculumId)
+        ? EditorStore.getActiveCurriculumId()
+        : null;
+
+      if (!store.activeClassId) {
+        if (typeof SharedClassSync !== 'undefined' && SharedClassSync.saveActiveUnits) {
+          SharedClassSync.saveActiveUnits(selectedUnits, activeCurId || 'smart-phonics', null);
+        }
+        return null;
+      }
 
       const cls = store.classes.find(c => c.id === store.activeClassId);
-      if (!cls) return null;
+      if (!cls) {
+        if (typeof SharedClassSync !== 'undefined' && SharedClassSync.saveActiveUnits) {
+          SharedClassSync.saveActiveUnits(selectedUnits, activeCurId || 'smart-phonics', null);
+        }
+        return null;
+      }
 
       cls.selectedUnits = [...selectedUnits];
+      if (activeCurId) {
+        cls.curriculumId = activeCurId;
+      }
       cls.options = {
         includeExtras: !!currentOptions.includeExtras,
         includeSightWords: !!currentOptions.includeSightWords,

@@ -77,7 +77,8 @@
     sun: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`,
     moon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
     shuffle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>`,
-    undo: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>`
+    undo: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>`,
+    sync: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3L21.5 8M22 12.5a10 10 0 0 1-18.8 4.2L2.5 16"/></svg>`
   };
 
   // ── Level Colors ───────────────────────────────────────────
@@ -168,14 +169,101 @@
       }
 
       const scheduledClass = ClassesManager.findCurrentScheduledClass();
+      const latestActiveUnits = typeof SharedClassSync !== 'undefined' ? SharedClassSync.getActiveUnits() : null;
+      const localUnitsUpdatedAt = Number(localStorage.getItem('phonics-flash-units-updated-at') || 0);
+
       if (scheduledClass) {
+        // If another app updated units very recently (within 2 hours) and newer than the class profile, adopt them
+        if (
+          latestActiveUnits &&
+          Array.isArray(latestActiveUnits.units) &&
+          latestActiveUnits.units.length > 0 &&
+          (Date.now() - (latestActiveUnits.updatedAt || 0) < 2 * 60 * 60 * 1000) &&
+          (latestActiveUnits.updatedAt || 0) > (scheduledClass.updatedAt || 0)
+        ) {
+          scheduledClass.selectedUnits = latestActiveUnits.units.map(u =>
+            typeof SharedClassSync !== 'undefined' ? (SharedClassSync.toPhonicsFlash(u) || u) : u
+          );
+          if (latestActiveUnits.curriculumId) {
+            scheduledClass.curriculumId = latestActiveUnits.curriculumId;
+          }
+        }
         ClassesManager.setActiveClassId(scheduledClass.id);
         applyClassProfile(scheduledClass);
       } else {
-        ClassesManager.setActiveClassId(null);
-        // Do not wipe saved units on startup (High #3)
+        // Outside scheduled class hours: check if there's an active session class or newer shared active units
+        const activeSession = typeof SharedClassSync !== 'undefined' ? SharedClassSync.getActiveSession() : null;
+        const matchedSessionClass = activeSession?.className
+          ? ClassesManager.getClasses().find(c => c.name === activeSession.className)
+          : null;
+
+        if (matchedSessionClass) {
+          if (
+            latestActiveUnits &&
+            Array.isArray(latestActiveUnits.units) &&
+            latestActiveUnits.units.length > 0 &&
+            (latestActiveUnits.updatedAt || 0) > (matchedSessionClass.updatedAt || 0)
+          ) {
+            matchedSessionClass.selectedUnits = latestActiveUnits.units.map(u =>
+              typeof SharedClassSync !== 'undefined' ? (SharedClassSync.toPhonicsFlash(u) || u) : u
+            );
+            if (latestActiveUnits.curriculumId) {
+              matchedSessionClass.curriculumId = latestActiveUnits.curriculumId;
+            }
+          }
+          ClassesManager.setActiveClassId(matchedSessionClass.id);
+          applyClassProfile(matchedSessionClass);
+        } else {
+          ClassesManager.setActiveClassId(null);
+          if (
+            latestActiveUnits &&
+            Array.isArray(latestActiveUnits.units) &&
+            latestActiveUnits.units.length > 0 &&
+            (latestActiveUnits.updatedAt || 0) > localUnitsUpdatedAt
+          ) {
+            const pfUnits = latestActiveUnits.units.map(u =>
+              typeof SharedClassSync !== 'undefined' ? (SharedClassSync.toPhonicsFlash(u) || u) : u
+            );
+            localStorage.setItem('phonics-flash-selected-units', JSON.stringify(pfUnits));
+            localStorage.setItem('phonics-flash-units-updated-at', String(latestActiveUnits.updatedAt || Date.now()));
+            if (latestActiveUnits.curriculumId && typeof EditorStore !== 'undefined' && EditorStore.getCurriculum(latestActiveUnits.curriculumId)) {
+              EditorStore.setActiveCurriculum(latestActiveUnits.curriculumId);
+            }
+          }
+        }
       }
       initClassesUI();
+
+      // Re-sync when switching back to an open Phonics Flash tab on the menu screen
+      document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState !== 'visible') return;
+        const isMenuVisible = !document.getElementById('menu-screen')?.classList.contains('hidden');
+        if (!isMenuVisible || typeof SharedClassSync === 'undefined') return;
+        try {
+          await SharedClassSync.loadAllClasses();
+          const freshActive = SharedClassSync.getActiveUnits();
+          const currentLocalTime = Number(localStorage.getItem('phonics-flash-units-updated-at') || 0);
+          if (
+            freshActive &&
+            Array.isArray(freshActive.units) &&
+            freshActive.units.length > 0 &&
+            (freshActive.updatedAt || 0) > currentLocalTime
+          ) {
+            const pfUnits = freshActive.units.map(u => SharedClassSync.toPhonicsFlash(u) || u);
+            localStorage.setItem('phonics-flash-selected-units', JSON.stringify(pfUnits));
+            localStorage.setItem('phonics-flash-units-updated-at', String(freshActive.updatedAt || Date.now()));
+            if (freshActive.curriculumId && typeof EditorStore !== 'undefined' && EditorStore.getCurriculum(freshActive.curriculumId)) {
+              if (EditorStore.getActiveCurriculumId() !== freshActive.curriculumId) {
+                EditorStore.setActiveCurriculum(freshActive.curriculumId);
+                phonicsData = EditorStore.getActiveCurriculum();
+              }
+            }
+            renderMenu();
+          }
+        } catch (e) {
+          console.warn('[PhonicsFlash] visibilitychange sync failed:', e);
+        }
+      });
 
       // Cloud pull in background if configured
       ClassesManager.syncCloud().then(res => {
@@ -320,8 +408,8 @@
   }
 
   // ── Reset to Default Settings (No Class Selected) ───────────
-  function resetToDefaultSettings() {
-    if (typeof ClassesManager !== 'undefined') {
+  function resetToDefaultSettings({ keepActiveClass = false } = {}) {
+    if (!keepActiveClass && typeof ClassesManager !== 'undefined') {
       ClassesManager.setActiveClassId(null);
     }
 
@@ -384,9 +472,11 @@
     syncActivityTabs();
     syncModeOptionDependencies();
 
-    const classSelect = document.getElementById('class-select');
-    if (classSelect) {
-      classSelect.value = '';
+    if (!keepActiveClass) {
+      const classSelect = document.getElementById('class-select');
+      if (classSelect) {
+        classSelect.value = '';
+      }
     }
 
     if (phonicsData) {
@@ -656,6 +746,20 @@
       btn.classList.remove('active');
       span.textContent = 'Sight Words';
       btn.title = 'Include sight words with selected units';
+    }
+  }
+
+  // Helper to sync the slideshow review Sync toggle state, badges, and title
+  function updateSyncButtonUI(btn, isSync) {
+    if (!btn) return;
+    btn.classList.toggle('active', isSync);
+    btn.setAttribute('aria-pressed', isSync ? 'true' : 'false');
+    btn.setAttribute('title', isSync
+      ? 'Sync enabled: Slide levels progress together across decks (Click to turn off)'
+      : 'Sync disabled: Decks navigate independently (Click to turn on)');
+    const badge = btn.querySelector('.sync-badge');
+    if (badge) {
+      badge.textContent = isSync ? 'ON' : 'OFF';
     }
   }
 
@@ -1003,7 +1107,7 @@
     const resetBtn = document.getElementById('reset-btn');
     if (resetBtn) {
       resetBtn.addEventListener('click', () => {
-        resetToDefaultSettings();
+        resetToDefaultSettings({ keepActiveClass: true });
         showToast('All selections cleared', 'info', 2000);
       });
     }
@@ -1164,7 +1268,16 @@
     const units = Array.isArray(level.units) ? level.units : [];
 
     // Check if any units in this level are saved/checked
-    const isUnitChecked = (uid) => savedUnits.includes(uid) || savedUnits.some(s => s === uid || (typeof SharedClassSync !== 'undefined' && SharedClassSync.toPhonicsFlash(s) === uid));
+    const isUnitChecked = (uid) => {
+      if (savedUnits.includes(uid)) return true;
+      if (typeof SharedClassSync === 'undefined') return false;
+      const uidCanon = SharedClassSync.toCanonicalUnit(uid)?.id;
+      return savedUnits.some(s => {
+        if (s === uid || SharedClassSync.toPhonicsFlash(s) === uid) return true;
+        if (uidCanon && SharedClassSync.toCanonicalUnit(s)?.id === uidCanon) return true;
+        return false;
+      });
+    };
     const checkedUnitsInLevel = units.filter(u => isUnitChecked(u.id));
     const hasSelected = checkedUnitsInLevel.length > 0;
     const allChecked = units.length > 0 && checkedUnitsInLevel.length === units.length;
@@ -1296,6 +1409,7 @@
   function saveSelectedUnits() {
     const selectedIds = getSelectedUnitIds();
     localStorage.setItem('phonics-flash-selected-units', JSON.stringify(selectedIds));
+    localStorage.setItem('phonics-flash-units-updated-at', String(Date.now()));
     saveCurrentOptionsToActiveClass();
   }
 
@@ -1492,7 +1606,7 @@
     if (syncBtn) {
       if (!opts.mixMode && selectedUnits.length > 1) {
         syncBtn.classList.remove('hidden');
-        syncBtn.classList.toggle('active', options.syncSlides);
+        updateSyncButtonUI(syncBtn, options.syncSlides);
       } else {
         syncBtn.classList.add('hidden');
       }
@@ -2065,7 +2179,9 @@
         <span class="unit-badge" id="chrome-unit"></span>
         <span class="progress-badge" id="chrome-progress"></span>
         <button class="option-btn hidden" id="toggle-sync" title="Sync slide levels across decks">
-          <span>Sync</span>
+          <span class="sync-icon">${ICONS.sync}</span>
+          <span class="sync-label">Sync</span>
+          <span class="sync-badge">ON</span>
         </button>
       </div>
 
@@ -2269,7 +2385,7 @@
       syncBtn.onclick = (e) => {
         e.stopPropagation();
         options.syncSlides = !options.syncSlides;
-        syncBtn.classList.toggle('active', options.syncSlides);
+        updateSyncButtonUI(syncBtn, options.syncSlides);
         localStorage.setItem('phonics-flash-sync', options.syncSlides);
         if (revealInstance && !isMixMode) {
           revealInstance.configure({
