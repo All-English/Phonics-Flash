@@ -217,7 +217,7 @@ const AudioPlayer = (() => {
           voiceId = voice.voice_id || 'cgSgspJ2msm6clMCkdW9';
         }
 
-        const modelId = (typeof ELEVENLABS_CONFIG !== 'undefined' && ELEVENLABS_CONFIG.modelId) || 'eleven_flash_v2';
+        const modelId = (typeof ELEVENLABS_CONFIG !== 'undefined' && ELEVENLABS_CONFIG.modelId) || 'eleven_v4_turbo';
 
         const currentSpeed = getPlaybackSpeed();
 
@@ -299,7 +299,7 @@ const AudioPlayer = (() => {
     }
 
     const targetVoiceId = voiceId || getSelectedVoiceId() || 'cgSgspJ2msm6clMCkdW9'; // Jessica default
-    const modelId = (typeof ELEVENLABS_CONFIG !== 'undefined' && ELEVENLABS_CONFIG.modelId) || 'eleven_flash_v2';
+    const modelId = (typeof ELEVENLABS_CONFIG !== 'undefined' && ELEVENLABS_CONFIG.modelId) || 'eleven_v4_turbo';
     const testSpeed = typeof customSpeed === 'number' ? customSpeed : getPlaybackSpeed();
 
     const response = await fetch(

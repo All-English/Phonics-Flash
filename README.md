@@ -59,7 +59,7 @@ To enable natural, studio-quality AI voices instead of the browser's default TTS
 ```javascript
 const ELEVENLABS_CONFIG = {
   apiKey: 'YOUR_ELEVENLABS_API_KEY_HERE',
-  modelId: 'eleven_flash_v2',
+  modelId: 'eleven_v4_turbo',
   voices: [
     {
       name: "Jessica",
