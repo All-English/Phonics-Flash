@@ -158,80 +158,122 @@
       }
     }
 
-    // 2. Check auto-schedule matching for classes (can safely read EditorStore.getCurriculum())
-    if (typeof ClassesManager !== 'undefined') {
-      if (typeof SharedClassSync !== 'undefined') {
-        try {
-          await SharedClassSync.loadAllClasses();
-        } catch (e) {
-          console.warn('[ClassesManager] Error loading shared classes:', e);
+    // 2. Load phonics curriculum data so all built-in & custom books exist in EditorStore before class matching
+    try {
+      phonicsData = await loadData();
+      if (window.PhonicsEngine) {
+        PhonicsEngine.setPhonicsData(phonicsData);
+      }
+    } catch (err) {
+      console.error('Failed to load phonics data:', err);
+      document.getElementById('menu-screen').innerHTML =
+        `<div style="text-align:center;padding:4rem;color:#FF6B6B;">
+          <h2>Failed to load word data</h2>
+          <p style="color:rgba(255,255,255,0.6);margin-top:1rem;">Check that <code>data/words.json</code> exists and is valid JSON.</p>
+        </div>`;
+      return;
+    }
+
+    // 3. Explicit book parameter in URL takes precedence (e.g. from editor "Preview in App" or bookmarks)
+    const urlSearchParams = new URLSearchParams(window.location.search);
+    const hasExplicitBookOrUnitsParam = urlSearchParams.has('book') || urlSearchParams.has('b') || urlSearchParams.has('units') || urlSearchParams.has('q');
+    if (typeof EditorStore !== 'undefined') {
+      const bookParam = urlSearchParams.get('book') || urlSearchParams.get('b');
+      if (bookParam) {
+        const matchedBookId = resolveCurriculumId(bookParam);
+        if (matchedBookId && EditorStore.getCurriculum(matchedBookId)) {
+          EditorStore.setActiveCurriculum(matchedBookId);
+          phonicsData = EditorStore.getActiveCurriculum();
+          if (window.PhonicsEngine) PhonicsEngine.setPhonicsData(phonicsData);
         }
       }
+    }
 
-      const scheduledClass = ClassesManager.findCurrentScheduledClass();
-      const latestActiveUnits = typeof SharedClassSync !== 'undefined' ? SharedClassSync.getActiveUnits() : null;
-      const localUnitsUpdatedAt = Number(localStorage.getItem('phonics-flash-units-updated-at') || 0);
+    // 4. Synchronize classes from cloud/shared storage and apply unit selection priority
+    if (typeof ClassesManager !== 'undefined') {
+      try {
+        await Promise.all([
+          typeof SharedClassSync !== 'undefined' ? SharedClassSync.loadAllClasses() : Promise.resolve(),
+          ClassesManager.syncCloud()
+        ]);
+      } catch (e) {
+        console.warn('[ClassesManager] Error syncing classes on startup:', e);
+      }
 
-      if (scheduledClass) {
-        // If another app updated units very recently (within 2 hours) and newer than the class profile, adopt them
-        if (
-          latestActiveUnits &&
-          Array.isArray(latestActiveUnits.units) &&
-          latestActiveUnits.units.length > 0 &&
-          (Date.now() - (latestActiveUnits.updatedAt || 0) < 2 * 60 * 60 * 1000) &&
-          (latestActiveUnits.updatedAt || 0) > (scheduledClass.updatedAt || 0)
-        ) {
-          scheduledClass.selectedUnits = latestActiveUnits.units.map(u =>
-            typeof SharedClassSync !== 'undefined' ? (SharedClassSync.toPhonicsFlash(u) || u) : u
-          );
-          if (latestActiveUnits.curriculumId) {
-            scheduledClass.curriculumId = latestActiveUnits.curriculumId;
-          }
-        }
-        ClassesManager.setActiveClassId(scheduledClass.id);
-        applyClassProfile(scheduledClass);
-      } else {
-        // Outside scheduled class hours: check if there's an active session class or newer shared active units
-        const activeSession = typeof SharedClassSync !== 'undefined' ? SharedClassSync.getActiveSession() : null;
-        const matchedSessionClass = activeSession?.className
-          ? ClassesManager.getClasses().find(c => c.name === activeSession.className)
-          : null;
+      if (!hasExplicitBookOrUnitsParam) {
+        const scheduledClass = ClassesManager.findCurrentScheduledClass();
+        const latestActiveUnits = typeof SharedClassSync !== 'undefined' ? SharedClassSync.getActiveUnits() : null;
+        const localUnitsUpdatedAt = Number(localStorage.getItem('phonics-flash-units-updated-at') || 0);
 
-        if (matchedSessionClass) {
-          if (
+        if (scheduledClass) {
+          // Priority 1: Scheduled class is in session right now.
+          // Use the class's saved units from its last lesson, UNLESS another app updated units for THIS class
+          // (or during this class's current session window) more recently than the class profile.
+          const canAdoptActiveUnitsForScheduled =
             latestActiveUnits &&
             Array.isArray(latestActiveUnits.units) &&
             latestActiveUnits.units.length > 0 &&
-            (latestActiveUnits.updatedAt || 0) > (matchedSessionClass.updatedAt || 0)
-          ) {
-            matchedSessionClass.selectedUnits = latestActiveUnits.units.map(u =>
+            (latestActiveUnits.updatedAt || 0) > (scheduledClass.updatedAt || 0) &&
+            (
+              latestActiveUnits.className === scheduledClass.name ||
+              (
+                !latestActiveUnits.className &&
+                typeof SharedClassSync !== 'undefined' &&
+                typeof SharedClassSync.isTimestampInCurrentClassSession === 'function' &&
+                SharedClassSync.isTimestampInCurrentClassSession(latestActiveUnits.updatedAt, scheduledClass.name, scheduledClass)
+              )
+            );
+
+          if (canAdoptActiveUnitsForScheduled) {
+            scheduledClass.selectedUnits = latestActiveUnits.units.map(u =>
               typeof SharedClassSync !== 'undefined' ? (SharedClassSync.toPhonicsFlash(u) || u) : u
             );
             if (latestActiveUnits.curriculumId) {
-              matchedSessionClass.curriculumId = latestActiveUnits.curriculumId;
+              scheduledClass.curriculumId = latestActiveUnits.curriculumId;
             }
           }
-          ClassesManager.setActiveClassId(matchedSessionClass.id);
-          applyClassProfile(matchedSessionClass);
+
+          ClassesManager.setActiveClassId(scheduledClass.id);
+          applyClassProfile(scheduledClass);
         } else {
+          // Priority 2: Outside scheduled class hours -> default to "No Class" and remember previous units used.
           ClassesManager.setActiveClassId(null);
+          let existingSaved = [];
+          try {
+            existingSaved = JSON.parse(localStorage.getItem('phonics-flash-selected-units') || '[]');
+            if (!Array.isArray(existingSaved)) existingSaved = [];
+          } catch {
+            existingSaved = [];
+          }
+
           if (
             latestActiveUnits &&
             Array.isArray(latestActiveUnits.units) &&
             latestActiveUnits.units.length > 0 &&
-            (latestActiveUnits.updatedAt || 0) > localUnitsUpdatedAt
+            ((latestActiveUnits.updatedAt || 0) > localUnitsUpdatedAt || existingSaved.length === 0)
           ) {
-            const pfUnits = latestActiveUnits.units.map(u =>
-              typeof SharedClassSync !== 'undefined' ? (SharedClassSync.toPhonicsFlash(u) || u) : u
-            );
-            localStorage.setItem('phonics-flash-selected-units', JSON.stringify(pfUnits));
-            localStorage.setItem('phonics-flash-units-updated-at', String(latestActiveUnits.updatedAt || Date.now()));
-            if (latestActiveUnits.curriculumId && typeof EditorStore !== 'undefined' && EditorStore.getCurriculum(latestActiveUnits.curriculumId)) {
-              EditorStore.setActiveCurriculum(latestActiveUnits.curriculumId);
+            if (latestActiveUnits.curriculumId && typeof EditorStore !== 'undefined') {
+              const targetBookId = resolveCurriculumId(latestActiveUnits.curriculumId);
+              if (targetBookId && EditorStore.getCurriculum(targetBookId) && EditorStore.getActiveCurriculumId() !== targetBookId) {
+                EditorStore.setActiveCurriculum(targetBookId);
+                phonicsData = EditorStore.getActiveCurriculum();
+                if (window.PhonicsEngine) PhonicsEngine.setPhonicsData(phonicsData);
+              }
+            }
+            const resolvedUnits = resolveUnitIdsForBook(latestActiveUnits.units, phonicsData);
+            if (resolvedUnits.length > 0) {
+              localStorage.setItem('phonics-flash-selected-units', JSON.stringify(resolvedUnits));
+              localStorage.setItem('phonics-flash-units-updated-at', String(latestActiveUnits.updatedAt || Date.now()));
+            }
+          } else if (existingSaved.length > 0) {
+            const resolvedExisting = resolveUnitIdsForBook(existingSaved, phonicsData);
+            if (resolvedExisting.length > 0) {
+              localStorage.setItem('phonics-flash-selected-units', JSON.stringify(resolvedExisting));
             }
           }
         }
       }
+
       initClassesUI();
 
       // Re-sync when switching back to an open Phonics Flash tab on the menu screen
@@ -249,51 +291,25 @@
             freshActive.units.length > 0 &&
             (freshActive.updatedAt || 0) > currentLocalTime
           ) {
-            const pfUnits = freshActive.units.map(u => SharedClassSync.toPhonicsFlash(u) || u);
-            localStorage.setItem('phonics-flash-selected-units', JSON.stringify(pfUnits));
-            localStorage.setItem('phonics-flash-units-updated-at', String(freshActive.updatedAt || Date.now()));
-            if (freshActive.curriculumId && typeof EditorStore !== 'undefined' && EditorStore.getCurriculum(freshActive.curriculumId)) {
-              if (EditorStore.getActiveCurriculumId() !== freshActive.curriculumId) {
-                EditorStore.setActiveCurriculum(freshActive.curriculumId);
+            if (freshActive.curriculumId && typeof EditorStore !== 'undefined') {
+              const targetBookId = resolveCurriculumId(freshActive.curriculumId);
+              if (targetBookId && EditorStore.getCurriculum(targetBookId) && EditorStore.getActiveCurriculumId() !== targetBookId) {
+                EditorStore.setActiveCurriculum(targetBookId);
                 phonicsData = EditorStore.getActiveCurriculum();
+                if (window.PhonicsEngine) PhonicsEngine.setPhonicsData(phonicsData);
               }
             }
-            renderMenu();
+            const resolvedUnits = resolveUnitIdsForBook(freshActive.units, phonicsData);
+            if (resolvedUnits.length > 0) {
+              localStorage.setItem('phonics-flash-selected-units', JSON.stringify(resolvedUnits));
+              localStorage.setItem('phonics-flash-units-updated-at', String(freshActive.updatedAt || Date.now()));
+              renderMenu();
+            }
           }
         } catch (e) {
           console.warn('[PhonicsFlash] visibilitychange sync failed:', e);
         }
       });
-
-      // Cloud pull in background if configured
-      ClassesManager.syncCloud().then(res => {
-        if (res && res.success && res.source === 'remote_loaded') {
-          // Only auto-apply scheduled class if user has not explicitly navigated via URL or selected a book (High #5)
-          const urlParams = new URLSearchParams(window.location.search);
-          const hasExplicitParam = urlParams.has('book') || urlParams.has('b') || urlParams.has('units') || urlParams.has('q');
-          const isMenuVisible = !document.getElementById('menu-screen')?.classList.contains('hidden');
-
-          if (!hasExplicitParam && isMenuVisible && !ClassesManager.getActiveClassId()) {
-            const scheduled = ClassesManager.findCurrentScheduledClass();
-            if (scheduled) {
-              ClassesManager.setActiveClassId(scheduled.id);
-              applyClassProfile(scheduled);
-            }
-          }
-          if (typeof populateClassDropdown === 'function') {
-            populateClassDropdown();
-          }
-        }
-      }).catch(console.warn);
-    }
-
-    // 3. Explicit book parameter in URL takes precedence (e.g. from editor "Preview in App" or bookmarks)
-    if (typeof EditorStore !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const bookParam = urlParams.get('book') || urlParams.get('b');
-      if (bookParam && EditorStore.getCurriculum(bookParam)) {
-        EditorStore.setActiveCurriculum(bookParam);
-      }
     }
 
     // Log audio engine configuration status to assist in debugging
@@ -313,34 +329,20 @@
       );
     }
 
-    try {
-      phonicsData = await loadData();
-      if (window.PhonicsEngine) {
-        PhonicsEngine.setPhonicsData(phonicsData);
-      }
-      if (window.ChartScreen) {
-        ChartScreen.init({
-          getSelectedUnitIds: () => getSelectedUnitIds(),
-          getOptions: () => options,
-          getPhonicsData: () => phonicsData,
-          onClose: () => {
-            renderMenu();
-          },
-          onCaseChange: (selectedCase) => {
-            options.letterCase = selectedCase;
-            localStorage.setItem('phonics-flash-letter-case', selectedCase);
-            syncCaseButtons(selectedCase);
-          }
-        });
-      }
-    } catch (err) {
-      console.error('Failed to load phonics data:', err);
-      document.getElementById('menu-screen').innerHTML =
-        `<div style="text-align:center;padding:4rem;color:#FF6B6B;">
-          <h2>Failed to load word data</h2>
-          <p style="color:rgba(255,255,255,0.6);margin-top:1rem;">Check that <code>data/words.json</code> exists and is valid JSON.</p>
-        </div>`;
-      return;
+    if (window.ChartScreen) {
+      ChartScreen.init({
+        getSelectedUnitIds: () => getSelectedUnitIds(),
+        getOptions: () => options,
+        getPhonicsData: () => phonicsData,
+        onClose: () => {
+          renderMenu();
+        },
+        onCaseChange: (selectedCase) => {
+          options.letterCase = selectedCase;
+          localStorage.setItem('phonics-flash-letter-case', selectedCase);
+          syncCaseButtons(selectedCase);
+        }
+      });
     }
 
     // Initialize Book Selector
@@ -484,6 +486,80 @@
     }
   }
 
+  function resolveCurriculumId(rawId) {
+    if (!rawId || typeof EditorStore === 'undefined') return 'smart-phonics';
+    if (EditorStore.getCurriculum(rawId)) return rawId;
+    if (typeof SharedClassSync !== 'undefined') {
+      const targetSlug = SharedClassSync.toSeriesSlug(rawId);
+      const match = (EditorStore.getCurricula() || []).find(
+        c => SharedClassSync.toSeriesSlug(c.id) === targetSlug || SharedClassSync.toSeriesSlug(c.name) === targetSlug
+      );
+      if (match) return match.id;
+    }
+    return rawId;
+  }
+
+  function resolveUnitIdsForBook(unitIds, bookData) {
+    if (!Array.isArray(unitIds) || unitIds.length === 0) return [];
+    const targetBook = bookData || phonicsData;
+    if (!targetBook || !Array.isArray(targetBook.levels)) {
+      return unitIds.map(u => (typeof SharedClassSync !== 'undefined' ? (SharedClassSync.toPhonicsFlash(u) || u) : u)).filter(Boolean);
+    }
+
+    const exactIds = new Set();
+    const byLevelUnit = new Map();
+    for (const lvl of targetBook.levels) {
+      const lvlMatch = String(lvl.id || '').match(/(\d+)/);
+      const lvlNum = lvlMatch ? parseInt(lvlMatch[1], 10) : null;
+      for (const u of (lvl.units || [])) {
+        if (!u || !u.id) continue;
+        exactIds.add(u.id);
+        if (typeof SharedClassSync !== 'undefined') {
+          const c = SharedClassSync.toCanonicalUnit(u.id);
+          if (c && !isNaN(c.level) && !isNaN(c.unit)) {
+            byLevelUnit.set(`L${c.level}U${c.unit}`, u.id);
+          } else if (lvlNum !== null) {
+            const uMatch = String(u.id).match(/U(\d+)/i) || String(u.name || '').match(/Unit\s*(\d+)/i);
+            if (uMatch) {
+              byLevelUnit.set(`L${lvlNum}U${parseInt(uMatch[1], 10)}`, u.id);
+            }
+          }
+        }
+      }
+    }
+
+    const resolved = [];
+    for (const raw of unitIds) {
+      if (!raw) continue;
+      if (exactIds.has(raw)) {
+        if (!resolved.includes(raw)) resolved.push(raw);
+        continue;
+      }
+      if (typeof SharedClassSync !== 'undefined') {
+        const pf = SharedClassSync.toPhonicsFlash(raw);
+        if (pf && exactIds.has(pf)) {
+          if (!resolved.includes(pf)) resolved.push(pf);
+          continue;
+        }
+        const c = SharedClassSync.toCanonicalUnit(raw);
+        if (c && !isNaN(c.level) && !isNaN(c.unit)) {
+          const mapped = byLevelUnit.get(`L${c.level}U${c.unit}`);
+          if (mapped) {
+            if (!resolved.includes(mapped)) resolved.push(mapped);
+            continue;
+          }
+          const bare = `L${c.level}U${c.unit}`;
+          if (exactIds.has(bare) && !resolved.includes(bare)) {
+            resolved.push(bare);
+            continue;
+          }
+        }
+      }
+      if (!resolved.includes(raw)) resolved.push(raw);
+    }
+    return resolved;
+  }
+
   // ── Class Profile Application ──────────────────────────────
   function applyClassProfile(cls) {
     if (!cls) return;
@@ -531,19 +607,37 @@
       localStorage.setItem('phonics-flash-word-chart', options.wordChart);
     }
 
-    if (cls.selectedUnits && Array.isArray(cls.selectedUnits)) {
-      localStorage.setItem('phonics-flash-selected-units', JSON.stringify(cls.selectedUnits));
-    }
-
-    // Auto-switch book series if class has an assigned curriculumId (fallback to smart-phonics for legacy classes - High #7)
-    const targetCurId = cls.curriculumId || 'smart-phonics';
+    // 1. Switch book series first so unit resolution uses the target book's levels/unit IDs
+    const targetCurId = resolveCurriculumId(cls.curriculumId || 'smart-phonics');
     if (typeof EditorStore !== 'undefined') {
-      if (EditorStore.getActiveCurriculumId() !== targetCurId && EditorStore.getCurriculum(targetCurId)) {
-        EditorStore.setActiveCurriculum(targetCurId);
+      if (EditorStore.getCurriculum(targetCurId)) {
+        if (EditorStore.getActiveCurriculumId() !== targetCurId) {
+          EditorStore.setActiveCurriculum(targetCurId);
+        }
         phonicsData = EditorStore.getActiveCurriculum();
+        if (window.PhonicsEngine && phonicsData) {
+          PhonicsEngine.setPhonicsData(phonicsData);
+        }
         const bookSelect = document.getElementById('book-select');
         if (bookSelect) bookSelect.value = targetCurId;
       }
+    }
+
+    // 2. Resolve class units (falling back to shared_class_profiles if cls.selectedUnits is empty)
+    let rawUnits = Array.isArray(cls.selectedUnits) ? cls.selectedUnits : [];
+    if (rawUnits.length === 0 && typeof SharedClassSync !== 'undefined' && cls.name) {
+      try {
+        const profiles = JSON.parse(localStorage.getItem(SharedClassSync.SHARED_CLASS_PROFILES_KEY) || '{}');
+        if (Array.isArray(profiles[cls.name]?.units) && profiles[cls.name].units.length > 0) {
+          rawUnits = profiles[cls.name].units;
+        }
+      } catch {}
+    }
+
+    const resolvedUnits = resolveUnitIdsForBook(rawUnits, phonicsData);
+    localStorage.setItem('phonics-flash-selected-units', JSON.stringify(resolvedUnits));
+    if (resolvedUnits.length > 0 && cls.updatedAt) {
+      localStorage.setItem('phonics-flash-units-updated-at', String(cls.updatedAt));
     }
 
     const select = document.getElementById('class-select');
@@ -556,10 +650,10 @@
     }
   }
 
-  function saveCurrentOptionsToActiveClass() {
+  function saveCurrentOptionsToActiveClass({ isUnitChange = false } = {}) {
     if (typeof ClassesManager !== 'undefined') {
       const selectedIds = getSelectedUnitIds();
-      ClassesManager.saveCurrentToActiveClass(selectedIds, options);
+      ClassesManager.saveCurrentToActiveClass(selectedIds, options, { isUnitChange });
     }
   }
 
@@ -1271,10 +1365,14 @@
     const isUnitChecked = (uid) => {
       if (savedUnits.includes(uid)) return true;
       if (typeof SharedClassSync === 'undefined') return false;
-      const uidCanon = SharedClassSync.toCanonicalUnit(uid)?.id;
+      const uidCanon = SharedClassSync.toCanonicalUnit(uid);
       return savedUnits.some(s => {
         if (s === uid || SharedClassSync.toPhonicsFlash(s) === uid) return true;
-        if (uidCanon && SharedClassSync.toCanonicalUnit(s)?.id === uidCanon) return true;
+        const sCanon = SharedClassSync.toCanonicalUnit(s);
+        if (uidCanon && sCanon) {
+          if (uidCanon.id === sCanon.id) return true;
+          if (uidCanon.level === sCanon.level && uidCanon.unit === sCanon.unit) return true;
+        }
         return false;
       });
     };
@@ -1402,6 +1500,15 @@
   }
 
   function getSelectedUnitIds() {
+    const allCheckboxes = document.querySelectorAll('#levels-container .unit-checkbox input[type="checkbox"]');
+    if (allCheckboxes.length === 0) {
+      try {
+        const stored = JSON.parse(localStorage.getItem('phonics-flash-selected-units') || '[]');
+        return Array.isArray(stored) ? stored : [];
+      } catch {
+        return [];
+      }
+    }
     const checked = document.querySelectorAll('#levels-container .unit-checkbox input:checked');
     return Array.from(checked).map(cb => cb.value);
   }
@@ -1410,7 +1517,7 @@
     const selectedIds = getSelectedUnitIds();
     localStorage.setItem('phonics-flash-selected-units', JSON.stringify(selectedIds));
     localStorage.setItem('phonics-flash-units-updated-at', String(Date.now()));
-    saveCurrentOptionsToActiveClass();
+    saveCurrentOptionsToActiveClass({ isUnitChange: true });
   }
 
   function updateStartButton() {

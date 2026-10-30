@@ -129,8 +129,10 @@ window.EditorStore = (() => {
       series: curricula.map(c => ({
         id: c.id,
         name: c.name,
+        isCustom: !!c.isCustom,
         description: c.description || '',
-        levels: c.levels || []
+        levels: c.levels || [],
+        updatedAt: c.updatedAt || maxLocalUpdate
       })),
       // Retain curricula for backward compatibility
       curricula
@@ -187,15 +189,26 @@ window.EditorStore = (() => {
 
       const remoteList = remote && (Array.isArray(remote.series) ? remote.series : remote.curricula);
       if (remoteList && Array.isArray(remoteList) && remoteList.length > 0) {
+        const remoteUpdatedAt = remote.updatedAt || 0;
+        const normalizedRemote = remoteList.map(c => ({
+          ...c,
+          updatedAt: c.updatedAt || remoteUpdatedAt
+        }));
         // Timestamp check: only replace if remote is genuinely newer than local data
         const localMaxUpdate = curricula.reduce((max, c) => Math.max(max, c.updatedAt || 0), 0);
-        if (remote.updatedAt && remote.updatedAt <= localMaxUpdate) {
+        if (remoteUpdatedAt && localMaxUpdate > 0 && remoteUpdatedAt <= localMaxUpdate) {
           // Local edits are newer or matching; do not overwrite!
           return false;
         }
 
-        curricula = remoteList;
-        if (remote.activeCurriculumId) activeCurriculumId = remote.activeCurriculumId;
+        curricula = normalizedRemote;
+        if (!activeCurriculumId || !curricula.some(c => c.id === activeCurriculumId)) {
+          if (remote.activeCurriculumId && curricula.some(c => c.id === remote.activeCurriculumId)) {
+            activeCurriculumId = remote.activeCurriculumId;
+          } else if (curricula.length > 0) {
+            activeCurriculumId = curricula[0].id;
+          }
+        }
         if (typeof remote.hideBuiltIn === 'boolean') hideBuiltIn = remote.hideBuiltIn;
         await saveToStorage();
         notifyChange();

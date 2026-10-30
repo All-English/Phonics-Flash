@@ -103,7 +103,9 @@ window.ClassesManager = (() => {
           let existing = classes.find(c => c.name === setName);
           const prof = profiles[setName] || {};
           const sched = prof.schedule || SharedClassSync.parseScheduleFromName(setName);
-          const savedUnits = prof.units || [];
+          const savedUnits = Array.isArray(prof.units)
+            ? prof.units.map(u => SharedClassSync.toPhonicsFlash(u) || u).filter(Boolean)
+            : [];
 
           if (!existing) {
             existing = {
@@ -147,23 +149,25 @@ window.ClassesManager = (() => {
               existing.curriculumId = 'smart-phonics';
             }
 
-            // Adopt units from shared_class_profiles when shared profile is newer
-            if (Array.isArray(prof.units) && (profTime > localTime || ((!existing.selectedUnits || existing.selectedUnits.length === 0) && prof.units.length > 0))) {
-              existing.selectedUnits = [...prof.units];
-              existing.updatedAt = profTime || localTime;
-            } else if (localTime > profTime && Array.isArray(existing.selectedUnits) && existing.selectedUnits.length > 0) {
-              // Local Phonics Flash class is newer than shared_class_profiles: propagate to shared_class_profiles
+            // Adopt units from shared_class_profiles when shared profile has non-empty units and is newer (or local has no units)
+            if (savedUnits.length > 0 && (profTime > localTime || !Array.isArray(existing.selectedUnits) || existing.selectedUnits.length === 0)) {
+              existing.selectedUnits = [...savedUnits];
+              if (profTime > localTime) existing.updatedAt = profTime;
+            } else if (Array.isArray(existing.selectedUnits) && existing.selectedUnits.length > 0 && (localTime > profTime || savedUnits.length === 0)) {
+              // Local Phonics Flash class has units that shared_class_profiles lacks or is newer: propagate to shared_class_profiles
               const canonicals = existing.selectedUnits
                 .map(u => SharedClassSync.toCanonicalUnit(u)?.id)
                 .filter(Boolean);
-              profiles[setName] = {
-                ...prof,
-                schedule: existing.schedule || sched,
-                curriculumId: existing.curriculumId || 'smart-phonics',
-                units: canonicals,
-                updatedAt: localTime
-              };
-              profilesDirty = true;
+              if (canonicals.length > 0) {
+                profiles[setName] = {
+                  ...prof,
+                  schedule: existing.schedule || sched,
+                  curriculumId: existing.curriculumId || 'smart-phonics',
+                  units: canonicals,
+                  updatedAt: Math.max(localTime, profTime)
+                };
+                profilesDirty = true;
+              }
             }
 
             if (Array.isArray(playerList)) existing.players = playerList;
@@ -185,8 +189,10 @@ window.ClassesManager = (() => {
     };
   }
 
-  function saveLocalData(data) {
-    data.updatedAt = Date.now();
+  function saveLocalData(data, { touchUpdatedAt = true } = {}) {
+    if (touchUpdatedAt) {
+      data.updatedAt = Date.now();
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     return data;
   }
@@ -468,8 +474,7 @@ window.ClassesManager = (() => {
     setActiveClassId(classId) {
       const store = loadLocalData();
       store.activeClassId = classId || null;
-      saveLocalData(store);
-      debouncedPushToUpstash(store);
+      saveLocalData(store, { touchUpdatedAt: false });
 
       if (typeof SharedClassSync !== 'undefined') {
         const cls = classId ? store.classes.find(c => c.id === classId) : null;
@@ -478,6 +483,11 @@ window.ClassesManager = (() => {
             localStorage.setItem(SharedClassSync.SHARED_ACTIVE_CLASS_KEY, cls.name);
           } catch {}
           SharedClassSync.writeSharedSyncCookie?.({ actClass: cls.name });
+        } else {
+          try {
+            localStorage.removeItem(SharedClassSync.SHARED_ACTIVE_CLASS_KEY);
+          } catch {}
+          SharedClassSync.writeSharedSyncCookie?.({ actClass: '' });
         }
       }
       return store;
@@ -512,24 +522,33 @@ window.ClassesManager = (() => {
         updatedAt: Date.now()
       };
 
-      store.classes.push(newClass);
-      store.activeClassId = newClass.id;
-      saveLocalData(store);
-      debouncedPushToUpstash(store);
-
       if (typeof SharedClassSync !== 'undefined') {
         try {
           const profiles = JSON.parse(localStorage.getItem(SharedClassSync.SHARED_CLASS_PROFILES_KEY) || '{}');
+          const existingProf = profiles[newClass.name];
+          if ((!newClass.selectedUnits || newClass.selectedUnits.length === 0) && Array.isArray(existingProf?.units) && existingProf.units.length > 0) {
+            newClass.selectedUnits = existingProf.units.map(u => SharedClassSync.toPhonicsFlash(u) || u).filter(Boolean);
+          }
           profiles[newClass.name] = {
-            ...(profiles[newClass.name] || {}),
+            ...(existingProf || {}),
             schedule: newClass.schedule,
             curriculumId: newClass.curriculumId,
+            units: (newClass.selectedUnits && newClass.selectedUnits.length > 0)
+              ? newClass.selectedUnits.map(u => SharedClassSync.toCanonicalUnit(u)?.id || u).filter(Boolean)
+              : (existingProf?.units || []),
             updatedAt: newClass.updatedAt
           };
           localStorage.setItem(SharedClassSync.SHARED_CLASS_PROFILES_KEY, JSON.stringify(profiles));
         } catch {}
-        SharedClassSync.saveClassUnits(newClass.name, newClass.selectedUnits, newClass.curriculumId);
+        if (newClass.selectedUnits && newClass.selectedUnits.length > 0) {
+          SharedClassSync.saveClassUnits(newClass.name, newClass.selectedUnits, newClass.curriculumId);
+        }
       }
+
+      store.classes.push(newClass);
+      store.activeClassId = newClass.id;
+      saveLocalData(store);
+      debouncedPushToUpstash(store);
 
       return newClass;
     },
@@ -552,10 +571,15 @@ window.ClassesManager = (() => {
       if (typeof SharedClassSync !== 'undefined') {
         try {
           const profiles = JSON.parse(localStorage.getItem(SharedClassSync.SHARED_CLASS_PROFILES_KEY) || '{}');
+          const existingProf = profiles[updated.name];
+          const updatedCanonicals = Array.isArray(updated.selectedUnits) && updated.selectedUnits.length > 0
+            ? updated.selectedUnits.map(u => SharedClassSync.toCanonicalUnit(u)?.id || u).filter(Boolean)
+            : (existingProf?.units || []);
           profiles[updated.name] = {
-            ...(profiles[updated.name] || {}),
+            ...(existingProf || {}),
             schedule: updated.schedule,
             curriculumId: updated.curriculumId || 'smart-phonics',
+            units: updatedCanonicals,
             updatedAt: updated.updatedAt
           };
           localStorage.setItem(SharedClassSync.SHARED_CLASS_PROFILES_KEY, JSON.stringify(profiles));
@@ -577,14 +601,15 @@ window.ClassesManager = (() => {
       return store;
     },
 
-    saveCurrentToActiveClass(selectedUnits, currentOptions) {
+    saveCurrentToActiveClass(selectedUnits, currentOptions, { isUnitChange = false } = {}) {
       const store = loadLocalData();
       const activeCurId = (typeof EditorStore !== 'undefined' && EditorStore.getActiveCurriculumId)
         ? EditorStore.getActiveCurriculumId()
         : null;
+      const hasNonEmptyUnits = Array.isArray(selectedUnits) && selectedUnits.length > 0;
 
       if (!store.activeClassId) {
-        if (typeof SharedClassSync !== 'undefined' && SharedClassSync.saveActiveUnits) {
+        if (hasNonEmptyUnits && typeof SharedClassSync !== 'undefined' && SharedClassSync.saveActiveUnits) {
           SharedClassSync.saveActiveUnits(selectedUnits, activeCurId || 'smart-phonics', null);
         }
         return null;
@@ -592,13 +617,15 @@ window.ClassesManager = (() => {
 
       const cls = store.classes.find(c => c.id === store.activeClassId);
       if (!cls) {
-        if (typeof SharedClassSync !== 'undefined' && SharedClassSync.saveActiveUnits) {
+        if (hasNonEmptyUnits && typeof SharedClassSync !== 'undefined' && SharedClassSync.saveActiveUnits) {
           SharedClassSync.saveActiveUnits(selectedUnits, activeCurId || 'smart-phonics', null);
         }
         return null;
       }
 
-      cls.selectedUnits = [...selectedUnits];
+      if (isUnitChange || hasNonEmptyUnits) {
+        cls.selectedUnits = [...selectedUnits];
+      }
       if (activeCurId) {
         cls.curriculumId = activeCurId;
       }
@@ -621,8 +648,8 @@ window.ClassesManager = (() => {
       saveLocalData(store);
       debouncedPushToUpstash(store);
 
-      if (typeof SharedClassSync !== 'undefined') {
-        SharedClassSync.saveClassUnits(cls.name, selectedUnits, cls.curriculumId);
+      if (typeof SharedClassSync !== 'undefined' && (isUnitChange || hasNonEmptyUnits)) {
+        SharedClassSync.saveClassUnits(cls.name, cls.selectedUnits, cls.curriculumId);
       }
       return cls;
     },
@@ -636,25 +663,73 @@ window.ClassesManager = (() => {
       const remote = await fetchFromUpstash();
       const local = loadLocalData();
 
-      if (!remote) {
-        // No remote data or pull failed, try pushing local
+      if (!remote || !Array.isArray(remote.classes)) {
         const pushed = await pushToUpstash(local);
-        return { success: pushed, source: 'local_pushed' };
+        return { success: pushed, source: 'local_pushed', data: local };
       }
 
-      // If remote is newer, update local
-      const remoteTime = remote.updatedAt || 0;
-      const localTime = local.updatedAt || 0;
+      let remoteHadNewer = false;
+      let localHadNewer = false;
+      const mergedClassesMap = new Map();
 
-      if (remoteTime > localTime) {
-        saveLocalData(remote);
-        const merged = loadLocalData();
-        saveLocalData(merged);
-        return { success: true, source: 'remote_loaded', data: merged };
-      } else {
-        await pushToUpstash(local);
-        return { success: true, source: 'local_synced', data: local };
+      for (const lCls of (local.classes || [])) {
+        if (lCls && lCls.name) {
+          mergedClassesMap.set(lCls.name, { ...lCls });
+        }
       }
+
+      for (const rCls of (remote.classes || [])) {
+        if (!rCls || !rCls.name) continue;
+        const lCls = mergedClassesMap.get(rCls.name);
+        if (!lCls) {
+          mergedClassesMap.set(rCls.name, { ...rCls });
+          remoteHadNewer = true;
+        } else {
+          const rTime = rCls.updatedAt || 0;
+          const lTime = lCls.updatedAt || 0;
+          const rHasUnits = Array.isArray(rCls.selectedUnits) && rCls.selectedUnits.length > 0;
+          const lHasUnits = Array.isArray(lCls.selectedUnits) && lCls.selectedUnits.length > 0;
+
+          if (rTime > lTime) {
+            mergedClassesMap.set(rCls.name, {
+              ...lCls,
+              ...rCls,
+              id: lCls.id || rCls.id,
+              selectedUnits: rHasUnits ? rCls.selectedUnits : (lHasUnits ? lCls.selectedUnits : [])
+            });
+            remoteHadNewer = true;
+          } else if (lTime > rTime) {
+            if (!lHasUnits && rHasUnits) {
+              lCls.selectedUnits = rCls.selectedUnits;
+              remoteHadNewer = true;
+            }
+            localHadNewer = true;
+          } else if (!lHasUnits && rHasUnits) {
+            lCls.selectedUnits = rCls.selectedUnits;
+            remoteHadNewer = true;
+          }
+        }
+      }
+
+      const mergedStore = {
+        classes: Array.from(mergedClassesMap.values()),
+        activeClassId: local.activeClassId || remote.activeClassId || null,
+        updatedAt: Math.max(local.updatedAt || 0, remote.updatedAt || 0)
+      };
+
+      saveLocalData(mergedStore, { touchUpdatedAt: false });
+      const finalStore = loadLocalData();
+      saveLocalData(finalStore, { touchUpdatedAt: false });
+
+      if (localHadNewer || (local.updatedAt || 0) > (remote.updatedAt || 0)) {
+        await pushToUpstash(finalStore);
+      }
+
+      return {
+        success: true,
+        source: remoteHadNewer ? 'remote_loaded' : 'local_synced',
+        data: finalStore
+      };
     },
 
     exportJSON() {
