@@ -29,7 +29,7 @@
   --danger-soft: light-dark(rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.2));
 
   --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-word: 'Outfit', 'Inter', system-ui, sans-serif;
+  --font-word: 'Quicksand', 'Inter', system-ui, -apple-system, sans-serif;
 
   --radius-sm: 8px;
   --radius-md: 12px;

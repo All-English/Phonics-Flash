@@ -4,7 +4,7 @@
    ============================================================ */
 
 /* ---------- Google Fonts ---------- */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Quicksand:wght@500;600;700&display=swap');
 
 /* ---------- CSS Custom Properties ---------- */
 :root {
@@ -74,7 +74,7 @@
   --incorrect-text: light-dark(#7f1d1d, #fecaca);
 
   --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-word: 'Outfit', 'Inter', system-ui, sans-serif;
+  --font-word: 'Quicksand', 'Inter', system-ui, -apple-system, sans-serif;
 
   --radius-sm: 8px;
   --radius-md: 14px;
@@ -848,6 +848,7 @@ body {
    ============================================================ */
 .reveal {
   font-family: var(--font-ui);
+  font-variant-ligatures: none;
 }
 
 .reveal .slides {
@@ -937,9 +938,10 @@ body {
 .word-text {
   font-family: var(--font-word);
   font-size: clamp(5rem, 15vw, 10rem);
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: -0.02em;
+  letter-spacing: 0.02em;
+  font-variant-ligatures: none;
   line-height: 1.1;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -1585,9 +1587,10 @@ body {
   display: block !important;
   font-family: var(--font-word);
   font-size: clamp(5rem, 15vw, 10rem);
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: -0.02em;
+  letter-spacing: 0.02em;
+  font-variant-ligatures: none;
   line-height: 1.1;
   text-align: center;
   user-select: none;
@@ -1684,7 +1687,9 @@ body {
   white-space: nowrap;
   font-family: var(--font-word);
   font-size: clamp(4.2rem, 10vw, 7.8rem);
-  font-weight: 800;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-variant-ligatures: none;
   line-height: 1.15;
   color: var(--text-primary);
   background: var(--glass-bg);
@@ -1853,7 +1858,9 @@ body {
 .sound-option-btn {
   font-family: var(--font-word);
   font-size: clamp(4.2rem, 10.5vw, 7.8rem) !important;
-  font-weight: 800 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em;
+  font-variant-ligatures: none;
   line-height: 1.15;
   text-align: center;
 }
@@ -2138,7 +2145,9 @@ body {
 .reveal .picture-card-word {
   font-family: var(--font-word);
   font-size: clamp(5rem, 15vw, 10rem);
-  font-weight: 800;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-variant-ligatures: none;
   line-height: 1.1;
   color: var(--text-primary);
   margin-top: 0.5rem;
@@ -3074,10 +3083,11 @@ body {
 
 .letter-tile-text {
   font-family: var(--font-word);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.1;
   color: var(--text-primary);
-  letter-spacing: -0.02em;
+  letter-spacing: 0.01em;
+  font-variant-ligatures: none;
   text-shadow: light-dark(0 2px 12px rgba(0, 0, 0, 0.08), 0 4px 24px rgba(0, 0, 0, 0.4));
   transition: transform var(--transition-fast), color var(--transition-fast), text-shadow var(--transition-fast);
   white-space: nowrap;
