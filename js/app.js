@@ -11,6 +11,8 @@
   let slideshowKeydownHandler = null;
   let slideshowResizeHandler = null;
   let isNavigatingHistory = false;
+  let lastSyncedV = 0;
+  let unitLastV = {};
 
   function getRevealDimensions() {
     const isPortrait = window.innerHeight > window.innerWidth;
@@ -1623,6 +1625,10 @@
   }
 
   function startSlideshow(unitIds, opts) {
+    // Reset vertical slide position memory for new review session
+    lastSyncedV = 0;
+    unitLastV = {};
+
     // Enforce quiz/dictation/sound-quiz/picture-quiz mode constraints
     if (opts.quizMode || opts.dictationMode || opts.pictureQuizMode) {
       opts.includeExtras = false;
@@ -2394,6 +2400,38 @@
     }
   }
 
+  // ── Sync Stack Index & Advance Helpers ──────────────────────
+  function syncStackPreviousIndexV() {
+    if (!revealInstance || options.mixMode) return;
+    const stacks = document.querySelectorAll('#slideshow-screen .reveal .slides > section');
+    // Index 0 is the Intro slide. Stacks 1, 2, ... are the unit decks.
+    for (let h = 1; h < stacks.length; h++) {
+      const targetV = options.syncSlides ? lastSyncedV : (unitLastV[h] ?? 0);
+      stacks[h].setAttribute('data-previous-indexv', targetV);
+    }
+  }
+
+  function advanceFromIntroSlide() {
+    if (!revealInstance) return;
+    if (options.mixMode) {
+      revealInstance.next();
+      return;
+    }
+    const targetV = options.syncSlides ? lastSyncedV : (unitLastV[1] ?? 0);
+    revealInstance.slide(1, targetV);
+  }
+
+  function handleRightArrowKey() {
+    const currentSlide = getCurrentSlide();
+    if (currentSlide && currentSlide.dataset.isIntro === 'true') {
+      advanceFromIntroSlide();
+      return;
+    }
+    if (revealInstance) {
+      revealInstance.right();
+    }
+  }
+
   // ── Initialize Reveal.js ───────────────────────────────────
   function initReveal(isMixMode) {
     // Destroy previous instance if exists
@@ -2419,8 +2457,9 @@
       height: dims.height,
       margin: dims.margin,
 
-      // Navigation — linear in mix mode, grid (synced) or default in normal mode
-      navigationMode: isMixMode ? 'linear' : (options.syncSlides ? 'grid' : 'default'),
+      // Navigation — linear in mix mode; on startup in normal mode, default mode is used so
+      // navigating right into stack 1 respects data-previous-indexv, switching to grid/default on deck slides
+      navigationMode: isMixMode ? 'linear' : 'default',
       controls: true,
       controlsTutorial: true,
       controlsLayout: 'bottom-right',
@@ -2455,7 +2494,8 @@
         50: () => { handleQuizOptionKey(1); },           // 2 (Option 2)
         97: () => { handleQuizOptionKey(0); },           // Numpad 1
         98: () => { handleQuizOptionKey(1); },           // Numpad 2
-        16: () => { playCurrentSlideAudio(); }           // Shift (Play audio)
+        16: () => { playCurrentSlideAudio(); },          // Shift (Play audio)
+        39: () => { handleRightArrowKey(); }             // Right Arrow (Preserves card index from intro)
       },
 
       // Touch — let reveal.js handle swipe gestures natively
@@ -2468,6 +2508,7 @@
     window.revealInstance = revealInstance;
 
     revealInstance.initialize().then(() => {
+      syncStackPreviousIndexV();
       // Update chrome after reveal.js has set up the .present classes
       updateSlideChrome();
       const currentSlide = getCurrentSlide();
@@ -2505,39 +2546,89 @@
         options.syncSlides = !options.syncSlides;
         updateSyncButtonUI(syncBtn, options.syncSlides);
         localStorage.setItem('phonics-flash-sync', options.syncSlides);
+        syncStackPreviousIndexV();
         if (revealInstance && !isMixMode) {
+          const currentSlide = getCurrentSlide();
+          const isIntro = currentSlide && currentSlide.dataset.isIntro === 'true';
           revealInstance.configure({
-            navigationMode: options.syncSlides ? 'grid' : 'default'
+            navigationMode: isIntro ? 'default' : (options.syncSlides ? 'grid' : 'default')
           });
         }
       };
     }
 
     // Update chrome and trigger auto-play if needed whenever slide changes
-    revealInstance.on('slidechanged', () => {
+    revealInstance.on('slidechanged', (event) => {
       AudioPlayer.stop();
       updateSlideChrome();
+
+      if (!isMixMode && event) {
+        const { indexh, indexv } = event;
+        if (indexh >= 1) {
+          // On a review deck slide: update tracked vertical position across units
+          lastSyncedV = indexv;
+          unitLastV[indexh] = indexv;
+          syncStackPreviousIndexV();
+
+          // Ensure grid navigation mode is active for deck progression
+          const desiredMode = options.syncSlides ? 'grid' : 'default';
+          if (revealInstance.getConfig().navigationMode !== desiredMode) {
+            revealInstance.configure({ navigationMode: desiredMode });
+          }
+        } else if (indexh === 0) {
+          // On Intro slide: sync stack previous indices and temporarily use 'default' navigationMode
+          // so Reveal's navigateRight (Right Arrow / controls / swipe) transitions directly to (1, targetV)
+          syncStackPreviousIndexV();
+          if (revealInstance.getConfig().navigationMode !== 'default') {
+            revealInstance.configure({ navigationMode: 'default' });
+          }
+        }
+      }
+
       const currentSlide = getCurrentSlide();
       if (currentSlide && currentSlide.dataset.soundQuizMode === 'true' && currentSlide.dataset.hasImage !== 'true' && currentSlide.dataset.answered !== 'true' && currentSlide.dataset.isIntro !== 'true') {
         playCurrentSlideAudio();
       }
     });
 
-    // Dedicated keydown handler for Shift key (plays audio without revealing answer)
+    // Dedicated keydown handler for Shift key and Intro navigation
     if (slideshowKeydownHandler) {
-      window.removeEventListener('keydown', slideshowKeydownHandler);
+      window.removeEventListener('keydown', slideshowKeydownHandler, true);
     }
     slideshowKeydownHandler = (e) => {
       if (document.getElementById('slideshow-screen')?.classList.contains('hidden')) return;
       if (e.key === 'Shift') {
         e.preventDefault();
         playCurrentSlideAudio();
+        return;
+      }
+      if (e.key === 'ArrowRight' || e.keyCode === 39) {
+        const currentSlide = getCurrentSlide();
+        if (currentSlide && currentSlide.dataset.isIntro === 'true') {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          advanceFromIntroSlide();
+          return;
+        }
       }
     };
-    window.addEventListener('keydown', slideshowKeydownHandler);
+    window.addEventListener('keydown', slideshowKeydownHandler, true);
 
-    // Click/tap on word text plays audio, click/tap background advances slide
-    deck.addEventListener('click', handleSlideClick);
+    // Click/tap handling: capture right arrow control on intro slide, plus normal slide interaction
+    deck.addEventListener('click', (e) => {
+      const rightControl = e.target.closest('.navigate-right');
+      if (rightControl) {
+        const currentSlide = getCurrentSlide();
+        if (currentSlide && currentSlide.dataset.isIntro === 'true') {
+          e.preventDefault();
+          e.stopPropagation();
+          advanceFromIntroSlide();
+          return;
+        }
+      }
+      handleSlideClick(e);
+    }, true);
   }
 
   // ── Select a Choice / Reveal Quiz ──────────────────────────
@@ -2730,9 +2821,7 @@
 
     // Advance slide if clicking on intro slide
     if (currentSlide.dataset.isIntro === 'true') {
-      if (revealInstance) {
-        revealInstance.next();
-      }
+      advanceFromIntroSlide();
       return;
     }
 
@@ -2838,9 +2927,7 @@
 
     // Advance slide if pressing key on intro slide
     if (currentSlide.dataset.isIntro === 'true') {
-      if (revealInstance) {
-        revealInstance.next();
-      }
+      advanceFromIntroSlide();
       return;
     }
 
