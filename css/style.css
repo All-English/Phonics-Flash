@@ -2144,7 +2144,7 @@ body {
 
 .reveal .picture-card-word {
   font-family: var(--font-word);
-  font-size: clamp(5rem, 15vw, 10rem);
+  font-size: clamp(3.8rem, 8vw, 5.8rem);
   font-weight: 700;
   letter-spacing: 0.02em;
   font-variant-ligatures: none;
@@ -2152,6 +2152,8 @@ body {
   color: var(--text-primary);
   margin-top: 0.5rem;
   text-align: center;
+  white-space: nowrap;
+  max-width: 100%;
   opacity: 0;
   transform: translateY(8px);
   transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease;
@@ -2159,18 +2161,19 @@ body {
 }
 
 .reveal .picture-card-word[data-len="5"] {
-  font-size: clamp(4.2rem, 12vw, 8.5rem);
+  font-size: clamp(3.3rem, 7vw, 5.0rem);
 }
 
 .reveal .picture-card-word[data-len="6"] {
-  font-size: clamp(3.6rem, 10vw, 7.5rem);
+  font-size: clamp(2.8rem, 6vw, 4.3rem);
 }
 
 .reveal .picture-card-word[data-len="7"],
 .reveal .picture-card-word[data-len="8"] {
-  font-size: clamp(3rem, 8vw, 6.2rem);
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
 }
 
+.reveal .picture-option-card.hint-revealed .picture-card-word,
 .reveal .picture-option-card.answered .picture-card-word {
   opacity: 1;
   transform: translateY(0);
@@ -2211,22 +2214,22 @@ body {
 
 .reveal .picture-option-card.answered:not(.correct) .picture-card-word {
   color: var(--text-primary) !important;
-  font-size: clamp(3.8rem, 11vw, 7.5rem) !important;
+  font-size: clamp(3.2rem, 7vw, 4.8rem) !important;
   text-decoration: none !important;
   opacity: 1 !important;
 }
 
 .reveal .picture-option-card.answered:not(.correct) .picture-card-word[data-len="5"] {
-  font-size: clamp(3.2rem, 9vw, 6.4rem) !important;
+  font-size: clamp(2.8rem, 6vw, 4.2rem) !important;
 }
 
 .reveal .picture-option-card.answered:not(.correct) .picture-card-word[data-len="6"] {
-  font-size: clamp(2.8rem, 7.5vw, 5.6rem) !important;
+  font-size: clamp(2.4rem, 5vw, 3.6rem) !important;
 }
 
 .reveal .picture-option-card.answered:not(.correct) .picture-card-word[data-len="7"],
 .reveal .picture-option-card.answered:not(.correct) .picture-card-word[data-len="8"] {
-  font-size: clamp(2.4rem, 6.2vw, 4.8rem) !important;
+  font-size: clamp(2.0rem, 4.2vw, 3.0rem) !important;
 }
 
 .reveal .picture-option-card.incorrect {

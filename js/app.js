@@ -2206,13 +2206,14 @@
         const cDisplay = (opts && opts.highlightSounds)
           ? highlightTargetSound(c.word, cTargetSound, c.unit.levelId)
           : c.word;
+        const cBlanked = getBlankedWord(c.word, cTargetSound, c.unit.levelId);
         const cIsMedia = c.image && c.image.startsWith('media:');
 
         return `
           <button class="picture-option-card" data-correct="${c.isCorrect ? 'true' : 'false'}" data-word="${c.word}" type="button">
             <span class="picture-card-status-badge" aria-hidden="true"></span>
             <img ${cIsMedia ? `data-media-uri="${c.image}" style="display:none;"` : `src="${c.image || ''}"`} alt="${c.word}" class="picture-card-img word-image" onerror="if(this.src) this.style.display='none'">
-            <div class="picture-card-word" data-len="${maxCardWordLen}">${cDisplay}</div>
+            <div class="picture-card-word" data-full-word="${encodeURIComponent(cDisplay)}" data-blanked-word="${encodeURIComponent(cBlanked)}" data-len="${maxCardWordLen}">${cDisplay}</div>
           </button>
         `;
       }).join('');
@@ -2370,15 +2371,25 @@
       audioBtn.classList.toggle('hidden', hideAudio);
     }
 
-    // Dictation Hint button in chrome
+    // Hint button in chrome (for Dictation Mode and Picture Quiz Mode)
     const chromeHint = document.getElementById('chrome-hint');
     if (chromeHint) {
       const isDictation = slide.dataset.dictationMode === 'true';
-      const wordText = slide.querySelector('.word-text');
-      const hintText = slide.querySelector('.dictation-hint-text');
-      const isWordRevealed = !wordText || !wordText.classList.contains('dictation-hide');
-      const isHintRevealed = hintText && !hintText.classList.contains('hidden');
-      const showHint = isDictation && !isIntro && !isWordRevealed && !isHintRevealed;
+      const isPictureQuiz = slide.dataset.pictureQuizMode === 'true';
+      let showHint = false;
+
+      if (isDictation && !isIntro) {
+        const wordText = slide.querySelector('.word-text');
+        const hintText = slide.querySelector('.dictation-hint-text');
+        const isWordRevealed = !wordText || !wordText.classList.contains('dictation-hide');
+        const isHintRevealed = hintText && !hintText.classList.contains('hidden');
+        showHint = !isWordRevealed && !isHintRevealed;
+      } else if (isPictureQuiz && !isIntro) {
+        const isAnswered = slide.dataset.answered === 'true';
+        const isHintRevealed = slide.dataset.hintRevealed === 'true';
+        showHint = !isAnswered && !isHintRevealed;
+      }
+
       chromeHint.classList.toggle('hidden', !showHint);
     }
   }
@@ -2586,7 +2597,12 @@
     const cards = slide.querySelectorAll('.picture-option-card');
     cards.forEach(card => {
       card.disabled = true;
+      card.classList.remove('hint-revealed');
       card.classList.add('answered');
+      const wordEl = card.querySelector('.picture-card-word');
+      if (wordEl && wordEl.dataset.fullWord) {
+        wordEl.innerHTML = decodeURIComponent(wordEl.dataset.fullWord);
+      }
       if (card.dataset.correct === 'true') {
         card.classList.add('correct');
       } else if (clickedCard && card === clickedCard) {
@@ -2595,12 +2611,31 @@
     });
 
     playCurrentSlideAudio();
-    updateSlideChrome(); // Shows the audio button
+    updateSlideChrome(); // Shows the audio button and hides the hint button
   }
 
-  // ── Dictation Mode Hint & Reveal ───────────────────────────
+  // ── Dictation Mode & Picture Quiz Hint & Reveal ────────────
   function triggerDictationHint(slide) {
     if (!slide) return;
+
+    // Picture Quiz Hint: reveal blanked word minus target sound under both picture choices
+    if (slide.dataset.pictureQuizMode === 'true') {
+      if (slide.dataset.answered !== 'true' && slide.dataset.hintRevealed !== 'true') {
+        slide.dataset.hintRevealed = 'true';
+        const cards = slide.querySelectorAll('.picture-option-card');
+        cards.forEach(card => {
+          card.classList.add('hint-revealed');
+          const wordEl = card.querySelector('.picture-card-word');
+          if (wordEl && wordEl.dataset.blankedWord) {
+            wordEl.innerHTML = decodeURIComponent(wordEl.dataset.blankedWord);
+          }
+        });
+        const chromeHint = document.getElementById('chrome-hint');
+        if (chromeHint) chromeHint.classList.add('hidden');
+      }
+      return;
+    }
+
     const hintBtn = slide.querySelector('.dictation-hint-btn');
     const chromeHint = document.getElementById('chrome-hint');
     const hintText = slide.querySelector('.dictation-hint-text');
@@ -2638,6 +2673,13 @@
     if (currentSlide.dataset.dictationMode === 'true') {
       const wordTextEl = currentSlide.querySelector('.word-text');
       if (wordTextEl && wordTextEl.classList.contains('dictation-hide')) {
+        triggerDictationHint(currentSlide);
+        return;
+      }
+    }
+
+    if (currentSlide.dataset.pictureQuizMode === 'true') {
+      if (currentSlide.dataset.answered !== 'true' && currentSlide.dataset.hintRevealed !== 'true') {
         triggerDictationHint(currentSlide);
         return;
       }
