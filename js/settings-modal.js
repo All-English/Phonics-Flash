@@ -685,8 +685,11 @@
             await EditorStore.pullFromUpstash();
           }
           populateClassDropdown();
-          renderClassesList();
+          renderClassesListModal();
           populateSyncForm();
+          if (context && typeof context.onCurriculumChange === 'function') {
+            context.onCurriculumChange();
+          }
           if (msgSpan) {
             msgSpan.textContent = `✅ Connected as "${res.snapshot.syncCode}"!`;
             msgSpan.style.color = '#3DAA5C';
@@ -732,6 +735,7 @@
 
     window.addEventListener('ae-cloud-sync-updated', () => {
       populateClassDropdown();
+      renderClassesListModal();
     });
 
     // Export JSON
