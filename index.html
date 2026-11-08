@@ -456,15 +456,15 @@
           <div class="sync-section">
             <h3>☁️ Cloud Sync</h3>
             <p class="sync-desc">
-              Synchronize your classes, schedules, current units, player rosters, and custom curriculum edits across all All-English apps using a Sync Code.
+              Pick your own unique Sync Code (e.g. your name or school). It synchronizes your classes, schedules, current units, player rosters, and custom curriculum edits across all All-English apps and devices in real-time.
             </p>
             <div class="form-group">
-              <label for="sync-code-input">Sync Code</label>
-              <input type="text" id="sync-code-input" placeholder="e.g. judson-english" autocomplete="off">
+              <label for="sync-code-input">Sync Code <span style="font-size: 0.8rem; font-weight: normal; opacity: 0.85;">(choose your own)</span></label>
+              <input type="text" id="sync-code-input" placeholder="Pick a code (e.g. teacher-sarah)" autocomplete="off">
             </div>
             <div class="form-group">
-              <label for="sync-pin-input">4-Digit PIN (Optional)</label>
-              <input type="password" id="sync-pin-input" placeholder="Optional 4-digit PIN" maxlength="4" inputmode="numeric" autocomplete="off">
+              <label for="sync-pin-input">4-Digit PIN <span style="font-size: 0.8rem; font-weight: normal; opacity: 0.85;">(optional lock)</span></label>
+              <input type="password" id="sync-pin-input" placeholder="Optional PIN to protect code" maxlength="4" inputmode="numeric" autocomplete="off">
             </div>
             <div class="sync-btn-row" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
               <button id="connect-sync-btn" type="button" class="btn btn-primary">Connect Existing</button>
@@ -472,6 +472,9 @@
               <button id="disconnect-sync-btn" type="button" class="btn btn-secondary" style="display: none;">Disconnect</button>
               <span id="sync-status-msg" class="sync-status-msg"></span>
             </div>
+            <p class="sync-help-text" style="font-size: 0.8rem; color: var(--text-muted, #718096); margin: 0.5rem 0 0 0; line-height: 1.35;">
+              First time? Pick a code and click <strong>Create New Code</strong>.<br>On another computer or device? Enter your code and click <strong>Connect Existing</strong>.
+            </p>
           </div>
 
           <hr class="modal-divider">
