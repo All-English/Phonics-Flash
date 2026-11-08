@@ -282,12 +282,21 @@
   }
 
   function populateSyncForm() {
-    if (typeof ClassesManager === 'undefined') return;
-    const upstashCfg = ClassesManager.getUpstashConfig();
-    const urlInput = document.getElementById('upstash-url-input');
-    const tokenInput = document.getElementById('upstash-token-input');
-    if (urlInput && upstashCfg?.url) urlInput.value = upstashCfg.url;
-    if (tokenInput && upstashCfg?.token) tokenInput.value = upstashCfg.token;
+    if (typeof SharedClassSync === 'undefined') return;
+    const cfg = SharedClassSync.getSyncConfig ? SharedClassSync.getSyncConfig() : { syncCode: '', pin: '' };
+    const codeInput = document.getElementById('sync-code-input');
+    const pinInput = document.getElementById('sync-pin-input');
+    const disconnectBtn = document.getElementById('disconnect-sync-btn');
+    const msgSpan = document.getElementById('sync-status-msg');
+    if (codeInput) codeInput.value = cfg.syncCode || '';
+    if (pinInput) pinInput.value = cfg.pin || '';
+    if (disconnectBtn) {
+      disconnectBtn.style.display = cfg.syncCode ? 'inline-flex' : 'none';
+    }
+    if (msgSpan && cfg.syncCode) {
+      msgSpan.textContent = `Connected: "${cfg.syncCode}"`;
+      msgSpan.style.color = '#3DAA5C';
+    }
   }
 
   function initClassesUI() {
@@ -304,7 +313,9 @@
     const classForm = document.getElementById('class-form');
     const cancelFormBtn = document.getElementById('form-cancel-btn');
     const formBackBtn = document.getElementById('form-back-btn');
-    const saveUpstashBtn = document.getElementById('save-upstash-btn');
+    const connectSyncBtn = document.getElementById('connect-sync-btn');
+    const createSyncBtn = document.getElementById('create-sync-btn');
+    const disconnectSyncBtn = document.getElementById('disconnect-sync-btn');
     const exportBtn = document.getElementById('export-classes-btn');
     const importInput = document.getElementById('import-classes-input');
 
@@ -630,38 +641,98 @@
       });
     }
 
-    // Cloud Sync
-    if (saveUpstashBtn) {
-      saveUpstashBtn.addEventListener('click', async () => {
-        const url = document.getElementById('upstash-url-input').value.trim();
-        const token = document.getElementById('upstash-token-input').value.trim();
-        const msgSpan = document.getElementById('sync-status-msg');
+    // Cloud Sync (Convex Sync Code + Optional 4-Digit PIN)
+    const handleSyncAction = async (mode) => {
+      const codeInput = document.getElementById('sync-code-input');
+      const pinInput = document.getElementById('sync-pin-input');
+      const msgSpan = document.getElementById('sync-status-msg');
+      const rawCode = (codeInput?.value || '').trim();
+      const rawPin = (pinInput?.value || '').trim();
 
-        ClassesManager.setUpstashConfig(url, token);
+      if (!rawCode) {
+        if (msgSpan) {
+          msgSpan.textContent = '⚠️ Please enter a Sync Code.';
+          msgSpan.style.color = '#FF6B6B';
+        }
+        return;
+      }
 
-        if (!url || !token) {
-          msgSpan.textContent = 'Configuration cleared.';
-          return;
+      if (rawPin && !/^\d{4}$/.test(rawPin)) {
+        if (msgSpan) {
+          msgSpan.textContent = '⚠️ PIN must be 4 digits (or left blank).';
+          msgSpan.style.color = '#FF6B6B';
+        }
+        return;
+      }
+
+      if (msgSpan) {
+        msgSpan.textContent = mode === 'create' ? 'Creating Sync Code...' : 'Connecting & syncing...';
+        msgSpan.style.color = '';
+      }
+
+      try {
+        // Ensure local curriculum overrides are computed before creating a new workspace
+        if (mode === 'create' && typeof EditorStore !== 'undefined' && EditorStore.pushToUpstash) {
+          await EditorStore.pushToUpstash().catch(() => {});
         }
 
-        msgSpan.textContent = 'Testing connection & syncing...';
-        try {
-          const res = await ClassesManager.syncCloud();
-          if (res && res.success) {
-            msgSpan.textContent = '✅ Connected and synced to Upstash!';
+        const res = mode === 'create'
+          ? await SharedClassSync.createSyncWorkspace(rawCode, rawPin)
+          : await SharedClassSync.connectSyncWorkspace(rawCode, rawPin);
+
+        if (res && res.ok) {
+          if (typeof EditorStore !== 'undefined' && EditorStore.pullFromUpstash) {
+            await EditorStore.pullFromUpstash();
+          }
+          populateClassDropdown();
+          renderClassesList();
+          populateSyncForm();
+          if (msgSpan) {
+            msgSpan.textContent = `✅ Connected as "${res.snapshot.syncCode}"!`;
             msgSpan.style.color = '#3DAA5C';
-            populateClassDropdown();
-            context.showToast('Connected and synced to Upstash Redis!', 'success', 3000);
-          } else {
-            msgSpan.textContent = '⚠️ Cloud sync failed. Check URL & Token.';
+          }
+          context.showToast(`Cloud Sync connected (${res.snapshot.syncCode})!`, 'success', 3000);
+        } else {
+          if (msgSpan) {
+            msgSpan.textContent = `⚠️ ${res?.message || 'Cloud sync failed.'}`;
             msgSpan.style.color = '#FF6B6B';
           }
-        } catch (err) {
+        }
+      } catch (err) {
+        if (msgSpan) {
           msgSpan.textContent = `❌ Error: ${err.message}`;
           msgSpan.style.color = '#FF6B6B';
         }
+      }
+    };
+
+    if (connectSyncBtn) {
+      connectSyncBtn.addEventListener('click', () => handleSyncAction('connect'));
+    }
+    if (createSyncBtn) {
+      createSyncBtn.addEventListener('click', () => handleSyncAction('create'));
+    }
+    if (disconnectSyncBtn) {
+      disconnectSyncBtn.addEventListener('click', () => {
+        if (typeof SharedClassSync !== 'undefined' && SharedClassSync.clearSyncConfig) {
+          SharedClassSync.clearSyncConfig();
+        }
+        const codeInput = document.getElementById('sync-code-input');
+        const pinInput = document.getElementById('sync-pin-input');
+        const msgSpan = document.getElementById('sync-status-msg');
+        if (codeInput) codeInput.value = '';
+        if (pinInput) pinInput.value = '';
+        disconnectSyncBtn.style.display = 'none';
+        if (msgSpan) {
+          msgSpan.textContent = 'Disconnected from Cloud Sync.';
+          msgSpan.style.color = '';
+        }
       });
     }
+
+    window.addEventListener('ae-cloud-sync-updated', () => {
+      populateClassDropdown();
+    });
 
     // Export JSON
     if (exportBtn) {

@@ -10,55 +10,20 @@ window.ClassesManager = (() => {
   const UPSTASH_LOCAL_KEY = 'phonics-flash-upstash-config';
   const REDIS_KEY = 'phonics_flash:classes';
 
-  // ── Helper: Get Upstash Credentials ─────────────────────────
+  // ── Helper: Get Cloud Sync Config ───────────────────────────
   function getUpstashConfig() {
-    // 1. Check SharedClassSync if available
-    if (typeof window !== 'undefined' && window.SharedClassSync?.getCredentials) {
-      const creds = window.SharedClassSync.getCredentials();
-      if (creds && creds.url && creds.token) {
-        return { url: creds.url.trim(), token: creds.token.trim() };
+    if (typeof window !== 'undefined' && window.SharedClassSync?.getSyncConfig) {
+      const cfg = window.SharedClassSync.getSyncConfig();
+      if (cfg && cfg.syncCode) {
+        return { syncCode: cfg.syncCode, pin: cfg.pin || '', url: cfg.convexUrl, token: cfg.syncCode };
       }
     }
-
-    // 2. Check shared Upstash keys used across all apps
-    if (typeof localStorage !== 'undefined') {
-      const sharedUrl = localStorage.getItem('upstash_redis_url');
-      const sharedToken = localStorage.getItem('upstash_redis_token');
-      if (sharedUrl && sharedToken) {
-        return { url: sharedUrl.trim(), token: sharedToken.trim() };
-      }
-    }
-
-    // 3. Check localStorage phonics-flash-upstash-config
-    try {
-      const local = JSON.parse(localStorage.getItem(UPSTASH_LOCAL_KEY) || '{}');
-      if (local.url && local.token) return local;
-    } catch (e) { /* ignore */ }
-
-    // 4. Fall back to config.js if defined
-    if (typeof UPSTASH_CONFIG !== 'undefined' && UPSTASH_CONFIG.url && UPSTASH_CONFIG.token) {
-      return UPSTASH_CONFIG;
-    }
-
     return null;
   }
 
-  function setUpstashConfig(url, token) {
-    if (!url && !token) {
-      localStorage.removeItem(UPSTASH_LOCAL_KEY);
-      localStorage.removeItem('upstash_redis_url');
-      localStorage.removeItem('upstash_redis_token');
-      if (typeof window !== 'undefined' && window.SharedClassSync?.clearCredentials) {
-        window.SharedClassSync.clearCredentials();
-      }
-    } else {
-      localStorage.setItem(UPSTASH_LOCAL_KEY, JSON.stringify({ url: url.trim(), token: token.trim() }));
-      // Also write to shared keys so all apps stay aligned
-      localStorage.setItem('upstash_redis_url', url.trim());
-      localStorage.setItem('upstash_redis_token', token.trim());
-      if (typeof window !== 'undefined' && window.SharedClassSync?.saveCredentials) {
-        window.SharedClassSync.saveCredentials(url, token);
-      }
+  function setUpstashConfig(syncCode, pin) {
+    if (typeof window !== 'undefined' && window.SharedClassSync?.saveSyncConfig) {
+      window.SharedClassSync.saveSyncConfig(syncCode, pin);
     }
   }
 
@@ -383,60 +348,19 @@ window.ClassesManager = (() => {
     };
   }
 
-  // ── Upstash REST Cloud Sync (Key: phonics_flash:classes) ─────
+  // ── Convex Cloud Sync (via SharedClassSync) ─────────────────
   async function fetchFromUpstash() {
-    const config = getUpstashConfig();
-    if (!config || !config.url || !config.token) return null;
-
-    try {
-      const cleanUrl = config.url.replace(/\/+$/, '');
-      const response = await fetch(`${cleanUrl}/get/${encodeURIComponent(REDIS_KEY)}`, {
-        headers: {
-          Authorization: `Bearer ${config.token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Upstash HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (data && data.result) {
-        const parsed = typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
-        return parsed;
-      }
-    } catch (err) {
-      console.warn('[ClassesManager] Upstash cloud pull failed:', err);
+    if (typeof window !== 'undefined' && window.SharedClassSync?.fetchUpstash) {
+      return await window.SharedClassSync.fetchUpstash(REDIS_KEY);
     }
     return null;
   }
 
   async function pushToUpstash(data) {
-    const config = getUpstashConfig();
-    if (!config || !config.url || !config.token) return false;
-
-    try {
-      const cleanUrl = config.url.replace(/\/+$/, '');
-      const payload = JSON.stringify(data);
-      const response = await fetch(`${cleanUrl}/set/${encodeURIComponent(REDIS_KEY)}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${config.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        throw new Error(`Upstash HTTP ${response.status}`);
-      }
-
-      const resData = await response.json();
-      return resData && resData.result === 'OK';
-    } catch (err) {
-      console.warn('[ClassesManager] Upstash cloud push failed:', err);
-      return false;
+    if (typeof window !== 'undefined' && window.SharedClassSync?.syncUpstash) {
+      return await window.SharedClassSync.syncUpstash(REDIS_KEY, data);
     }
+    return false;
   }
 
   // Debounced auto-push to prevent spamming REST API on rapid checkbox changes

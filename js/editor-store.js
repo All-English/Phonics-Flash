@@ -85,23 +85,31 @@ window.EditorStore = (() => {
     saveToStorage();
   }
 
-  // ── 3. Upstash Cloud Sync ────────────────────────────────────
-  function getUpstashCredentials() {
-    // 1. Check SharedClassSync if available
-    if (typeof SharedClassSync !== 'undefined' && typeof SharedClassSync.getCredentials === 'function') {
-      const creds = SharedClassSync.getCredentials();
-      if (creds && creds.url && creds.token) return creds;
+  // ── 3. Convex Curriculum Override Cloud Sync ──────────────────
+  let cachedDefaultBase = null;
+
+  async function loadDefaultBaseForDiff() {
+    if (cachedDefaultBase) return cachedDefaultBase;
+    if (typeof SharedClassSync !== 'undefined' && SharedClassSync.CurriculumLoader?.cachedMasterCurriculum) {
+      cachedDefaultBase = SharedClassSync.CurriculumLoader.cachedMasterCurriculum;
+      return cachedDefaultBase;
     }
-    // 2. Check localStorage
-    if (typeof localStorage !== 'undefined') {
-      const url = localStorage.getItem('upstash_redis_url');
-      const token = localStorage.getItem('upstash_redis_token');
-      if (url && token) return { url: url.trim(), token: token.trim() };
-    }
-    // 3. Fallback to UPSTASH_CONFIG in config.js
-    if (typeof UPSTASH_CONFIG !== 'undefined' && UPSTASH_CONFIG.url && UPSTASH_CONFIG.token) {
-      return UPSTASH_CONFIG;
-    }
+    try {
+      const res = await fetch('data/words.json');
+      if (res.ok) {
+        const rawData = await res.json();
+        cachedDefaultBase = {
+          version: 2,
+          series: [{
+            id: DEFAULT_BOOK_ID,
+            name: 'Smart Phonics',
+            isCustom: false,
+            levels: rawData.levels || []
+          }]
+        };
+        return cachedDefaultBase;
+      }
+    } catch {}
     return null;
   }
 
@@ -109,113 +117,57 @@ window.EditorStore = (() => {
     if (pushDebounceTimer) clearTimeout(pushDebounceTimer);
     pushDebounceTimer = setTimeout(() => {
       pushToUpstash();
-    }, 1500);
+    }, 1000);
   }
 
   async function pushToUpstash() {
-    const creds = getUpstashCredentials();
-    if (!creds) return false;
-
-    const maxLocalUpdate = curricula.reduce((max, c) => Math.max(max, c.updatedAt || 0), Date.now());
-
-    // Canonical v2 format for cross-game compatibility
-    const mediaBase = (typeof SharedClassSync !== 'undefined' && SharedClassSync.DEFAULT_MEDIA_BASE) || 'https://all-english-media.allenglish.link';
-    const payload = {
-      version: 2,
-      updatedAt: maxLocalUpdate,
-      mediaBase,
-      activeCurriculumId,
-      hideBuiltIn,
-      series: curricula.map(c => ({
-        id: c.id,
-        name: c.name,
-        isCustom: !!c.isCustom,
-        description: c.description || '',
-        levels: c.levels || [],
-        updatedAt: c.updatedAt || maxLocalUpdate
-      })),
-      // Retain curricula for backward compatibility
-      curricula
-    };
+    if (typeof SharedClassSync === 'undefined' || !SharedClassSync.computeCurriculumOverrides) {
+      return false;
+    }
 
     try {
-      const cleanUrl = creds.url.replace(/\/$/, '');
-      const bodyStr = JSON.stringify(payload);
-      const headers = {
-        'Authorization': `Bearer ${creds.token}`,
-        'Content-Type': 'application/json'
-      };
-
-      // Save to shared key for Word-Tac-Toe / MatchMaker / Treasure Hunt
-      const res1 = await fetch(`${cleanUrl}/set/${encodeURIComponent(UPSTASH_SHARED_KEY)}`, {
-        method: 'POST',
-        headers,
-        body: bodyStr
+      const base = await loadDefaultBaseForDiff();
+      const overrides = SharedClassSync.computeCurriculumOverrides(curricula, base);
+      return await SharedClassSync.saveCurriculumOverridesToConvex({
+        overrides,
+        hideBuiltIn,
+        activeCurriculumId,
+        replaceAll: true
       });
-
-      // Also mirror to app-specific key
-      const res2 = await fetch(`${cleanUrl}/set/${encodeURIComponent(UPSTASH_APP_KEY)}`, {
-        method: 'POST',
-        headers,
-        body: bodyStr
-      });
-
-      return (res1.ok && res2.ok);
     } catch (e) {
-      console.warn('[EditorStore] Upstash push failed:', e);
+      console.warn('[EditorStore] Convex curriculum push failed:', e);
       return false;
     }
   }
 
   async function pullFromUpstash() {
-    const creds = getUpstashCredentials();
-    if (!creds) return false;
+    if (typeof SharedClassSync === 'undefined' || !SharedClassSync.fetchUpstash) {
+      return false;
+    }
 
     try {
-      const cleanUrl = creds.url.replace(/\/$/, '');
-      const res = await fetch(`${cleanUrl}/get/${encodeURIComponent(UPSTASH_SHARED_KEY)}`, {
-        headers: { Authorization: `Bearer ${creds.token}` }
-      });
-      if (!res.ok) return false;
-      const data = await res.json();
-      if (!data || !data.result) return false;
-
-      let remote = null;
-      try {
-        remote = typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
-      } catch (e) {
+      const overrides = await SharedClassSync.fetchUpstash(UPSTASH_SHARED_KEY);
+      if (!Array.isArray(overrides) || overrides.length === 0) {
         return false;
       }
 
-      const remoteList = remote && (Array.isArray(remote.series) ? remote.series : remote.curricula);
-      if (remoteList && Array.isArray(remoteList) && remoteList.length > 0) {
-        const remoteUpdatedAt = remote.updatedAt || 0;
-        const normalizedRemote = remoteList.map(c => ({
-          ...c,
-          updatedAt: c.updatedAt || remoteUpdatedAt
-        }));
-        // Timestamp check: only replace if remote is genuinely newer than local data
-        const localMaxUpdate = curricula.reduce((max, c) => Math.max(max, c.updatedAt || 0), 0);
-        if (remoteUpdatedAt && localMaxUpdate > 0 && remoteUpdatedAt <= localMaxUpdate) {
-          // Local edits are newer or matching; do not overwrite!
-          return false;
-        }
-
-        curricula = normalizedRemote;
+      const base = await loadDefaultBaseForDiff();
+      const baseObj = {
+        version: 2,
+        series: curricula.length > 0 ? curricula : (base?.series || [])
+      };
+      const merged = SharedClassSync.applyCurriculumOverrides(baseObj, overrides);
+      if (merged && Array.isArray(merged.series) && merged.series.length > 0) {
+        curricula = merged.series;
         if (!activeCurriculumId || !curricula.some(c => c.id === activeCurriculumId)) {
-          if (remote.activeCurriculumId && curricula.some(c => c.id === remote.activeCurriculumId)) {
-            activeCurriculumId = remote.activeCurriculumId;
-          } else if (curricula.length > 0) {
-            activeCurriculumId = curricula[0].id;
-          }
+          activeCurriculumId = curricula[0].id;
         }
-        if (typeof remote.hideBuiltIn === 'boolean') hideBuiltIn = remote.hideBuiltIn;
         await saveToStorage();
         notifyChange();
         return true;
       }
     } catch (e) {
-      console.warn('[EditorStore] Upstash pull failed:', e);
+      console.warn('[EditorStore] Convex curriculum pull failed:', e);
     }
     return false;
   }
