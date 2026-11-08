@@ -88,12 +88,54 @@ window.EditorStore = (() => {
   // ── 3. Convex Curriculum Override Cloud Sync ──────────────────
   let cachedDefaultBase = null;
 
+  function deduplicateCurriculaUnits(list) {
+    if (!Array.isArray(list)) return false;
+    let hadDuplicates = false;
+    const seenBooks = new Map();
+    for (const book of list) {
+      if (!book || !book.id) continue;
+      if (seenBooks.has(book.id)) {
+        hadDuplicates = true;
+        continue;
+      }
+      if (Array.isArray(book.levels)) {
+        const seenLevels = new Map();
+        for (const lvl of book.levels) {
+          if (!lvl) continue;
+          const lvlKey = String(lvl.id || lvl.level || lvl.name || '');
+          if (Array.isArray(lvl.units)) {
+            const seenUnits = new Map();
+            for (const u of lvl.units) {
+              if (!u) continue;
+              const uKey = String(u.id || u.unitNumber || u.unit || u.name || '');
+              if (seenUnits.has(uKey)) {
+                hadDuplicates = true;
+              }
+              seenUnits.set(uKey, u);
+            }
+            if (lvl.units.length !== seenUnits.size) {
+              lvl.units = Array.from(seenUnits.values());
+            }
+          }
+          if (seenLevels.has(lvlKey)) {
+            hadDuplicates = true;
+          }
+          seenLevels.set(lvlKey, lvl);
+        }
+        if (book.levels.length !== seenLevels.size) {
+          book.levels = Array.from(seenLevels.values());
+        }
+      }
+      seenBooks.set(book.id, book);
+    }
+    if (list.length !== seenBooks.size) {
+      list.splice(0, list.length, ...seenBooks.values());
+    }
+    return hadDuplicates;
+  }
+
   async function loadDefaultBaseForDiff() {
     if (cachedDefaultBase) return cachedDefaultBase;
-    if (typeof SharedClassSync !== 'undefined' && SharedClassSync.CurriculumLoader?.cachedMasterCurriculum) {
-      cachedDefaultBase = SharedClassSync.CurriculumLoader.cachedMasterCurriculum;
-      return cachedDefaultBase;
-    }
     try {
       const res = await fetch('data/words.json');
       if (res.ok) {
@@ -110,6 +152,10 @@ window.EditorStore = (() => {
         return cachedDefaultBase;
       }
     } catch {}
+    if (typeof SharedClassSync !== 'undefined' && SharedClassSync.CurriculumLoader?.cachedMasterCurriculum) {
+      cachedDefaultBase = SharedClassSync.CurriculumLoader.cachedMasterCurriculum;
+      return cachedDefaultBase;
+    }
     return null;
   }
 
@@ -159,6 +205,7 @@ window.EditorStore = (() => {
       const merged = SharedClassSync.applyCurriculumOverrides(baseObj, overrides);
       if (merged && Array.isArray(merged.series) && merged.series.length > 0) {
         curricula = merged.series;
+        deduplicateCurriculaUnits(curricula);
         if (!activeCurriculumId || !curricula.some(c => c.id === activeCurriculumId)) {
           activeCurriculumId = curricula[0].id;
         }
@@ -202,6 +249,10 @@ window.EditorStore = (() => {
       if (curricula.length > 0 && typeof MediaDB !== 'undefined' && typeof MediaDB.saveAllCurriculaRecords === 'function') {
         MediaDB.saveAllCurriculaRecords(curricula).catch(() => {});
       }
+    }
+
+    if (deduplicateCurriculaUnits(curricula)) {
+      await saveToStorage();
     }
 
     activeCurriculumId = localStorage.getItem(ACTIVE_BOOK_KEY) || DEFAULT_BOOK_ID;
