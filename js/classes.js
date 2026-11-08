@@ -516,12 +516,18 @@ window.ClassesManager = (() => {
 
     deleteClass(classId) {
       const store = loadLocalData();
+      const targetCls = store.classes.find(c => c.id === classId);
+      const className = targetCls ? targetCls.name : null;
       store.classes = store.classes.filter(c => c.id !== classId);
       if (store.activeClassId === classId) {
         store.activeClassId = null;
       }
       saveLocalData(store);
-      debouncedPushToUpstash(store);
+      if (typeof window !== 'undefined' && window.SharedClassSync?.deleteClass && className) {
+        window.SharedClassSync.deleteClass(className);
+      } else {
+        debouncedPushToUpstash(store);
+      }
       return store;
     },
 

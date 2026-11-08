@@ -302,6 +302,13 @@ window.EditorStore = (() => {
       });
   }
 
+  // Live real-time sync subscription listener
+  if (typeof window !== 'undefined') {
+    window.addEventListener('ae-cloud-sync-updated', () => {
+      pullFromUpstash().catch(() => {});
+    });
+  }
+
   // ── 5. Curriculum / Book Series CRUD ─────────────────────────
   function getCurricula() {
     if (hideBuiltIn) {
