@@ -12,7 +12,6 @@ window.EditorStore = (() => {
   const ACTIVE_BOOK_KEY = 'phonics-flash-active-curriculum';
   const HIDE_BUILTIN_KEY = 'phonics-flash-hide-builtin';
   const UPSTASH_SHARED_KEY = 'shared_phonics_curriculum';
-  const UPSTASH_APP_KEY = 'phonics_flash:curriculum';
   const DEFAULT_BOOK_ID = 'smart-phonics';
 
   let curricula = [];
@@ -304,8 +303,10 @@ window.EditorStore = (() => {
 
   // Live real-time sync subscription listener
   if (typeof window !== 'undefined') {
-    window.addEventListener('ae-cloud-sync-updated', () => {
-      pullFromUpstash().catch(() => {});
+    window.addEventListener('ae-cloud-sync-updated', (e) => {
+      if (e?.detail?.curriculumChanged !== false) {
+        pullFromUpstash().catch(() => {});
+      }
     });
   }
 

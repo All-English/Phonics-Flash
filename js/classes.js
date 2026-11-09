@@ -7,7 +7,6 @@
 
 window.ClassesManager = (() => {
   const STORAGE_KEY = 'phonics-flash-classes';
-  const UPSTASH_LOCAL_KEY = 'phonics-flash-upstash-config';
   const REDIS_KEY = 'phonics_flash:classes';
 
   // ── Helper: Get Cloud Sync Config ───────────────────────────
