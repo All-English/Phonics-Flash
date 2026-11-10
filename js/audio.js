@@ -96,9 +96,18 @@ const AudioPlayer = (() => {
     try {
       setButtonState(btn, 'loading');
 
-      // 1. Try local MP3 file or MediaDB audio recording (supports random choice from multiple audio paths)
+      // 1. Try local/CDN MP3 file or MediaDB audio recording (supports multi-voice modes and random choice)
       let selectedPath = audioPath;
-      if (Array.isArray(audioPath)) {
+      const isCustomMedia = typeof MediaDB !== 'undefined' && MediaDB.isMediaId(selectedPath);
+      const isSingleLetter = String(word || '').trim().length <= 1;
+
+      if (!isCustomMedia && !isSingleLetter && typeof window !== 'undefined' && window.SharedClassSync?.getWordAudioUrls) {
+        const mode = (localStorage.getItem('word_voice_mode') || 'mixed').toLowerCase();
+        const candidateUrls = window.SharedClassSync.getWordAudioUrls(word, { officialUrl: selectedPath, mode });
+        if (candidateUrls && candidateUrls.length > 0) {
+          selectedPath = candidateUrls[Math.floor(Math.random() * candidateUrls.length)];
+        }
+      } else if (Array.isArray(audioPath)) {
         selectedPath = audioPath.length > 0 ? audioPath[Math.floor(Math.random() * audioPath.length)] : null;
       } else if (typeof audioPath === 'string' && audioPath.startsWith('[') && audioPath.endsWith(']')) {
         try {

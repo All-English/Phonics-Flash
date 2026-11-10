@@ -115,10 +115,14 @@
 
   function populateTTSSettings() {
     const keyInput = document.getElementById('elevenlabs-key-input');
+    const wordModeSelect = document.getElementById('word-voice-mode-select');
     const voiceSelect = document.getElementById('elevenlabs-voice-select');
     const speedInput = document.getElementById('elevenlabs-speed-input');
     const feedbackEl = document.getElementById('tts-test-feedback');
 
+    if (wordModeSelect) {
+      wordModeSelect.value = localStorage.getItem('word_voice_mode') || 'mixed';
+    }
     if (keyInput && typeof AudioPlayer !== 'undefined') {
       keyInput.value = AudioPlayer.getApiKey() || '';
     }
@@ -322,6 +326,7 @@
     // ElevenLabs / TTS Settings Elements
     const keyInput = document.getElementById('elevenlabs-key-input');
     const visibilityBtn = document.getElementById('toggle-key-visibility');
+    const wordModeSelect = document.getElementById('word-voice-mode-select');
     const voiceSelect = document.getElementById('elevenlabs-voice-select');
     const speedInput = document.getElementById('elevenlabs-speed-input');
     const speedResetBtn = document.getElementById('speed-reset-default-btn');
@@ -329,6 +334,13 @@
     const testTtsBtn = document.getElementById('test-elevenlabs-btn');
     const clearTtsBtn = document.getElementById('clear-elevenlabs-btn');
     const feedbackEl = document.getElementById('tts-test-feedback');
+
+    if (wordModeSelect) {
+      wordModeSelect.value = localStorage.getItem('word_voice_mode') || 'mixed';
+      wordModeSelect.addEventListener('change', (e) => {
+        localStorage.setItem('word_voice_mode', e.target.value);
+      });
+    }
 
     // Dropdown change
     if (classSelect) {

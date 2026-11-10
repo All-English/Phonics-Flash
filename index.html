@@ -336,6 +336,18 @@
             </div>
 
             <div class="form-group">
+              <label for="word-voice-mode-select">Word Audio Source</label>
+              <div class="custom-select-wrapper">
+                <select id="word-voice-mode-select" class="class-dropdown" aria-label="Select Word Audio Source">
+                  <option value="mixed" selected>Mixed (Official + 3 AI Voices)</option>
+                  <option value="official">Official Voice Only</option>
+                  <option value="ai">AI Voices Only (3 Voices)</option>
+                </select>
+              </div>
+              <span class="field-hint">Choose whether to rotate across all 4 voices (Official + 3 AI), stick to the official textbook audio, or use AI voices.</span>
+            </div>
+
+            <div class="form-group">
               <label for="elevenlabs-voice-select">Preferred Voice</label>
               <div class="custom-select-wrapper">
                 <select id="elevenlabs-voice-select" class="class-dropdown" aria-label="Select ElevenLabs Voice">
