@@ -935,7 +935,8 @@ body {
   animation: fadeInScale 0.5s ease-out;
 }
 
-.word-text {
+.word-text,
+.dictation-hint-text {
   font-family: var(--font-word);
   font-size: clamp(5rem, 15vw, 10rem);
   font-weight: 700;
@@ -943,10 +944,13 @@ body {
   letter-spacing: 0.02em;
   font-variant-ligatures: none;
   line-height: 1.1;
-  cursor: pointer;
-  transition: all var(--transition-fast);
   text-shadow: light-dark(0 2px 12px rgba(0, 0, 0, 0.06), 0 4px 30px rgba(0, 0, 0, 0.3));
   user-select: none;
+}
+
+.word-text {
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
 
 .word-text:hover {
@@ -1230,7 +1234,8 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .word-text {
+  .word-text,
+  .dictation-hint-text {
     font-size: 10rem;
   }
 
@@ -1585,15 +1590,7 @@ body {
 /* Dictation Mode Hint Text & Answer Word Typography & Smooth Transitions */
 .dictation-hint-text {
   display: block !important;
-  font-family: var(--font-word);
-  font-size: clamp(5rem, 15vw, 10rem);
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: 0.02em;
-  font-variant-ligatures: none;
-  line-height: 1.1;
   text-align: center;
-  user-select: none;
   opacity: 1;
   transform: scale(1);
   visibility: visible;
@@ -1648,6 +1645,13 @@ body {
 .word-slide[data-dictation-mode="true"] .dictation-hint-text[data-len="7"],
 .word-slide[data-dictation-mode="true"] .dictation-hint-text[data-len="8"] {
   font-size: clamp(3rem, 8vw, 6.2rem);
+}
+
+.word-slide[data-dictation-mode="true"] .word-text[data-len="9"],
+.word-slide[data-dictation-mode="true"] .word-text[data-len="10"],
+.word-slide[data-dictation-mode="true"] .dictation-hint-text[data-len="9"],
+.word-slide[data-dictation-mode="true"] .dictation-hint-text[data-len="10"] {
+  font-size: clamp(2.6rem, 7vw, 5.2rem);
 }
 
 /* ============================================================
@@ -2214,22 +2218,8 @@ body {
 
 .reveal .picture-option-card.answered:not(.correct) .picture-card-word {
   color: var(--text-primary) !important;
-  font-size: clamp(3.2rem, 7vw, 4.8rem) !important;
   text-decoration: none !important;
   opacity: 1 !important;
-}
-
-.reveal .picture-option-card.answered:not(.correct) .picture-card-word[data-len="5"] {
-  font-size: clamp(2.8rem, 6vw, 4.2rem) !important;
-}
-
-.reveal .picture-option-card.answered:not(.correct) .picture-card-word[data-len="6"] {
-  font-size: clamp(2.4rem, 5vw, 3.6rem) !important;
-}
-
-.reveal .picture-option-card.answered:not(.correct) .picture-card-word[data-len="7"],
-.reveal .picture-option-card.answered:not(.correct) .picture-card-word[data-len="8"] {
-  font-size: clamp(2.0rem, 4.2vw, 3.0rem) !important;
 }
 
 .reveal .picture-option-card.incorrect {
@@ -2293,9 +2283,6 @@ body {
     font-size: clamp(2.8rem, 6.2vw, 3.8rem);
   }
 
-  .reveal .picture-option-card.answered:not(.correct) .picture-card-word {
-    font-size: clamp(3.2rem, 7vw, 4.4rem) !important;
-  }
 }
 
 /* ============================================================
@@ -4453,12 +4440,28 @@ body {
   }
 
 
-  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .dictation-hint-text {
-    font-size: clamp(3.8rem, 7.5vw, 6.5rem) !important;
-  }
-
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .dictation-hint-text,
   .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .word-text {
     font-size: clamp(4.2rem, 8.5vw, 7.5rem) !important;
+  }
+
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .dictation-hint-text[data-len="6"],
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .word-text[data-len="6"] {
+    font-size: clamp(3.6rem, 7.5vw, 6.5rem) !important;
+  }
+
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .dictation-hint-text[data-len="7"],
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .dictation-hint-text[data-len="8"],
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .word-text[data-len="7"],
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .word-text[data-len="8"] {
+    font-size: clamp(3.0rem, 6.5vw, 5.5rem) !important;
+  }
+
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .dictation-hint-text[data-len="9"],
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .dictation-hint-text[data-len="10"],
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .word-text[data-len="9"],
+  .reveal .slides section[data-dictation-mode="true"][data-has-image="true"] .word-text[data-len="10"] {
+    font-size: clamp(2.6rem, 5.5vw, 4.5rem) !important;
   }
 }
 
