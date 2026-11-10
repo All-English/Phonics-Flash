@@ -692,7 +692,7 @@
           }
         }
         tile.dataset.baseLetter = item.baseLetter;
-        tile.dataset.audio = item.audio || '';
+        tile.dataset.audio = Array.isArray(item.audio) ? JSON.stringify(item.audio) : (item.audio || '');
         tile.dataset.text = item.displayText;
         tile.dataset.tileIndex = currentIdx;
 

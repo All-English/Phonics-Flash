@@ -681,28 +681,68 @@
           ],
           "extraWords": [
             {
-              "word": "gap"
+              "word": "gap",
+              "audio": [
+                "media/SmartPhonics/2/Unit1/sounds/extra_gap_jessica.mp3",
+                "media/SmartPhonics/2/Unit1/sounds/extra_gap_chris.mp3",
+                "media/SmartPhonics/2/Unit1/sounds/extra_gap_laura.mp3"
+              ]
             },
             {
-              "word": "rap"
+              "word": "rap",
+              "audio": [
+                "media/SmartPhonics/2/Unit1/sounds/extra_rap_sarah.mp3",
+                "media/SmartPhonics/2/Unit1/sounds/extra_rap_liam.mp3",
+                "media/SmartPhonics/2/Unit1/sounds/extra_rap_bella.mp3"
+              ]
             },
             {
-              "word": "sap"
+              "word": "sap",
+              "audio": [
+                "media/SmartPhonics/2/Unit1/sounds/extra_sap_matilda.mp3",
+                "media/SmartPhonics/2/Unit1/sounds/extra_sap_eric.mp3",
+                "media/SmartPhonics/2/Unit1/sounds/extra_sap_arabella.mp3"
+              ]
             },
             {
-              "word": "tap"
+              "word": "tap",
+              "audio": [
+                "media/SmartPhonics/2/Unit1/sounds/extra_tap_jessica.mp3",
+                "media/SmartPhonics/2/Unit1/sounds/extra_tap_callum.mp3",
+                "media/SmartPhonics/2/Unit1/sounds/extra_tap_river.mp3"
+              ]
             },
             {
-              "word": "bad"
+              "word": "bad",
+              "audio": [
+                "media/SmartPhonics/2/Unit1/sounds/extra_bad_laura.mp3",
+                "media/SmartPhonics/2/Unit1/sounds/extra_bad_brian.mp3",
+                "media/SmartPhonics/2/Unit1/sounds/extra_bad_bill.mp3"
+              ]
             },
             {
-              "word": "sad"
+              "word": "sad",
+              "audio": [
+                "media/SmartPhonics/2/Unit1/sounds/extra_sad_sarah.mp3",
+                "media/SmartPhonics/2/Unit1/sounds/extra_sad_will.mp3",
+                "media/SmartPhonics/2/Unit1/sounds/extra_sad_roger.mp3"
+              ]
             },
             {
-              "word": "bag"
+              "word": "bag",
+              "audio": [
+                "media/SmartPhonics/2/Unit1/sounds/extra_bag_bella.mp3",
+                "media/SmartPhonics/2/Unit1/sounds/extra_bag_chris.mp3",
+                "media/SmartPhonics/2/Unit1/sounds/extra_bag_matilda.mp3"
+              ]
             },
             {
-              "word": "cab"
+              "word": "cab",
+              "audio": [
+                "media/SmartPhonics/2/Unit1/sounds/extra_cab_arabella.mp3",
+                "media/SmartPhonics/2/Unit1/sounds/extra_cab_liam.mp3",
+                "media/SmartPhonics/2/Unit1/sounds/extra_cab_river.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -774,28 +814,68 @@
           ],
           "extraWords": [
             {
-              "word": "ran"
+              "word": "ran",
+              "audio": [
+                "media/SmartPhonics/2/Unit2/sounds/extra_ran_jessica.mp3",
+                "media/SmartPhonics/2/Unit2/sounds/extra_ran_eric.mp3",
+                "media/SmartPhonics/2/Unit2/sounds/extra_ran_callum.mp3"
+              ]
             },
             {
-              "word": "tan"
+              "word": "tan",
+              "audio": [
+                "media/SmartPhonics/2/Unit2/sounds/extra_tan_laura.mp3",
+                "media/SmartPhonics/2/Unit2/sounds/extra_tan_brian.mp3",
+                "media/SmartPhonics/2/Unit2/sounds/extra_tan_bill.mp3"
+              ]
             },
             {
-              "word": "van"
+              "word": "van",
+              "audio": [
+                "media/SmartPhonics/2/Unit2/sounds/extra_van_sarah.mp3",
+                "media/SmartPhonics/2/Unit2/sounds/extra_van_will.mp3",
+                "media/SmartPhonics/2/Unit2/sounds/extra_van_roger.mp3"
+              ]
             },
             {
-              "word": "sat"
+              "word": "sat",
+              "audio": [
+                "media/SmartPhonics/2/Unit2/sounds/extra_sat_bella.mp3",
+                "media/SmartPhonics/2/Unit2/sounds/extra_sat_chris.mp3",
+                "media/SmartPhonics/2/Unit2/sounds/extra_sat_matilda.mp3"
+              ]
             },
             {
-              "word": "rat"
+              "word": "rat",
+              "audio": [
+                "media/SmartPhonics/2/Unit2/sounds/extra_rat_arabella.mp3",
+                "media/SmartPhonics/2/Unit2/sounds/extra_rat_liam.mp3",
+                "media/SmartPhonics/2/Unit2/sounds/extra_rat_river.mp3"
+              ]
             },
             {
-              "word": "fat"
+              "word": "fat",
+              "audio": [
+                "media/SmartPhonics/2/Unit2/sounds/extra_fat_jessica.mp3",
+                "media/SmartPhonics/2/Unit2/sounds/extra_fat_eric.mp3",
+                "media/SmartPhonics/2/Unit2/sounds/extra_fat_callum.mp3"
+              ]
             },
             {
-              "word": "pat"
+              "word": "pat",
+              "audio": [
+                "media/SmartPhonics/2/Unit2/sounds/extra_pat_laura.mp3",
+                "media/SmartPhonics/2/Unit2/sounds/extra_pat_brian.mp3",
+                "media/SmartPhonics/2/Unit2/sounds/extra_pat_bill.mp3"
+              ]
             },
             {
-              "word": "mad"
+              "word": "mad",
+              "audio": [
+                "media/SmartPhonics/2/Unit2/sounds/extra_mad_sarah.mp3",
+                "media/SmartPhonics/2/Unit2/sounds/extra_mad_will.mp3",
+                "media/SmartPhonics/2/Unit2/sounds/extra_mad_roger.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -870,28 +950,68 @@
           ],
           "extraWords": [
             {
-              "word": "bet"
+              "word": "bet",
+              "audio": [
+                "media/SmartPhonics/2/Unit3/sounds/extra_bet_bella.mp3",
+                "media/SmartPhonics/2/Unit3/sounds/extra_bet_chris.mp3",
+                "media/SmartPhonics/2/Unit3/sounds/extra_bet_matilda.mp3"
+              ]
             },
             {
-              "word": "get"
+              "word": "get",
+              "audio": [
+                "media/SmartPhonics/2/Unit3/sounds/extra_get_arabella.mp3",
+                "media/SmartPhonics/2/Unit3/sounds/extra_get_liam.mp3",
+                "media/SmartPhonics/2/Unit3/sounds/extra_get_river.mp3"
+              ]
             },
             {
-              "word": "let"
+              "word": "let",
+              "audio": [
+                "media/SmartPhonics/2/Unit3/sounds/extra_let_jessica.mp3",
+                "media/SmartPhonics/2/Unit3/sounds/extra_let_eric.mp3",
+                "media/SmartPhonics/2/Unit3/sounds/extra_let_callum.mp3"
+              ]
             },
             {
-              "word": "set"
+              "word": "set",
+              "audio": [
+                "media/SmartPhonics/2/Unit3/sounds/extra_set_laura.mp3",
+                "media/SmartPhonics/2/Unit3/sounds/extra_set_brian.mp3",
+                "media/SmartPhonics/2/Unit3/sounds/extra_set_bill.mp3"
+              ]
             },
             {
-              "word": "fed"
+              "word": "fed",
+              "audio": [
+                "media/SmartPhonics/2/Unit3/sounds/extra_fed_sarah.mp3",
+                "media/SmartPhonics/2/Unit3/sounds/extra_fed_will.mp3",
+                "media/SmartPhonics/2/Unit3/sounds/extra_fed_roger.mp3"
+              ]
             },
             {
-              "word": "led"
+              "word": "led",
+              "audio": [
+                "media/SmartPhonics/2/Unit3/sounds/extra_led_bella.mp3",
+                "media/SmartPhonics/2/Unit3/sounds/extra_led_chris.mp3",
+                "media/SmartPhonics/2/Unit3/sounds/extra_led_matilda.mp3"
+              ]
             },
             {
-              "word": "wed"
+              "word": "wed",
+              "audio": [
+                "media/SmartPhonics/2/Unit3/sounds/extra_wed_arabella.mp3",
+                "media/SmartPhonics/2/Unit3/sounds/extra_wed_liam.mp3",
+                "media/SmartPhonics/2/Unit3/sounds/extra_wed_river.mp3"
+              ]
             },
             {
-              "word": "leg"
+              "word": "leg",
+              "audio": [
+                "media/SmartPhonics/2/Unit3/sounds/extra_leg_jessica.mp3",
+                "media/SmartPhonics/2/Unit3/sounds/extra_leg_eric.mp3",
+                "media/SmartPhonics/2/Unit3/sounds/extra_leg_callum.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -966,28 +1086,68 @@
           ],
           "extraWords": [
             {
-              "word": "bid"
+              "word": "bid",
+              "audio": [
+                "media/SmartPhonics/2/Unit4/sounds/extra_bid_laura.mp3",
+                "media/SmartPhonics/2/Unit4/sounds/extra_bid_brian.mp3",
+                "media/SmartPhonics/2/Unit4/sounds/extra_bid_bill.mp3"
+              ]
             },
             {
-              "word": "did"
+              "word": "did",
+              "audio": [
+                "media/SmartPhonics/2/Unit4/sounds/extra_did_sarah.mp3",
+                "media/SmartPhonics/2/Unit4/sounds/extra_did_will.mp3",
+                "media/SmartPhonics/2/Unit4/sounds/extra_did_roger.mp3"
+              ]
             },
             {
-              "word": "mid"
+              "word": "mid",
+              "audio": [
+                "media/SmartPhonics/2/Unit4/sounds/extra_mid_bella.mp3",
+                "media/SmartPhonics/2/Unit4/sounds/extra_mid_chris.mp3",
+                "media/SmartPhonics/2/Unit4/sounds/extra_mid_matilda.mp3"
+              ]
             },
             {
-              "word": "big"
+              "word": "big",
+              "audio": [
+                "media/SmartPhonics/2/Unit4/sounds/extra_big_arabella.mp3",
+                "media/SmartPhonics/2/Unit4/sounds/extra_big_liam.mp3",
+                "media/SmartPhonics/2/Unit4/sounds/extra_big_river.mp3"
+              ]
             },
             {
-              "word": "dig"
+              "word": "dig",
+              "audio": [
+                "media/SmartPhonics/2/Unit4/sounds/extra_dig_jessica.mp3",
+                "media/SmartPhonics/2/Unit4/sounds/extra_dig_eric.mp3",
+                "media/SmartPhonics/2/Unit4/sounds/extra_dig_callum.mp3"
+              ]
             },
             {
-              "word": "fig"
+              "word": "fig",
+              "audio": [
+                "media/SmartPhonics/2/Unit4/sounds/extra_fig_laura.mp3",
+                "media/SmartPhonics/2/Unit4/sounds/extra_fig_brian.mp3",
+                "media/SmartPhonics/2/Unit4/sounds/extra_fig_bill.mp3"
+              ]
             },
             {
-              "word": "win"
+              "word": "win",
+              "audio": [
+                "media/SmartPhonics/2/Unit4/sounds/extra_win_sarah.mp3",
+                "media/SmartPhonics/2/Unit4/sounds/extra_win_will.mp3",
+                "media/SmartPhonics/2/Unit4/sounds/extra_win_roger.mp3"
+              ]
             },
             {
-              "word": "sin"
+              "word": "sin",
+              "audio": [
+                "media/SmartPhonics/2/Unit4/sounds/extra_sin_bella.mp3",
+                "media/SmartPhonics/2/Unit4/sounds/extra_sin_chris.mp3",
+                "media/SmartPhonics/2/Unit4/sounds/extra_sin_matilda.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -1056,28 +1216,68 @@
           ],
           "extraWords": [
             {
-              "word": "tip"
+              "word": "tip",
+              "audio": [
+                "media/SmartPhonics/2/Unit5/sounds/extra_tip_arabella.mp3",
+                "media/SmartPhonics/2/Unit5/sounds/extra_tip_liam.mp3",
+                "media/SmartPhonics/2/Unit5/sounds/extra_tip_river.mp3"
+              ]
             },
             {
-              "word": "nip"
+              "word": "nip",
+              "audio": [
+                "media/SmartPhonics/2/Unit5/sounds/extra_nip_jessica.mp3",
+                "media/SmartPhonics/2/Unit5/sounds/extra_nip_eric.mp3",
+                "media/SmartPhonics/2/Unit5/sounds/extra_nip_callum.mp3"
+              ]
             },
             {
-              "word": "sip"
+              "word": "sip",
+              "audio": [
+                "media/SmartPhonics/2/Unit5/sounds/extra_sip_laura.mp3",
+                "media/SmartPhonics/2/Unit5/sounds/extra_sip_brian.mp3",
+                "media/SmartPhonics/2/Unit5/sounds/extra_sip_bill.mp3"
+              ]
             },
             {
-              "word": "pit"
+              "word": "pit",
+              "audio": [
+                "media/SmartPhonics/2/Unit5/sounds/extra_pit_sarah.mp3",
+                "media/SmartPhonics/2/Unit5/sounds/extra_pit_will.mp3",
+                "media/SmartPhonics/2/Unit5/sounds/extra_pit_roger.mp3"
+              ]
             },
             {
-              "word": "bit"
+              "word": "bit",
+              "audio": [
+                "media/SmartPhonics/2/Unit5/sounds/extra_bit_bella.mp3",
+                "media/SmartPhonics/2/Unit5/sounds/extra_bit_chris.mp3",
+                "media/SmartPhonics/2/Unit5/sounds/extra_bit_matilda.mp3"
+              ]
             },
             {
-              "word": "fit"
+              "word": "fit",
+              "audio": [
+                "media/SmartPhonics/2/Unit5/sounds/extra_fit_arabella.mp3",
+                "media/SmartPhonics/2/Unit5/sounds/extra_fit_liam.mp3",
+                "media/SmartPhonics/2/Unit5/sounds/extra_fit_river.mp3"
+              ]
             },
             {
-              "word": "rid"
+              "word": "rid",
+              "audio": [
+                "media/SmartPhonics/2/Unit5/sounds/extra_rid_jessica.mp3",
+                "media/SmartPhonics/2/Unit5/sounds/extra_rid_eric.mp3",
+                "media/SmartPhonics/2/Unit5/sounds/extra_rid_callum.mp3"
+              ]
             },
             {
-              "word": "tin"
+              "word": "tin",
+              "audio": [
+                "media/SmartPhonics/2/Unit5/sounds/extra_tin_laura.mp3",
+                "media/SmartPhonics/2/Unit5/sounds/extra_tin_brian.mp3",
+                "media/SmartPhonics/2/Unit5/sounds/extra_tin_bill.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -1149,28 +1349,68 @@
           ],
           "extraWords": [
             {
-              "word": "dot"
+              "word": "dot",
+              "audio": [
+                "media/SmartPhonics/2/Unit6/sounds/extra_dot_sarah.mp3",
+                "media/SmartPhonics/2/Unit6/sounds/extra_dot_will.mp3",
+                "media/SmartPhonics/2/Unit6/sounds/extra_dot_roger.mp3"
+              ]
             },
             {
-              "word": "got"
+              "word": "got",
+              "audio": [
+                "media/SmartPhonics/2/Unit6/sounds/extra_got_bella.mp3",
+                "media/SmartPhonics/2/Unit6/sounds/extra_got_chris.mp3",
+                "media/SmartPhonics/2/Unit6/sounds/extra_got_matilda.mp3"
+              ]
             },
             {
-              "word": "lot"
+              "word": "lot",
+              "audio": [
+                "media/SmartPhonics/2/Unit6/sounds/extra_lot_arabella.mp3",
+                "media/SmartPhonics/2/Unit6/sounds/extra_lot_liam.mp3",
+                "media/SmartPhonics/2/Unit6/sounds/extra_lot_river.mp3"
+              ]
             },
             {
-              "word": "mop"
+              "word": "mop",
+              "audio": [
+                "media/SmartPhonics/2/Unit6/sounds/extra_mop_jessica.mp3",
+                "media/SmartPhonics/2/Unit6/sounds/extra_mop_eric.mp3",
+                "media/SmartPhonics/2/Unit6/sounds/extra_mop_callum.mp3"
+              ]
             },
             {
-              "word": "top"
+              "word": "top",
+              "audio": [
+                "media/SmartPhonics/2/Unit6/sounds/extra_top_laura.mp3",
+                "media/SmartPhonics/2/Unit6/sounds/extra_top_brian.mp3",
+                "media/SmartPhonics/2/Unit6/sounds/extra_top_bill.mp3"
+              ]
             },
             {
-              "word": "pop"
+              "word": "pop",
+              "audio": [
+                "media/SmartPhonics/2/Unit6/sounds/extra_pop_sarah.mp3",
+                "media/SmartPhonics/2/Unit6/sounds/extra_pop_will.mp3",
+                "media/SmartPhonics/2/Unit6/sounds/extra_pop_roger.mp3"
+              ]
             },
             {
-              "word": "bog"
+              "word": "bog",
+              "audio": [
+                "media/SmartPhonics/2/Unit6/sounds/extra_bog_bella.mp3",
+                "media/SmartPhonics/2/Unit6/sounds/extra_bog_chris.mp3",
+                "media/SmartPhonics/2/Unit6/sounds/extra_bog_matilda.mp3"
+              ]
             },
             {
-              "word": "fog"
+              "word": "fog",
+              "audio": [
+                "media/SmartPhonics/2/Unit6/sounds/extra_fog_arabella.mp3",
+                "media/SmartPhonics/2/Unit6/sounds/extra_fog_liam.mp3",
+                "media/SmartPhonics/2/Unit6/sounds/extra_fog_river.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -1242,28 +1482,68 @@
           ],
           "extraWords": [
             {
-              "word": "dug"
+              "word": "dug",
+              "audio": [
+                "media/SmartPhonics/2/Unit7/sounds/extra_dug_jessica.mp3",
+                "media/SmartPhonics/2/Unit7/sounds/extra_dug_eric.mp3",
+                "media/SmartPhonics/2/Unit7/sounds/extra_dug_callum.mp3"
+              ]
             },
             {
-              "word": "lug"
+              "word": "lug",
+              "audio": [
+                "media/SmartPhonics/2/Unit7/sounds/extra_lug_laura.mp3",
+                "media/SmartPhonics/2/Unit7/sounds/extra_lug_brian.mp3",
+                "media/SmartPhonics/2/Unit7/sounds/extra_lug_bill.mp3"
+              ]
             },
             {
-              "word": "tug"
+              "word": "tug",
+              "audio": [
+                "media/SmartPhonics/2/Unit7/sounds/extra_tug_sarah.mp3",
+                "media/SmartPhonics/2/Unit7/sounds/extra_tug_will.mp3",
+                "media/SmartPhonics/2/Unit7/sounds/extra_tug_roger.mp3"
+              ]
             },
             {
-              "word": "jug"
+              "word": "jug",
+              "audio": [
+                "media/SmartPhonics/2/Unit7/sounds/extra_jug_bella.mp3",
+                "media/SmartPhonics/2/Unit7/sounds/extra_jug_chris.mp3",
+                "media/SmartPhonics/2/Unit7/sounds/extra_jug_matilda.mp3"
+              ]
             },
             {
-              "word": "cub"
+              "word": "cub",
+              "audio": [
+                "media/SmartPhonics/2/Unit7/sounds/extra_cub_arabella.mp3",
+                "media/SmartPhonics/2/Unit7/sounds/extra_cub_liam.mp3",
+                "media/SmartPhonics/2/Unit7/sounds/extra_cub_river.mp3"
+              ]
             },
             {
-              "word": "hub"
+              "word": "hub",
+              "audio": [
+                "media/SmartPhonics/2/Unit7/sounds/extra_hub_jessica.mp3",
+                "media/SmartPhonics/2/Unit7/sounds/extra_hub_eric.mp3",
+                "media/SmartPhonics/2/Unit7/sounds/extra_hub_callum.mp3"
+              ]
             },
             {
-              "word": "sub"
+              "word": "sub",
+              "audio": [
+                "media/SmartPhonics/2/Unit7/sounds/extra_sub_laura.mp3",
+                "media/SmartPhonics/2/Unit7/sounds/extra_sub_brian.mp3",
+                "media/SmartPhonics/2/Unit7/sounds/extra_sub_bill.mp3"
+              ]
             },
             {
-              "word": "gut"
+              "word": "gut",
+              "audio": [
+                "media/SmartPhonics/2/Unit7/sounds/extra_gut_sarah.mp3",
+                "media/SmartPhonics/2/Unit7/sounds/extra_gut_will.mp3",
+                "media/SmartPhonics/2/Unit7/sounds/extra_gut_roger.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -1335,28 +1615,68 @@
           ],
           "extraWords": [
             {
-              "word": "gun"
+              "word": "gun",
+              "audio": [
+                "media/SmartPhonics/2/Unit8/sounds/extra_gun_bella.mp3",
+                "media/SmartPhonics/2/Unit8/sounds/extra_gun_chris.mp3",
+                "media/SmartPhonics/2/Unit8/sounds/extra_gun_matilda.mp3"
+              ]
             },
             {
-              "word": "nun"
+              "word": "nun",
+              "audio": [
+                "media/SmartPhonics/2/Unit8/sounds/extra_nun_arabella.mp3",
+                "media/SmartPhonics/2/Unit8/sounds/extra_nun_liam.mp3",
+                "media/SmartPhonics/2/Unit8/sounds/extra_nun_river.mp3"
+              ]
             },
             {
-              "word": "pun"
+              "word": "pun",
+              "audio": [
+                "media/SmartPhonics/2/Unit8/sounds/extra_pun_jessica.mp3",
+                "media/SmartPhonics/2/Unit8/sounds/extra_pun_eric.mp3",
+                "media/SmartPhonics/2/Unit8/sounds/extra_pun_callum.mp3"
+              ]
             },
             {
-              "word": "hut"
+              "word": "hut",
+              "audio": [
+                "media/SmartPhonics/2/Unit8/sounds/extra_hut_laura.mp3",
+                "media/SmartPhonics/2/Unit8/sounds/extra_hut_brian.mp3",
+                "media/SmartPhonics/2/Unit8/sounds/extra_hut_bill.mp3"
+              ]
             },
             {
-              "word": "bus"
+              "word": "bus",
+              "audio": [
+                "media/SmartPhonics/2/Unit8/sounds/extra_bus_sarah.mp3",
+                "media/SmartPhonics/2/Unit8/sounds/extra_bus_will.mp3",
+                "media/SmartPhonics/2/Unit8/sounds/extra_bus_roger.mp3"
+              ]
             },
             {
-              "word": "gum"
+              "word": "gum",
+              "audio": [
+                "media/SmartPhonics/2/Unit8/sounds/extra_gum_bella.mp3",
+                "media/SmartPhonics/2/Unit8/sounds/extra_gum_chris.mp3",
+                "media/SmartPhonics/2/Unit8/sounds/extra_gum_matilda.mp3"
+              ]
             },
             {
-              "word": "hum"
+              "word": "hum",
+              "audio": [
+                "media/SmartPhonics/2/Unit8/sounds/extra_hum_arabella.mp3",
+                "media/SmartPhonics/2/Unit8/sounds/extra_hum_liam.mp3",
+                "media/SmartPhonics/2/Unit8/sounds/extra_hum_river.mp3"
+              ]
             },
             {
-              "word": "sum"
+              "word": "sum",
+              "audio": [
+                "media/SmartPhonics/2/Unit8/sounds/extra_sum_jessica.mp3",
+                "media/SmartPhonics/2/Unit8/sounds/extra_sum_eric.mp3",
+                "media/SmartPhonics/2/Unit8/sounds/extra_sum_callum.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -1431,28 +1751,68 @@
           ],
           "extraWords": [
             {
-              "word": "make"
+              "word": "make",
+              "audio": [
+                "media/SmartPhonics/3/Unit1/sounds/extra_make_laura.mp3",
+                "media/SmartPhonics/3/Unit1/sounds/extra_make_brian.mp3",
+                "media/SmartPhonics/3/Unit1/sounds/extra_make_bill.mp3"
+              ]
             },
             {
-              "word": "take"
+              "word": "take",
+              "audio": [
+                "media/SmartPhonics/3/Unit1/sounds/extra_take_sarah.mp3",
+                "media/SmartPhonics/3/Unit1/sounds/extra_take_will.mp3",
+                "media/SmartPhonics/3/Unit1/sounds/extra_take_roger.mp3"
+              ]
             },
             {
-              "word": "wake"
+              "word": "wake",
+              "audio": [
+                "media/SmartPhonics/3/Unit1/sounds/extra_wake_bella.mp3",
+                "media/SmartPhonics/3/Unit1/sounds/extra_wake_chris.mp3",
+                "media/SmartPhonics/3/Unit1/sounds/extra_wake_matilda.mp3"
+              ]
             },
             {
-              "word": "save"
+              "word": "save",
+              "audio": [
+                "media/SmartPhonics/3/Unit1/sounds/extra_save_arabella.mp3",
+                "media/SmartPhonics/3/Unit1/sounds/extra_save_liam.mp3",
+                "media/SmartPhonics/3/Unit1/sounds/extra_save_river.mp3"
+              ]
             },
             {
-              "word": "gave"
+              "word": "gave",
+              "audio": [
+                "media/SmartPhonics/3/Unit1/sounds/extra_gave_jessica.mp3",
+                "media/SmartPhonics/3/Unit1/sounds/extra_gave_eric.mp3",
+                "media/SmartPhonics/3/Unit1/sounds/extra_gave_callum.mp3"
+              ]
             },
             {
-              "word": "late"
+              "word": "late",
+              "audio": [
+                "media/SmartPhonics/3/Unit1/sounds/extra_late_laura.mp3",
+                "media/SmartPhonics/3/Unit1/sounds/extra_late_brian.mp3",
+                "media/SmartPhonics/3/Unit1/sounds/extra_late_bill.mp3"
+              ]
             },
             {
-              "word": "pale"
+              "word": "pale",
+              "audio": [
+                "media/SmartPhonics/3/Unit1/sounds/extra_pale_sarah.mp3",
+                "media/SmartPhonics/3/Unit1/sounds/extra_pale_will.mp3",
+                "media/SmartPhonics/3/Unit1/sounds/extra_pale_roger.mp3"
+              ]
             },
             {
-              "word": "sale"
+              "word": "sale",
+              "audio": [
+                "media/SmartPhonics/3/Unit1/sounds/extra_sale_bella.mp3",
+                "media/SmartPhonics/3/Unit1/sounds/extra_sale_chris.mp3",
+                "media/SmartPhonics/3/Unit1/sounds/extra_sale_matilda.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -1536,28 +1896,68 @@
           ],
           "extraWords": [
             {
-              "word": "fame"
+              "word": "fame",
+              "audio": [
+                "media/SmartPhonics/3/Unit2/sounds/extra_fame_arabella.mp3",
+                "media/SmartPhonics/3/Unit2/sounds/extra_fame_liam.mp3",
+                "media/SmartPhonics/3/Unit2/sounds/extra_fame_river.mp3"
+              ]
             },
             {
-              "word": "same"
+              "word": "same",
+              "audio": [
+                "media/SmartPhonics/3/Unit2/sounds/extra_same_jessica.mp3",
+                "media/SmartPhonics/3/Unit2/sounds/extra_same_eric.mp3",
+                "media/SmartPhonics/3/Unit2/sounds/extra_same_callum.mp3"
+              ]
             },
             {
-              "word": "hate"
+              "word": "hate",
+              "audio": [
+                "media/SmartPhonics/3/Unit2/sounds/extra_hate_laura.mp3",
+                "media/SmartPhonics/3/Unit2/sounds/extra_hate_brian.mp3",
+                "media/SmartPhonics/3/Unit2/sounds/extra_hate_bill.mp3"
+              ]
             },
             {
-              "word": "rate"
+              "word": "rate",
+              "audio": [
+                "media/SmartPhonics/3/Unit2/sounds/extra_rate_sarah.mp3",
+                "media/SmartPhonics/3/Unit2/sounds/extra_rate_will.mp3",
+                "media/SmartPhonics/3/Unit2/sounds/extra_rate_roger.mp3"
+              ]
             },
             {
-              "word": "lane"
+              "word": "lane",
+              "audio": [
+                "media/SmartPhonics/3/Unit2/sounds/extra_lane_bella.mp3",
+                "media/SmartPhonics/3/Unit2/sounds/extra_lane_chris.mp3",
+                "media/SmartPhonics/3/Unit2/sounds/extra_lane_matilda.mp3"
+              ]
             },
             {
-              "word": "cage"
+              "word": "cage",
+              "audio": [
+                "media/SmartPhonics/3/Unit2/sounds/extra_cage_arabella.mp3",
+                "media/SmartPhonics/3/Unit2/sounds/extra_cage_liam.mp3",
+                "media/SmartPhonics/3/Unit2/sounds/extra_cage_river.mp3"
+              ]
             },
             {
-              "word": "page"
+              "word": "page",
+              "audio": [
+                "media/SmartPhonics/3/Unit2/sounds/extra_page_jessica.mp3",
+                "media/SmartPhonics/3/Unit2/sounds/extra_page_eric.mp3",
+                "media/SmartPhonics/3/Unit2/sounds/extra_page_callum.mp3"
+              ]
             },
             {
-              "word": "gaze"
+              "word": "gaze",
+              "audio": [
+                "media/SmartPhonics/3/Unit2/sounds/extra_gaze_laura.mp3",
+                "media/SmartPhonics/3/Unit2/sounds/extra_gaze_brian.mp3",
+                "media/SmartPhonics/3/Unit2/sounds/extra_gaze_bill.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -1644,28 +2044,68 @@
           ],
           "extraWords": [
             {
-              "word": "dine"
+              "word": "dine",
+              "audio": [
+                "media/SmartPhonics/3/Unit3/sounds/extra_dine_sarah.mp3",
+                "media/SmartPhonics/3/Unit3/sounds/extra_dine_will.mp3",
+                "media/SmartPhonics/3/Unit3/sounds/extra_dine_roger.mp3"
+              ]
             },
             {
-              "word": "fine"
+              "word": "fine",
+              "audio": [
+                "media/SmartPhonics/3/Unit3/sounds/extra_fine_bella.mp3",
+                "media/SmartPhonics/3/Unit3/sounds/extra_fine_chris.mp3",
+                "media/SmartPhonics/3/Unit3/sounds/extra_fine_matilda.mp3"
+              ]
             },
             {
-              "word": "mine"
+              "word": "mine",
+              "audio": [
+                "media/SmartPhonics/3/Unit3/sounds/extra_mine_arabella.mp3",
+                "media/SmartPhonics/3/Unit3/sounds/extra_mine_liam.mp3",
+                "media/SmartPhonics/3/Unit3/sounds/extra_mine_river.mp3"
+              ]
             },
             {
-              "word": "like"
+              "word": "like",
+              "audio": [
+                "media/SmartPhonics/3/Unit3/sounds/extra_like_jessica.mp3",
+                "media/SmartPhonics/3/Unit3/sounds/extra_like_eric.mp3",
+                "media/SmartPhonics/3/Unit3/sounds/extra_like_callum.mp3"
+              ]
             },
             {
-              "word": "mile"
+              "word": "mile",
+              "audio": [
+                "media/SmartPhonics/3/Unit3/sounds/extra_mile_laura.mp3",
+                "media/SmartPhonics/3/Unit3/sounds/extra_mile_brian.mp3",
+                "media/SmartPhonics/3/Unit3/sounds/extra_mile_bill.mp3"
+              ]
             },
             {
-              "word": "fire"
+              "word": "fire",
+              "audio": [
+                "media/SmartPhonics/3/Unit3/sounds/extra_fire_sarah.mp3",
+                "media/SmartPhonics/3/Unit3/sounds/extra_fire_will.mp3",
+                "media/SmartPhonics/3/Unit3/sounds/extra_fire_roger.mp3"
+              ]
             },
             {
-              "word": "wire"
+              "word": "wire",
+              "audio": [
+                "media/SmartPhonics/3/Unit3/sounds/extra_wire_bella.mp3",
+                "media/SmartPhonics/3/Unit3/sounds/extra_wire_chris.mp3",
+                "media/SmartPhonics/3/Unit3/sounds/extra_wire_matilda.mp3"
+              ]
             },
             {
-              "word": "ripe"
+              "word": "ripe",
+              "audio": [
+                "media/SmartPhonics/3/Unit3/sounds/extra_ripe_arabella.mp3",
+                "media/SmartPhonics/3/Unit3/sounds/extra_ripe_liam.mp3",
+                "media/SmartPhonics/3/Unit3/sounds/extra_ripe_river.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -1737,28 +2177,68 @@
           ],
           "extraWords": [
             {
-              "word": "wide"
+              "word": "wide",
+              "audio": [
+                "media/SmartPhonics/3/Unit4/sounds/extra_wide_jessica.mp3",
+                "media/SmartPhonics/3/Unit4/sounds/extra_wide_eric.mp3",
+                "media/SmartPhonics/3/Unit4/sounds/extra_wide_callum.mp3"
+              ]
             },
             {
-              "word": "side"
+              "word": "side",
+              "audio": [
+                "media/SmartPhonics/3/Unit4/sounds/extra_side_laura.mp3",
+                "media/SmartPhonics/3/Unit4/sounds/extra_side_brian.mp3",
+                "media/SmartPhonics/3/Unit4/sounds/extra_side_bill.mp3"
+              ]
             },
             {
-              "word": "tide"
+              "word": "tide",
+              "audio": [
+                "media/SmartPhonics/3/Unit4/sounds/extra_tide_sarah.mp3",
+                "media/SmartPhonics/3/Unit4/sounds/extra_tide_will.mp3",
+                "media/SmartPhonics/3/Unit4/sounds/extra_tide_roger.mp3"
+              ]
             },
             {
-              "word": "site"
+              "word": "site",
+              "audio": [
+                "media/SmartPhonics/3/Unit4/sounds/extra_site_bella.mp3",
+                "media/SmartPhonics/3/Unit4/sounds/extra_site_chris.mp3",
+                "media/SmartPhonics/3/Unit4/sounds/extra_site_matilda.mp3"
+              ]
             },
             {
-              "word": "mice"
+              "word": "mice",
+              "audio": [
+                "media/SmartPhonics/3/Unit4/sounds/extra_mice_arabella.mp3",
+                "media/SmartPhonics/3/Unit4/sounds/extra_mice_liam.mp3",
+                "media/SmartPhonics/3/Unit4/sounds/extra_mice_river.mp3"
+              ]
             },
             {
-              "word": "rice"
+              "word": "rice",
+              "audio": [
+                "media/SmartPhonics/3/Unit4/sounds/extra_rice_jessica.mp3",
+                "media/SmartPhonics/3/Unit4/sounds/extra_rice_eric.mp3",
+                "media/SmartPhonics/3/Unit4/sounds/extra_rice_callum.mp3"
+              ]
             },
             {
-              "word": "lice"
+              "word": "lice",
+              "audio": [
+                "media/SmartPhonics/3/Unit4/sounds/extra_lice_laura.mp3",
+                "media/SmartPhonics/3/Unit4/sounds/extra_lice_brian.mp3",
+                "media/SmartPhonics/3/Unit4/sounds/extra_lice_bill.mp3"
+              ]
             },
             {
-              "word": "nice"
+              "word": "nice",
+              "audio": [
+                "media/SmartPhonics/3/Unit4/sounds/extra_nice_sarah.mp3",
+                "media/SmartPhonics/3/Unit4/sounds/extra_nice_will.mp3",
+                "media/SmartPhonics/3/Unit4/sounds/extra_nice_roger.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -1830,28 +2310,68 @@
           ],
           "extraWords": [
             {
-              "word": "dose"
+              "word": "dose",
+              "audio": [
+                "media/SmartPhonics/3/Unit5/sounds/extra_dose_bella.mp3",
+                "media/SmartPhonics/3/Unit5/sounds/extra_dose_chris.mp3",
+                "media/SmartPhonics/3/Unit5/sounds/extra_dose_matilda.mp3"
+              ]
             },
             {
-              "word": "lose"
+              "word": "lose",
+              "audio": [
+                "media/SmartPhonics/3/Unit5/sounds/extra_lose_arabella.mp3",
+                "media/SmartPhonics/3/Unit5/sounds/extra_lose_liam.mp3",
+                "media/SmartPhonics/3/Unit5/sounds/extra_lose_river.mp3"
+              ]
             },
             {
-              "word": "code"
+              "word": "code",
+              "audio": [
+                "media/SmartPhonics/3/Unit5/sounds/extra_code_jessica.mp3",
+                "media/SmartPhonics/3/Unit5/sounds/extra_code_eric.mp3",
+                "media/SmartPhonics/3/Unit5/sounds/extra_code_callum.mp3"
+              ]
             },
             {
-              "word": "tone"
+              "word": "tone",
+              "audio": [
+                "media/SmartPhonics/3/Unit5/sounds/extra_tone_laura.mp3",
+                "media/SmartPhonics/3/Unit5/sounds/extra_tone_brian.mp3",
+                "media/SmartPhonics/3/Unit5/sounds/extra_tone_bill.mp3"
+              ]
             },
             {
-              "word": "bore"
+              "word": "bore",
+              "audio": [
+                "media/SmartPhonics/3/Unit5/sounds/extra_bore_sarah.mp3",
+                "media/SmartPhonics/3/Unit5/sounds/extra_bore_will.mp3",
+                "media/SmartPhonics/3/Unit5/sounds/extra_bore_roger.mp3"
+              ]
             },
             {
-              "word": "core"
+              "word": "core",
+              "audio": [
+                "media/SmartPhonics/3/Unit5/sounds/extra_core_bella.mp3",
+                "media/SmartPhonics/3/Unit5/sounds/extra_core_chris.mp3",
+                "media/SmartPhonics/3/Unit5/sounds/extra_core_matilda.mp3"
+              ]
             },
             {
-              "word": "more"
+              "word": "more",
+              "audio": [
+                "media/SmartPhonics/3/Unit5/sounds/extra_more_arabella.mp3",
+                "media/SmartPhonics/3/Unit5/sounds/extra_more_liam.mp3",
+                "media/SmartPhonics/3/Unit5/sounds/extra_more_river.mp3"
+              ]
             },
             {
-              "word": "fore"
+              "word": "fore",
+              "audio": [
+                "media/SmartPhonics/3/Unit5/sounds/extra_fore_jessica.mp3",
+                "media/SmartPhonics/3/Unit5/sounds/extra_fore_eric.mp3",
+                "media/SmartPhonics/3/Unit5/sounds/extra_fore_callum.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -1941,28 +2461,68 @@
           ],
           "extraWords": [
             {
-              "word": "role"
+              "word": "role",
+              "audio": [
+                "media/SmartPhonics/3/Unit6/sounds/extra_role_laura.mp3",
+                "media/SmartPhonics/3/Unit6/sounds/extra_role_brian.mp3",
+                "media/SmartPhonics/3/Unit6/sounds/extra_role_bill.mp3"
+              ]
             },
             {
-              "word": "rode"
+              "word": "rode",
+              "audio": [
+                "media/SmartPhonics/3/Unit6/sounds/extra_rode_sarah.mp3",
+                "media/SmartPhonics/3/Unit6/sounds/extra_rode_will.mp3",
+                "media/SmartPhonics/3/Unit6/sounds/extra_rode_roger.mp3"
+              ]
             },
             {
-              "word": "poke"
+              "word": "poke",
+              "audio": [
+                "media/SmartPhonics/3/Unit6/sounds/extra_poke_bella.mp3",
+                "media/SmartPhonics/3/Unit6/sounds/extra_poke_chris.mp3",
+                "media/SmartPhonics/3/Unit6/sounds/extra_poke_matilda.mp3"
+              ]
             },
             {
-              "word": "woke"
+              "word": "woke",
+              "audio": [
+                "media/SmartPhonics/3/Unit6/sounds/extra_woke_arabella.mp3",
+                "media/SmartPhonics/3/Unit6/sounds/extra_woke_liam.mp3",
+                "media/SmartPhonics/3/Unit6/sounds/extra_woke_river.mp3"
+              ]
             },
             {
-              "word": "joke"
+              "word": "joke",
+              "audio": [
+                "media/SmartPhonics/3/Unit6/sounds/extra_joke_jessica.mp3",
+                "media/SmartPhonics/3/Unit6/sounds/extra_joke_eric.mp3",
+                "media/SmartPhonics/3/Unit6/sounds/extra_joke_callum.mp3"
+              ]
             },
             {
-              "word": "coke"
+              "word": "coke",
+              "audio": [
+                "media/SmartPhonics/3/Unit6/sounds/extra_coke_laura.mp3",
+                "media/SmartPhonics/3/Unit6/sounds/extra_coke_brian.mp3",
+                "media/SmartPhonics/3/Unit6/sounds/extra_coke_bill.mp3"
+              ]
             },
             {
-              "word": "zone"
+              "word": "zone",
+              "audio": [
+                "media/SmartPhonics/3/Unit6/sounds/extra_zone_sarah.mp3",
+                "media/SmartPhonics/3/Unit6/sounds/extra_zone_will.mp3",
+                "media/SmartPhonics/3/Unit6/sounds/extra_zone_roger.mp3"
+              ]
             },
             {
-              "word": "node"
+              "word": "node",
+              "audio": [
+                "media/SmartPhonics/3/Unit6/sounds/extra_node_bella.mp3",
+                "media/SmartPhonics/3/Unit6/sounds/extra_node_chris.mp3",
+                "media/SmartPhonics/3/Unit6/sounds/extra_node_matilda.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -2046,28 +2606,68 @@
           ],
           "extraWords": [
             {
-              "word": "jute"
+              "word": "jute",
+              "audio": [
+                "media/SmartPhonics/3/Unit7/sounds/extra_jute_arabella.mp3",
+                "media/SmartPhonics/3/Unit7/sounds/extra_jute_liam.mp3",
+                "media/SmartPhonics/3/Unit7/sounds/extra_jute_river.mp3"
+              ]
             },
             {
-              "word": "rude"
+              "word": "rude",
+              "audio": [
+                "media/SmartPhonics/3/Unit7/sounds/extra_rude_jessica.mp3",
+                "media/SmartPhonics/3/Unit7/sounds/extra_rude_eric.mp3",
+                "media/SmartPhonics/3/Unit7/sounds/extra_rude_callum.mp3"
+              ]
             },
             {
-              "word": "huge"
+              "word": "huge",
+              "audio": [
+                "media/SmartPhonics/3/Unit7/sounds/extra_huge_laura.mp3",
+                "media/SmartPhonics/3/Unit7/sounds/extra_huge_brian.mp3",
+                "media/SmartPhonics/3/Unit7/sounds/extra_huge_bill.mp3"
+              ]
             },
             {
-              "word": "pure"
+              "word": "pure",
+              "audio": [
+                "media/SmartPhonics/3/Unit7/sounds/extra_pure_sarah.mp3",
+                "media/SmartPhonics/3/Unit7/sounds/extra_pure_will.mp3",
+                "media/SmartPhonics/3/Unit7/sounds/extra_pure_roger.mp3"
+              ]
             },
             {
-              "word": "sure"
+              "word": "sure",
+              "audio": [
+                "media/SmartPhonics/3/Unit7/sounds/extra_sure_bella.mp3",
+                "media/SmartPhonics/3/Unit7/sounds/extra_sure_chris.mp3",
+                "media/SmartPhonics/3/Unit7/sounds/extra_sure_matilda.mp3"
+              ]
             },
             {
-              "word": "rule"
+              "word": "rule",
+              "audio": [
+                "media/SmartPhonics/3/Unit7/sounds/extra_rule_arabella.mp3",
+                "media/SmartPhonics/3/Unit7/sounds/extra_rule_liam.mp3",
+                "media/SmartPhonics/3/Unit7/sounds/extra_rule_river.mp3"
+              ]
             },
             {
-              "word": "lure"
+              "word": "lure",
+              "audio": [
+                "media/SmartPhonics/3/Unit7/sounds/extra_lure_jessica.mp3",
+                "media/SmartPhonics/3/Unit7/sounds/extra_lure_eric.mp3",
+                "media/SmartPhonics/3/Unit7/sounds/extra_lure_callum.mp3"
+              ]
             },
             {
-              "word": "duke"
+              "word": "duke",
+              "audio": [
+                "media/SmartPhonics/3/Unit7/sounds/extra_duke_laura.mp3",
+                "media/SmartPhonics/3/Unit7/sounds/extra_duke_brian.mp3",
+                "media/SmartPhonics/3/Unit7/sounds/extra_duke_bill.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -2154,28 +2754,68 @@
           ],
           "extraWords": [
             {
-              "word": "block"
+              "word": "block",
+              "audio": [
+                "media/SmartPhonics/4/Unit1/sounds/extra_block_sarah.mp3",
+                "media/SmartPhonics/4/Unit1/sounds/extra_block_will.mp3",
+                "media/SmartPhonics/4/Unit1/sounds/extra_block_roger.mp3"
+              ]
             },
             {
-              "word": "blast"
+              "word": "blast",
+              "audio": [
+                "media/SmartPhonics/4/Unit1/sounds/extra_blast_bella.mp3",
+                "media/SmartPhonics/4/Unit1/sounds/extra_blast_chris.mp3",
+                "media/SmartPhonics/4/Unit1/sounds/extra_blast_matilda.mp3"
+              ]
             },
             {
-              "word": "blend"
+              "word": "blend",
+              "audio": [
+                "media/SmartPhonics/4/Unit1/sounds/extra_blend_arabella.mp3",
+                "media/SmartPhonics/4/Unit1/sounds/extra_blend_liam.mp3",
+                "media/SmartPhonics/4/Unit1/sounds/extra_blend_river.mp3"
+              ]
             },
             {
-              "word": "blunt"
+              "word": "blunt",
+              "audio": [
+                "media/SmartPhonics/4/Unit1/sounds/extra_blunt_jessica.mp3",
+                "media/SmartPhonics/4/Unit1/sounds/extra_blunt_eric.mp3",
+                "media/SmartPhonics/4/Unit1/sounds/extra_blunt_callum.mp3"
+              ]
             },
             {
-              "word": "clip"
+              "word": "clip",
+              "audio": [
+                "media/SmartPhonics/4/Unit1/sounds/extra_clip_laura.mp3",
+                "media/SmartPhonics/4/Unit1/sounds/extra_clip_brian.mp3",
+                "media/SmartPhonics/4/Unit1/sounds/extra_clip_bill.mp3"
+              ]
             },
             {
-              "word": "clan"
+              "word": "clan",
+              "audio": [
+                "media/SmartPhonics/4/Unit1/sounds/extra_clan_sarah.mp3",
+                "media/SmartPhonics/4/Unit1/sounds/extra_clan_will.mp3",
+                "media/SmartPhonics/4/Unit1/sounds/extra_clan_roger.mp3"
+              ]
             },
             {
-              "word": "flip"
+              "word": "flip",
+              "audio": [
+                "media/SmartPhonics/4/Unit1/sounds/extra_flip_bella.mp3",
+                "media/SmartPhonics/4/Unit1/sounds/extra_flip_chris.mp3",
+                "media/SmartPhonics/4/Unit1/sounds/extra_flip_matilda.mp3"
+              ]
             },
             {
-              "word": "flat"
+              "word": "flat",
+              "audio": [
+                "media/SmartPhonics/4/Unit1/sounds/extra_flat_arabella.mp3",
+                "media/SmartPhonics/4/Unit1/sounds/extra_flat_liam.mp3",
+                "media/SmartPhonics/4/Unit1/sounds/extra_flat_river.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -2288,28 +2928,68 @@
           ],
           "extraWords": [
             {
-              "word": "bring"
+              "word": "bring",
+              "audio": [
+                "media/SmartPhonics/4/Unit2/sounds/extra_bring_jessica.mp3",
+                "media/SmartPhonics/4/Unit2/sounds/extra_bring_eric.mp3",
+                "media/SmartPhonics/4/Unit2/sounds/extra_bring_callum.mp3"
+              ]
             },
             {
-              "word": "brag"
+              "word": "brag",
+              "audio": [
+                "media/SmartPhonics/4/Unit2/sounds/extra_brag_laura.mp3",
+                "media/SmartPhonics/4/Unit2/sounds/extra_brag_brian.mp3",
+                "media/SmartPhonics/4/Unit2/sounds/extra_brag_bill.mp3"
+              ]
             },
             {
-              "word": "brim"
+              "word": "brim",
+              "audio": [
+                "media/SmartPhonics/4/Unit2/sounds/extra_brim_sarah.mp3",
+                "media/SmartPhonics/4/Unit2/sounds/extra_brim_will.mp3",
+                "media/SmartPhonics/4/Unit2/sounds/extra_brim_roger.mp3"
+              ]
             },
             {
-              "word": "brand"
+              "word": "brand",
+              "audio": [
+                "media/SmartPhonics/4/Unit2/sounds/extra_brand_bella.mp3",
+                "media/SmartPhonics/4/Unit2/sounds/extra_brand_chris.mp3",
+                "media/SmartPhonics/4/Unit2/sounds/extra_brand_matilda.mp3"
+              ]
             },
             {
-              "word": "crack"
+              "word": "crack",
+              "audio": [
+                "media/SmartPhonics/4/Unit2/sounds/extra_crack_arabella.mp3",
+                "media/SmartPhonics/4/Unit2/sounds/extra_crack_liam.mp3",
+                "media/SmartPhonics/4/Unit2/sounds/extra_crack_river.mp3"
+              ]
             },
             {
-              "word": "crust"
+              "word": "crust",
+              "audio": [
+                "media/SmartPhonics/4/Unit2/sounds/extra_crust_jessica.mp3",
+                "media/SmartPhonics/4/Unit2/sounds/extra_crust_eric.mp3",
+                "media/SmartPhonics/4/Unit2/sounds/extra_crust_callum.mp3"
+              ]
             },
             {
-              "word": "frank"
+              "word": "frank",
+              "audio": [
+                "media/SmartPhonics/4/Unit2/sounds/extra_frank_laura.mp3",
+                "media/SmartPhonics/4/Unit2/sounds/extra_frank_brian.mp3",
+                "media/SmartPhonics/4/Unit2/sounds/extra_frank_bill.mp3"
+              ]
             },
             {
-              "word": "fret"
+              "word": "fret",
+              "audio": [
+                "media/SmartPhonics/4/Unit2/sounds/extra_fret_sarah.mp3",
+                "media/SmartPhonics/4/Unit2/sounds/extra_fret_will.mp3",
+                "media/SmartPhonics/4/Unit2/sounds/extra_fret_roger.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -2410,28 +3090,68 @@
           ],
           "extraWords": [
             {
-              "word": "glad"
+              "word": "glad",
+              "audio": [
+                "media/SmartPhonics/4/Unit3/sounds/extra_glad_bella.mp3",
+                "media/SmartPhonics/4/Unit3/sounds/extra_glad_chris.mp3",
+                "media/SmartPhonics/4/Unit3/sounds/extra_glad_matilda.mp3"
+              ]
             },
             {
-              "word": "glum"
+              "word": "glum",
+              "audio": [
+                "media/SmartPhonics/4/Unit3/sounds/extra_glum_arabella.mp3",
+                "media/SmartPhonics/4/Unit3/sounds/extra_glum_liam.mp3",
+                "media/SmartPhonics/4/Unit3/sounds/extra_glum_river.mp3"
+              ]
             },
             {
-              "word": "plank"
+              "word": "plank",
+              "audio": [
+                "media/SmartPhonics/4/Unit3/sounds/extra_plank_jessica.mp3",
+                "media/SmartPhonics/4/Unit3/sounds/extra_plank_eric.mp3",
+                "media/SmartPhonics/4/Unit3/sounds/extra_plank_callum.mp3"
+              ]
             },
             {
-              "word": "plus"
+              "word": "plus",
+              "audio": [
+                "media/SmartPhonics/4/Unit3/sounds/extra_plus_laura.mp3",
+                "media/SmartPhonics/4/Unit3/sounds/extra_plus_brian.mp3",
+                "media/SmartPhonics/4/Unit3/sounds/extra_plus_bill.mp3"
+              ]
             },
             {
-              "word": "slap"
+              "word": "slap",
+              "audio": [
+                "media/SmartPhonics/4/Unit3/sounds/extra_slap_sarah.mp3",
+                "media/SmartPhonics/4/Unit3/sounds/extra_slap_will.mp3",
+                "media/SmartPhonics/4/Unit3/sounds/extra_slap_roger.mp3"
+              ]
             },
             {
-              "word": "slip"
+              "word": "slip",
+              "audio": [
+                "media/SmartPhonics/4/Unit3/sounds/extra_slip_bella.mp3",
+                "media/SmartPhonics/4/Unit3/sounds/extra_slip_chris.mp3",
+                "media/SmartPhonics/4/Unit3/sounds/extra_slip_matilda.mp3"
+              ]
             },
             {
-              "word": "slam"
+              "word": "slam",
+              "audio": [
+                "media/SmartPhonics/4/Unit3/sounds/extra_slam_arabella.mp3",
+                "media/SmartPhonics/4/Unit3/sounds/extra_slam_liam.mp3",
+                "media/SmartPhonics/4/Unit3/sounds/extra_slam_river.mp3"
+              ]
             },
             {
-              "word": "slot"
+              "word": "slot",
+              "audio": [
+                "media/SmartPhonics/4/Unit3/sounds/extra_slot_jessica.mp3",
+                "media/SmartPhonics/4/Unit3/sounds/extra_slot_eric.mp3",
+                "media/SmartPhonics/4/Unit3/sounds/extra_slot_callum.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -2526,28 +3246,68 @@
           ],
           "extraWords": [
             {
-              "word": "drip"
+              "word": "drip",
+              "audio": [
+                "media/SmartPhonics/4/Unit4/sounds/extra_drip_laura.mp3",
+                "media/SmartPhonics/4/Unit4/sounds/extra_drip_brian.mp3",
+                "media/SmartPhonics/4/Unit4/sounds/extra_drip_bill.mp3"
+              ]
             },
             {
-              "word": "drop"
+              "word": "drop",
+              "audio": [
+                "media/SmartPhonics/4/Unit4/sounds/extra_drop_sarah.mp3",
+                "media/SmartPhonics/4/Unit4/sounds/extra_drop_will.mp3",
+                "media/SmartPhonics/4/Unit4/sounds/extra_drop_roger.mp3"
+              ]
             },
             {
-              "word": "prank"
+              "word": "prank",
+              "audio": [
+                "media/SmartPhonics/4/Unit4/sounds/extra_prank_bella.mp3",
+                "media/SmartPhonics/4/Unit4/sounds/extra_prank_chris.mp3",
+                "media/SmartPhonics/4/Unit4/sounds/extra_prank_matilda.mp3"
+              ]
             },
             {
-              "word": "prim"
+              "word": "prim",
+              "audio": [
+                "media/SmartPhonics/4/Unit4/sounds/extra_prim_arabella.mp3",
+                "media/SmartPhonics/4/Unit4/sounds/extra_prim_liam.mp3",
+                "media/SmartPhonics/4/Unit4/sounds/extra_prim_river.mp3"
+              ]
             },
             {
-              "word": "prop"
+              "word": "prop",
+              "audio": [
+                "media/SmartPhonics/4/Unit4/sounds/extra_prop_jessica.mp3",
+                "media/SmartPhonics/4/Unit4/sounds/extra_prop_eric.mp3",
+                "media/SmartPhonics/4/Unit4/sounds/extra_prop_callum.mp3"
+              ]
             },
             {
-              "word": "trap"
+              "word": "trap",
+              "audio": [
+                "media/SmartPhonics/4/Unit4/sounds/extra_trap_laura.mp3",
+                "media/SmartPhonics/4/Unit4/sounds/extra_trap_brian.mp3",
+                "media/SmartPhonics/4/Unit4/sounds/extra_trap_bill.mp3"
+              ]
             },
             {
-              "word": "trip"
+              "word": "trip",
+              "audio": [
+                "media/SmartPhonics/4/Unit4/sounds/extra_trip_sarah.mp3",
+                "media/SmartPhonics/4/Unit4/sounds/extra_trip_will.mp3",
+                "media/SmartPhonics/4/Unit4/sounds/extra_trip_roger.mp3"
+              ]
             },
             {
-              "word": "drag"
+              "word": "drag",
+              "audio": [
+                "media/SmartPhonics/4/Unit4/sounds/extra_drag_bella.mp3",
+                "media/SmartPhonics/4/Unit4/sounds/extra_drag_chris.mp3",
+                "media/SmartPhonics/4/Unit4/sounds/extra_drag_matilda.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -2654,28 +3414,68 @@
           ],
           "extraWords": [
             {
-              "word": "smack"
+              "word": "smack",
+              "audio": [
+                "media/SmartPhonics/4/Unit5/sounds/extra_smack_arabella.mp3",
+                "media/SmartPhonics/4/Unit5/sounds/extra_smack_liam.mp3",
+                "media/SmartPhonics/4/Unit5/sounds/extra_smack_river.mp3"
+              ]
             },
             {
-              "word": "smog"
+              "word": "smog",
+              "audio": [
+                "media/SmartPhonics/4/Unit5/sounds/extra_smog_jessica.mp3",
+                "media/SmartPhonics/4/Unit5/sounds/extra_smog_eric.mp3",
+                "media/SmartPhonics/4/Unit5/sounds/extra_smog_callum.mp3"
+              ]
             },
             {
-              "word": "snap"
+              "word": "snap",
+              "audio": [
+                "media/SmartPhonics/4/Unit5/sounds/extra_snap_laura.mp3",
+                "media/SmartPhonics/4/Unit5/sounds/extra_snap_brian.mp3",
+                "media/SmartPhonics/4/Unit5/sounds/extra_snap_bill.mp3"
+              ]
             },
             {
-              "word": "snug"
+              "word": "snug",
+              "audio": [
+                "media/SmartPhonics/4/Unit5/sounds/extra_snug_sarah.mp3",
+                "media/SmartPhonics/4/Unit5/sounds/extra_snug_will.mp3",
+                "media/SmartPhonics/4/Unit5/sounds/extra_snug_roger.mp3"
+              ]
             },
             {
-              "word": "stack"
+              "word": "stack",
+              "audio": [
+                "media/SmartPhonics/4/Unit5/sounds/extra_stack_bella.mp3",
+                "media/SmartPhonics/4/Unit5/sounds/extra_stack_chris.mp3",
+                "media/SmartPhonics/4/Unit5/sounds/extra_stack_matilda.mp3"
+              ]
             },
             {
-              "word": "step"
+              "word": "step",
+              "audio": [
+                "media/SmartPhonics/4/Unit5/sounds/extra_step_arabella.mp3",
+                "media/SmartPhonics/4/Unit5/sounds/extra_step_liam.mp3",
+                "media/SmartPhonics/4/Unit5/sounds/extra_step_river.mp3"
+              ]
             },
             {
-              "word": "swam"
+              "word": "swam",
+              "audio": [
+                "media/SmartPhonics/4/Unit5/sounds/extra_swam_jessica.mp3",
+                "media/SmartPhonics/4/Unit5/sounds/extra_swam_eric.mp3",
+                "media/SmartPhonics/4/Unit5/sounds/extra_swam_callum.mp3"
+              ]
             },
             {
-              "word": "swat"
+              "word": "swat",
+              "audio": [
+                "media/SmartPhonics/4/Unit5/sounds/extra_swat_laura.mp3",
+                "media/SmartPhonics/4/Unit5/sounds/extra_swat_brian.mp3",
+                "media/SmartPhonics/4/Unit5/sounds/extra_swat_bill.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -2767,28 +3567,68 @@
           ],
           "extraWords": [
             {
-              "word": "lung"
+              "word": "lung",
+              "audio": [
+                "media/SmartPhonics/4/Unit6/sounds/extra_lung_sarah.mp3",
+                "media/SmartPhonics/4/Unit6/sounds/extra_lung_will.mp3",
+                "media/SmartPhonics/4/Unit6/sounds/extra_lung_roger.mp3"
+              ]
             },
             {
-              "word": "rang"
+              "word": "rang",
+              "audio": [
+                "media/SmartPhonics/4/Unit6/sounds/extra_rang_bella.mp3",
+                "media/SmartPhonics/4/Unit6/sounds/extra_rang_chris.mp3",
+                "media/SmartPhonics/4/Unit6/sounds/extra_rang_matilda.mp3"
+              ]
             },
             {
-              "word": "sung"
+              "word": "sung",
+              "audio": [
+                "media/SmartPhonics/4/Unit6/sounds/extra_sung_arabella.mp3",
+                "media/SmartPhonics/4/Unit6/sounds/extra_sung_liam.mp3",
+                "media/SmartPhonics/4/Unit6/sounds/extra_sung_river.mp3"
+              ]
             },
             {
-              "word": "hang"
+              "word": "hang",
+              "audio": [
+                "media/SmartPhonics/4/Unit6/sounds/extra_hang_jessica.mp3",
+                "media/SmartPhonics/4/Unit6/sounds/extra_hang_eric.mp3",
+                "media/SmartPhonics/4/Unit6/sounds/extra_hang_callum.mp3"
+              ]
             },
             {
-              "word": "blink"
+              "word": "blink",
+              "audio": [
+                "media/SmartPhonics/4/Unit6/sounds/extra_blink_laura.mp3",
+                "media/SmartPhonics/4/Unit6/sounds/extra_blink_brian.mp3",
+                "media/SmartPhonics/4/Unit6/sounds/extra_blink_bill.mp3"
+              ]
             },
             {
-              "word": "drink"
+              "word": "drink",
+              "audio": [
+                "media/SmartPhonics/4/Unit6/sounds/extra_drink_sarah.mp3",
+                "media/SmartPhonics/4/Unit6/sounds/extra_drink_will.mp3",
+                "media/SmartPhonics/4/Unit6/sounds/extra_drink_roger.mp3"
+              ]
             },
             {
-              "word": "link"
+              "word": "link",
+              "audio": [
+                "media/SmartPhonics/4/Unit6/sounds/extra_link_bella.mp3",
+                "media/SmartPhonics/4/Unit6/sounds/extra_link_chris.mp3",
+                "media/SmartPhonics/4/Unit6/sounds/extra_link_matilda.mp3"
+              ]
             },
             {
-              "word": "sink"
+              "word": "sink",
+              "audio": [
+                "media/SmartPhonics/4/Unit6/sounds/extra_sink_arabella.mp3",
+                "media/SmartPhonics/4/Unit6/sounds/extra_sink_liam.mp3",
+                "media/SmartPhonics/4/Unit6/sounds/extra_sink_river.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -2892,28 +3732,68 @@
           ],
           "extraWords": [
             {
-              "word": "shed"
+              "word": "shed",
+              "audio": [
+                "media/SmartPhonics/4/Unit7/sounds/extra_shed_jessica.mp3",
+                "media/SmartPhonics/4/Unit7/sounds/extra_shed_eric.mp3",
+                "media/SmartPhonics/4/Unit7/sounds/extra_shed_callum.mp3"
+              ]
             },
             {
-              "word": "shell"
+              "word": "shell",
+              "audio": [
+                "media/SmartPhonics/4/Unit7/sounds/extra_shell_laura.mp3",
+                "media/SmartPhonics/4/Unit7/sounds/extra_shell_brian.mp3",
+                "media/SmartPhonics/4/Unit7/sounds/extra_shell_bill.mp3"
+              ]
             },
             {
-              "word": "shut"
+              "word": "shut",
+              "audio": [
+                "media/SmartPhonics/4/Unit7/sounds/extra_shut_sarah.mp3",
+                "media/SmartPhonics/4/Unit7/sounds/extra_shut_will.mp3",
+                "media/SmartPhonics/4/Unit7/sounds/extra_shut_roger.mp3"
+              ]
             },
             {
-              "word": "shack"
+              "word": "shack",
+              "audio": [
+                "media/SmartPhonics/4/Unit7/sounds/extra_shack_bella.mp3",
+                "media/SmartPhonics/4/Unit7/sounds/extra_shack_chris.mp3",
+                "media/SmartPhonics/4/Unit7/sounds/extra_shack_matilda.mp3"
+              ]
             },
             {
-              "word": "chest"
+              "word": "chest",
+              "audio": [
+                "media/SmartPhonics/4/Unit7/sounds/extra_chest_arabella.mp3",
+                "media/SmartPhonics/4/Unit7/sounds/extra_chest_liam.mp3",
+                "media/SmartPhonics/4/Unit7/sounds/extra_chest_river.mp3"
+              ]
             },
             {
-              "word": "chip"
+              "word": "chip",
+              "audio": [
+                "media/SmartPhonics/4/Unit7/sounds/extra_chip_jessica.mp3",
+                "media/SmartPhonics/4/Unit7/sounds/extra_chip_eric.mp3",
+                "media/SmartPhonics/4/Unit7/sounds/extra_chip_callum.mp3"
+              ]
             },
             {
-              "word": "check"
+              "word": "check",
+              "audio": [
+                "media/SmartPhonics/4/Unit7/sounds/extra_check_laura.mp3",
+                "media/SmartPhonics/4/Unit7/sounds/extra_check_brian.mp3",
+                "media/SmartPhonics/4/Unit7/sounds/extra_check_bill.mp3"
+              ]
             },
             {
-              "word": "chop"
+              "word": "chop",
+              "audio": [
+                "media/SmartPhonics/4/Unit7/sounds/extra_chop_sarah.mp3",
+                "media/SmartPhonics/4/Unit7/sounds/extra_chop_will.mp3",
+                "media/SmartPhonics/4/Unit7/sounds/extra_chop_roger.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -3020,28 +3900,68 @@
           ],
           "extraWords": [
             {
-              "word": "then"
+              "word": "then",
+              "audio": [
+                "media/SmartPhonics/4/Unit8/sounds/extra_then_bella.mp3",
+                "media/SmartPhonics/4/Unit8/sounds/extra_then_chris.mp3",
+                "media/SmartPhonics/4/Unit8/sounds/extra_then_matilda.mp3"
+              ]
             },
             {
-              "word": "thing"
+              "word": "thing",
+              "audio": [
+                "media/SmartPhonics/4/Unit8/sounds/extra_thing_arabella.mp3",
+                "media/SmartPhonics/4/Unit8/sounds/extra_thing_liam.mp3",
+                "media/SmartPhonics/4/Unit8/sounds/extra_thing_river.mp3"
+              ]
             },
             {
-              "word": "think"
+              "word": "think",
+              "audio": [
+                "media/SmartPhonics/4/Unit8/sounds/extra_think_jessica.mp3",
+                "media/SmartPhonics/4/Unit8/sounds/extra_think_eric.mp3",
+                "media/SmartPhonics/4/Unit8/sounds/extra_think_callum.mp3"
+              ]
             },
             {
-              "word": "thud"
+              "word": "thud",
+              "audio": [
+                "media/SmartPhonics/4/Unit8/sounds/extra_thud_laura.mp3",
+                "media/SmartPhonics/4/Unit8/sounds/extra_thud_brian.mp3",
+                "media/SmartPhonics/4/Unit8/sounds/extra_thud_bill.mp3"
+              ]
             },
             {
-              "word": "when"
+              "word": "when",
+              "audio": [
+                "media/SmartPhonics/4/Unit8/sounds/extra_when_sarah.mp3",
+                "media/SmartPhonics/4/Unit8/sounds/extra_when_will.mp3",
+                "media/SmartPhonics/4/Unit8/sounds/extra_when_roger.mp3"
+              ]
             },
             {
-              "word": "whim"
+              "word": "whim",
+              "audio": [
+                "media/SmartPhonics/4/Unit8/sounds/extra_whim_bella.mp3",
+                "media/SmartPhonics/4/Unit8/sounds/extra_whim_chris.mp3",
+                "media/SmartPhonics/4/Unit8/sounds/extra_whim_matilda.mp3"
+              ]
             },
             {
-              "word": "whack"
+              "word": "whack",
+              "audio": [
+                "media/SmartPhonics/4/Unit8/sounds/extra_whack_arabella.mp3",
+                "media/SmartPhonics/4/Unit8/sounds/extra_whack_liam.mp3",
+                "media/SmartPhonics/4/Unit8/sounds/extra_whack_river.mp3"
+              ]
             },
             {
-              "word": "whine"
+              "word": "whine",
+              "audio": [
+                "media/SmartPhonics/4/Unit8/sounds/extra_whine_jessica.mp3",
+                "media/SmartPhonics/4/Unit8/sounds/extra_whine_eric.mp3",
+                "media/SmartPhonics/4/Unit8/sounds/extra_whine_callum.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -3169,28 +4089,68 @@
           ],
           "extraWords": [
             {
-              "word": "seek"
+              "word": "seek",
+              "audio": [
+                "media/SmartPhonics/5/Unit1/sounds/extra_seek_laura.mp3",
+                "media/SmartPhonics/5/Unit1/sounds/extra_seek_brian.mp3",
+                "media/SmartPhonics/5/Unit1/sounds/extra_seek_bill.mp3"
+              ]
             },
             {
-              "word": "week"
+              "word": "week",
+              "audio": [
+                "media/SmartPhonics/5/Unit1/sounds/extra_week_sarah.mp3",
+                "media/SmartPhonics/5/Unit1/sounds/extra_week_will.mp3",
+                "media/SmartPhonics/5/Unit1/sounds/extra_week_roger.mp3"
+              ]
             },
             {
-              "word": "deep"
+              "word": "deep",
+              "audio": [
+                "media/SmartPhonics/5/Unit1/sounds/extra_deep_bella.mp3",
+                "media/SmartPhonics/5/Unit1/sounds/extra_deep_chris.mp3",
+                "media/SmartPhonics/5/Unit1/sounds/extra_deep_matilda.mp3"
+              ]
             },
             {
-              "word": "keep"
+              "word": "keep",
+              "audio": [
+                "media/SmartPhonics/5/Unit1/sounds/extra_keep_arabella.mp3",
+                "media/SmartPhonics/5/Unit1/sounds/extra_keep_liam.mp3",
+                "media/SmartPhonics/5/Unit1/sounds/extra_keep_river.mp3"
+              ]
             },
             {
-              "word": "beam"
+              "word": "beam",
+              "audio": [
+                "media/SmartPhonics/5/Unit1/sounds/extra_beam_jessica.mp3",
+                "media/SmartPhonics/5/Unit1/sounds/extra_beam_eric.mp3",
+                "media/SmartPhonics/5/Unit1/sounds/extra_beam_callum.mp3"
+              ]
             },
             {
-              "word": "beat"
+              "word": "beat",
+              "audio": [
+                "media/SmartPhonics/5/Unit1/sounds/extra_beat_laura.mp3",
+                "media/SmartPhonics/5/Unit1/sounds/extra_beat_brian.mp3",
+                "media/SmartPhonics/5/Unit1/sounds/extra_beat_bill.mp3"
+              ]
             },
             {
-              "word": "heat"
+              "word": "heat",
+              "audio": [
+                "media/SmartPhonics/5/Unit1/sounds/extra_heat_sarah.mp3",
+                "media/SmartPhonics/5/Unit1/sounds/extra_heat_will.mp3",
+                "media/SmartPhonics/5/Unit1/sounds/extra_heat_roger.mp3"
+              ]
             },
             {
-              "word": "lead"
+              "word": "lead",
+              "audio": [
+                "media/SmartPhonics/5/Unit1/sounds/extra_lead_bella.mp3",
+                "media/SmartPhonics/5/Unit1/sounds/extra_lead_chris.mp3",
+                "media/SmartPhonics/5/Unit1/sounds/extra_lead_matilda.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -3282,28 +4242,68 @@
           ],
           "extraWords": [
             {
-              "word": "load"
+              "word": "load",
+              "audio": [
+                "media/SmartPhonics/5/Unit2/sounds/extra_load_arabella.mp3",
+                "media/SmartPhonics/5/Unit2/sounds/extra_load_liam.mp3",
+                "media/SmartPhonics/5/Unit2/sounds/extra_load_river.mp3"
+              ]
             },
             {
-              "word": "toad"
+              "word": "toad",
+              "audio": [
+                "media/SmartPhonics/5/Unit2/sounds/extra_toad_jessica.mp3",
+                "media/SmartPhonics/5/Unit2/sounds/extra_toad_eric.mp3",
+                "media/SmartPhonics/5/Unit2/sounds/extra_toad_callum.mp3"
+              ]
             },
             {
-              "word": "foam"
+              "word": "foam",
+              "audio": [
+                "media/SmartPhonics/5/Unit2/sounds/extra_foam_laura.mp3",
+                "media/SmartPhonics/5/Unit2/sounds/extra_foam_brian.mp3",
+                "media/SmartPhonics/5/Unit2/sounds/extra_foam_bill.mp3"
+              ]
             },
             {
-              "word": "loan"
+              "word": "loan",
+              "audio": [
+                "media/SmartPhonics/5/Unit2/sounds/extra_loan_sarah.mp3",
+                "media/SmartPhonics/5/Unit2/sounds/extra_loan_will.mp3",
+                "media/SmartPhonics/5/Unit2/sounds/extra_loan_roger.mp3"
+              ]
             },
             {
-              "word": "crow"
+              "word": "crow",
+              "audio": [
+                "media/SmartPhonics/5/Unit2/sounds/extra_crow_bella.mp3",
+                "media/SmartPhonics/5/Unit2/sounds/extra_crow_chris.mp3",
+                "media/SmartPhonics/5/Unit2/sounds/extra_crow_matilda.mp3"
+              ]
             },
             {
-              "word": "flow"
+              "word": "flow",
+              "audio": [
+                "media/SmartPhonics/5/Unit2/sounds/extra_flow_arabella.mp3",
+                "media/SmartPhonics/5/Unit2/sounds/extra_flow_liam.mp3",
+                "media/SmartPhonics/5/Unit2/sounds/extra_flow_river.mp3"
+              ]
             },
             {
-              "word": "glow"
+              "word": "glow",
+              "audio": [
+                "media/SmartPhonics/5/Unit2/sounds/extra_glow_jessica.mp3",
+                "media/SmartPhonics/5/Unit2/sounds/extra_glow_eric.mp3",
+                "media/SmartPhonics/5/Unit2/sounds/extra_glow_callum.mp3"
+              ]
             },
             {
-              "word": "grow"
+              "word": "grow",
+              "audio": [
+                "media/SmartPhonics/5/Unit2/sounds/extra_grow_laura.mp3",
+                "media/SmartPhonics/5/Unit2/sounds/extra_grow_brian.mp3",
+                "media/SmartPhonics/5/Unit2/sounds/extra_grow_bill.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -3407,28 +4407,68 @@
           ],
           "extraWords": [
             {
-              "word": "aim"
+              "word": "aim",
+              "audio": [
+                "media/SmartPhonics/5/Unit3/sounds/extra_aim_sarah.mp3",
+                "media/SmartPhonics/5/Unit3/sounds/extra_aim_will.mp3",
+                "media/SmartPhonics/5/Unit3/sounds/extra_aim_roger.mp3"
+              ]
             },
             {
-              "word": "bait"
+              "word": "bait",
+              "audio": [
+                "media/SmartPhonics/5/Unit3/sounds/extra_bait_bella.mp3",
+                "media/SmartPhonics/5/Unit3/sounds/extra_bait_chris.mp3",
+                "media/SmartPhonics/5/Unit3/sounds/extra_bait_matilda.mp3"
+              ]
             },
             {
-              "word": "gain"
+              "word": "gain",
+              "audio": [
+                "media/SmartPhonics/5/Unit3/sounds/extra_gain_arabella.mp3",
+                "media/SmartPhonics/5/Unit3/sounds/extra_gain_liam.mp3",
+                "media/SmartPhonics/5/Unit3/sounds/extra_gain_river.mp3"
+              ]
             },
             {
-              "word": "hail"
+              "word": "hail",
+              "audio": [
+                "media/SmartPhonics/5/Unit3/sounds/extra_hail_jessica.mp3",
+                "media/SmartPhonics/5/Unit3/sounds/extra_hail_eric.mp3",
+                "media/SmartPhonics/5/Unit3/sounds/extra_hail_callum.mp3"
+              ]
             },
             {
-              "word": "bay"
+              "word": "bay",
+              "audio": [
+                "media/SmartPhonics/5/Unit3/sounds/extra_bay_laura.mp3",
+                "media/SmartPhonics/5/Unit3/sounds/extra_bay_brian.mp3",
+                "media/SmartPhonics/5/Unit3/sounds/extra_bay_bill.mp3"
+              ]
             },
             {
-              "word": "day"
+              "word": "day",
+              "audio": [
+                "media/SmartPhonics/5/Unit3/sounds/extra_day_sarah.mp3",
+                "media/SmartPhonics/5/Unit3/sounds/extra_day_will.mp3",
+                "media/SmartPhonics/5/Unit3/sounds/extra_day_roger.mp3"
+              ]
             },
             {
-              "word": "jay"
+              "word": "jay",
+              "audio": [
+                "media/SmartPhonics/5/Unit3/sounds/extra_jay_bella.mp3",
+                "media/SmartPhonics/5/Unit3/sounds/extra_jay_chris.mp3",
+                "media/SmartPhonics/5/Unit3/sounds/extra_jay_matilda.mp3"
+              ]
             },
             {
-              "word": "may"
+              "word": "may",
+              "audio": [
+                "media/SmartPhonics/5/Unit3/sounds/extra_may_arabella.mp3",
+                "media/SmartPhonics/5/Unit3/sounds/extra_may_liam.mp3",
+                "media/SmartPhonics/5/Unit3/sounds/extra_may_river.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -3532,22 +4572,52 @@
           ],
           "extraWords": [
             {
-              "word": "join"
+              "word": "join",
+              "audio": [
+                "media/SmartPhonics/5/Unit4/sounds/extra_join_jessica.mp3",
+                "media/SmartPhonics/5/Unit4/sounds/extra_join_eric.mp3",
+                "media/SmartPhonics/5/Unit4/sounds/extra_join_callum.mp3"
+              ]
             },
             {
-              "word": "void"
+              "word": "void",
+              "audio": [
+                "media/SmartPhonics/5/Unit4/sounds/extra_void_laura.mp3",
+                "media/SmartPhonics/5/Unit4/sounds/extra_void_brian.mp3",
+                "media/SmartPhonics/5/Unit4/sounds/extra_void_bill.mp3"
+              ]
             },
             {
-              "word": "voice"
+              "word": "voice",
+              "audio": [
+                "media/SmartPhonics/5/Unit4/sounds/extra_voice_sarah.mp3",
+                "media/SmartPhonics/5/Unit4/sounds/extra_voice_will.mp3",
+                "media/SmartPhonics/5/Unit4/sounds/extra_voice_roger.mp3"
+              ]
             },
             {
-              "word": "choice"
+              "word": "choice",
+              "audio": [
+                "media/SmartPhonics/5/Unit4/sounds/extra_choice_bella.mp3",
+                "media/SmartPhonics/5/Unit4/sounds/extra_choice_chris.mp3",
+                "media/SmartPhonics/5/Unit4/sounds/extra_choice_matilda.mp3"
+              ]
             },
             {
-              "word": "coy"
+              "word": "coy",
+              "audio": [
+                "media/SmartPhonics/5/Unit4/sounds/extra_coy_arabella.mp3",
+                "media/SmartPhonics/5/Unit4/sounds/extra_coy_liam.mp3",
+                "media/SmartPhonics/5/Unit4/sounds/extra_coy_river.mp3"
+              ]
             },
             {
-              "word": "soy"
+              "word": "soy",
+              "audio": [
+                "media/SmartPhonics/5/Unit4/sounds/extra_soy_jessica.mp3",
+                "media/SmartPhonics/5/Unit4/sounds/extra_soy_eric.mp3",
+                "media/SmartPhonics/5/Unit4/sounds/extra_soy_callum.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -3651,25 +4721,60 @@
           ],
           "extraWords": [
             {
-              "word": "how"
+              "word": "how",
+              "audio": [
+                "media/SmartPhonics/5/Unit5/sounds/extra_how_laura.mp3",
+                "media/SmartPhonics/5/Unit5/sounds/extra_how_brian.mp3",
+                "media/SmartPhonics/5/Unit5/sounds/extra_how_bill.mp3"
+              ]
             },
             {
-              "word": "now"
+              "word": "now",
+              "audio": [
+                "media/SmartPhonics/5/Unit5/sounds/extra_now_sarah.mp3",
+                "media/SmartPhonics/5/Unit5/sounds/extra_now_will.mp3",
+                "media/SmartPhonics/5/Unit5/sounds/extra_now_roger.mp3"
+              ]
             },
             {
-              "word": "town"
+              "word": "town",
+              "audio": [
+                "media/SmartPhonics/5/Unit5/sounds/extra_town_bella.mp3",
+                "media/SmartPhonics/5/Unit5/sounds/extra_town_chris.mp3",
+                "media/SmartPhonics/5/Unit5/sounds/extra_town_matilda.mp3"
+              ]
             },
             {
-              "word": "down"
+              "word": "down",
+              "audio": [
+                "media/SmartPhonics/5/Unit5/sounds/extra_down_arabella.mp3",
+                "media/SmartPhonics/5/Unit5/sounds/extra_down_liam.mp3",
+                "media/SmartPhonics/5/Unit5/sounds/extra_down_river.mp3"
+              ]
             },
             {
-              "word": "loud"
+              "word": "loud",
+              "audio": [
+                "media/SmartPhonics/5/Unit5/sounds/extra_loud_jessica.mp3",
+                "media/SmartPhonics/5/Unit5/sounds/extra_loud_eric.mp3",
+                "media/SmartPhonics/5/Unit5/sounds/extra_loud_callum.mp3"
+              ]
             },
             {
-              "word": "proud"
+              "word": "proud",
+              "audio": [
+                "media/SmartPhonics/5/Unit5/sounds/extra_proud_laura.mp3",
+                "media/SmartPhonics/5/Unit5/sounds/extra_proud_brian.mp3",
+                "media/SmartPhonics/5/Unit5/sounds/extra_proud_bill.mp3"
+              ]
             },
             {
-              "word": "pound"
+              "word": "pound",
+              "audio": [
+                "media/SmartPhonics/5/Unit5/sounds/extra_pound_sarah.mp3",
+                "media/SmartPhonics/5/Unit5/sounds/extra_pound_will.mp3",
+                "media/SmartPhonics/5/Unit5/sounds/extra_pound_roger.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -3782,28 +4887,68 @@
           ],
           "extraWords": [
             {
-              "word": "dirt"
+              "word": "dirt",
+              "audio": [
+                "media/SmartPhonics/5/Unit6/sounds/extra_dirt_bella.mp3",
+                "media/SmartPhonics/5/Unit6/sounds/extra_dirt_chris.mp3",
+                "media/SmartPhonics/5/Unit6/sounds/extra_dirt_matilda.mp3"
+              ]
             },
             {
-              "word": "firm"
+              "word": "firm",
+              "audio": [
+                "media/SmartPhonics/5/Unit6/sounds/extra_firm_arabella.mp3",
+                "media/SmartPhonics/5/Unit6/sounds/extra_firm_liam.mp3",
+                "media/SmartPhonics/5/Unit6/sounds/extra_firm_river.mp3"
+              ]
             },
             {
-              "word": "first"
+              "word": "first",
+              "audio": [
+                "media/SmartPhonics/5/Unit6/sounds/extra_first_jessica.mp3",
+                "media/SmartPhonics/5/Unit6/sounds/extra_first_eric.mp3",
+                "media/SmartPhonics/5/Unit6/sounds/extra_first_callum.mp3"
+              ]
             },
             {
-              "word": "her"
+              "word": "her",
+              "audio": [
+                "media/SmartPhonics/5/Unit6/sounds/extra_her_laura.mp3",
+                "media/SmartPhonics/5/Unit6/sounds/extra_her_brian.mp3",
+                "media/SmartPhonics/5/Unit6/sounds/extra_her_bill.mp3"
+              ]
             },
             {
-              "word": "term"
+              "word": "term",
+              "audio": [
+                "media/SmartPhonics/5/Unit6/sounds/extra_term_sarah.mp3",
+                "media/SmartPhonics/5/Unit6/sounds/extra_term_will.mp3",
+                "media/SmartPhonics/5/Unit6/sounds/extra_term_roger.mp3"
+              ]
             },
             {
-              "word": "verb"
+              "word": "verb",
+              "audio": [
+                "media/SmartPhonics/5/Unit6/sounds/extra_verb_bella.mp3",
+                "media/SmartPhonics/5/Unit6/sounds/extra_verb_chris.mp3",
+                "media/SmartPhonics/5/Unit6/sounds/extra_verb_matilda.mp3"
+              ]
             },
             {
-              "word": "burn"
+              "word": "burn",
+              "audio": [
+                "media/SmartPhonics/5/Unit6/sounds/extra_burn_arabella.mp3",
+                "media/SmartPhonics/5/Unit6/sounds/extra_burn_liam.mp3",
+                "media/SmartPhonics/5/Unit6/sounds/extra_burn_river.mp3"
+              ]
             },
             {
-              "word": "curl"
+              "word": "curl",
+              "audio": [
+                "media/SmartPhonics/5/Unit6/sounds/extra_curl_jessica.mp3",
+                "media/SmartPhonics/5/Unit6/sounds/extra_curl_eric.mp3",
+                "media/SmartPhonics/5/Unit6/sounds/extra_curl_callum.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -3913,28 +5058,68 @@
           ],
           "extraWords": [
             {
-              "word": "bar"
+              "word": "bar",
+              "audio": [
+                "media/SmartPhonics/5/Unit7/sounds/extra_bar_laura.mp3",
+                "media/SmartPhonics/5/Unit7/sounds/extra_bar_brian.mp3",
+                "media/SmartPhonics/5/Unit7/sounds/extra_bar_bill.mp3"
+              ]
             },
             {
-              "word": "far"
+              "word": "far",
+              "audio": [
+                "media/SmartPhonics/5/Unit7/sounds/extra_far_sarah.mp3",
+                "media/SmartPhonics/5/Unit7/sounds/extra_far_will.mp3",
+                "media/SmartPhonics/5/Unit7/sounds/extra_far_roger.mp3"
+              ]
             },
             {
-              "word": "jar"
+              "word": "jar",
+              "audio": [
+                "media/SmartPhonics/5/Unit7/sounds/extra_jar_bella.mp3",
+                "media/SmartPhonics/5/Unit7/sounds/extra_jar_chris.mp3",
+                "media/SmartPhonics/5/Unit7/sounds/extra_jar_matilda.mp3"
+              ]
             },
             {
-              "word": "dark"
+              "word": "dark",
+              "audio": [
+                "media/SmartPhonics/5/Unit7/sounds/extra_dark_arabella.mp3",
+                "media/SmartPhonics/5/Unit7/sounds/extra_dark_liam.mp3",
+                "media/SmartPhonics/5/Unit7/sounds/extra_dark_river.mp3"
+              ]
             },
             {
-              "word": "for"
+              "word": "for",
+              "audio": [
+                "media/SmartPhonics/5/Unit7/sounds/extra_for_jessica.mp3",
+                "media/SmartPhonics/5/Unit7/sounds/extra_for_eric.mp3",
+                "media/SmartPhonics/5/Unit7/sounds/extra_for_callum.mp3"
+              ]
             },
             {
-              "word": "nor"
+              "word": "nor",
+              "audio": [
+                "media/SmartPhonics/5/Unit7/sounds/extra_nor_laura.mp3",
+                "media/SmartPhonics/5/Unit7/sounds/extra_nor_brian.mp3",
+                "media/SmartPhonics/5/Unit7/sounds/extra_nor_bill.mp3"
+              ]
             },
             {
-              "word": "port"
+              "word": "port",
+              "audio": [
+                "media/SmartPhonics/5/Unit7/sounds/extra_port_sarah.mp3",
+                "media/SmartPhonics/5/Unit7/sounds/extra_port_will.mp3",
+                "media/SmartPhonics/5/Unit7/sounds/extra_port_roger.mp3"
+              ]
             },
             {
-              "word": "sort"
+              "word": "sort",
+              "audio": [
+                "media/SmartPhonics/5/Unit7/sounds/extra_sort_bella.mp3",
+                "media/SmartPhonics/5/Unit7/sounds/extra_sort_chris.mp3",
+                "media/SmartPhonics/5/Unit7/sounds/extra_sort_matilda.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -4041,25 +5226,60 @@
           ],
           "extraWords": [
             {
-              "word": "good"
+              "word": "good",
+              "audio": [
+                "media/SmartPhonics/5/Unit8/sounds/extra_good_arabella.mp3",
+                "media/SmartPhonics/5/Unit8/sounds/extra_good_liam.mp3",
+                "media/SmartPhonics/5/Unit8/sounds/extra_good_river.mp3"
+              ]
             },
             {
-              "word": "hood"
+              "word": "hood",
+              "audio": [
+                "media/SmartPhonics/5/Unit8/sounds/extra_hood_jessica.mp3",
+                "media/SmartPhonics/5/Unit8/sounds/extra_hood_eric.mp3",
+                "media/SmartPhonics/5/Unit8/sounds/extra_hood_callum.mp3"
+              ]
             },
             {
-              "word": "soot"
+              "word": "soot",
+              "audio": [
+                "media/SmartPhonics/5/Unit8/sounds/extra_soot_laura.mp3",
+                "media/SmartPhonics/5/Unit8/sounds/extra_soot_brian.mp3",
+                "media/SmartPhonics/5/Unit8/sounds/extra_soot_bill.mp3"
+              ]
             },
             {
-              "word": "wool"
+              "word": "wool",
+              "audio": [
+                "media/SmartPhonics/5/Unit8/sounds/extra_wool_sarah.mp3",
+                "media/SmartPhonics/5/Unit8/sounds/extra_wool_will.mp3",
+                "media/SmartPhonics/5/Unit8/sounds/extra_wool_roger.mp3"
+              ]
             },
             {
-              "word": "cool"
+              "word": "cool",
+              "audio": [
+                "media/SmartPhonics/5/Unit8/sounds/extra_cool_bella.mp3",
+                "media/SmartPhonics/5/Unit8/sounds/extra_cool_chris.mp3",
+                "media/SmartPhonics/5/Unit8/sounds/extra_cool_matilda.mp3"
+              ]
             },
             {
-              "word": "fool"
+              "word": "fool",
+              "audio": [
+                "media/SmartPhonics/5/Unit8/sounds/extra_fool_arabella.mp3",
+                "media/SmartPhonics/5/Unit8/sounds/extra_fool_liam.mp3",
+                "media/SmartPhonics/5/Unit8/sounds/extra_fool_river.mp3"
+              ]
             },
             {
-              "word": "root"
+              "word": "root",
+              "audio": [
+                "media/SmartPhonics/5/Unit8/sounds/extra_root_jessica.mp3",
+                "media/SmartPhonics/5/Unit8/sounds/extra_root_eric.mp3",
+                "media/SmartPhonics/5/Unit8/sounds/extra_root_callum.mp3"
+              ]
             }
           ],
           "sightWords": [
@@ -4175,31 +5395,76 @@
           ],
           "extraWords": [
             {
-              "word": "haunt"
+              "word": "haunt",
+              "audio": [
+                "media/SmartPhonics/5/Unit9/sounds/extra_haunt_laura.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_haunt_brian.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_haunt_bill.mp3"
+              ]
             },
             {
-              "word": "author"
+              "word": "author",
+              "audio": [
+                "media/SmartPhonics/5/Unit9/sounds/extra_author_sarah.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_author_will.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_author_roger.mp3"
+              ]
             },
             {
-              "word": "audio"
+              "word": "audio",
+              "audio": [
+                "media/SmartPhonics/5/Unit9/sounds/extra_audio_bella.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_audio_chris.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_audio_matilda.mp3"
+              ]
             },
             {
-              "word": "claw"
+              "word": "claw",
+              "audio": [
+                "media/SmartPhonics/5/Unit9/sounds/extra_claw_arabella.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_claw_liam.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_claw_river.mp3"
+              ]
             },
             {
-              "word": "hawk"
+              "word": "hawk",
+              "audio": [
+                "media/SmartPhonics/5/Unit9/sounds/extra_hawk_jessica.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_hawk_eric.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_hawk_callum.mp3"
+              ]
             },
             {
-              "word": "saw"
+              "word": "saw",
+              "audio": [
+                "media/SmartPhonics/5/Unit9/sounds/extra_saw_laura.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_saw_brian.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_saw_bill.mp3"
+              ]
             },
             {
-              "word": "wall"
+              "word": "wall",
+              "audio": [
+                "media/SmartPhonics/5/Unit9/sounds/extra_wall_sarah.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_wall_will.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_wall_roger.mp3"
+              ]
             },
             {
-              "word": "call"
+              "word": "call",
+              "audio": [
+                "media/SmartPhonics/5/Unit9/sounds/extra_call_bella.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_call_chris.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_call_matilda.mp3"
+              ]
             },
             {
-              "word": "stall"
+              "word": "stall",
+              "audio": [
+                "media/SmartPhonics/5/Unit9/sounds/extra_stall_arabella.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_stall_liam.mp3",
+                "media/SmartPhonics/5/Unit9/sounds/extra_stall_river.mp3"
+              ]
             }
           ]
         },
@@ -4271,31 +5536,76 @@
           ],
           "extraWords": [
             {
-              "word": "numb"
+              "word": "numb",
+              "audio": [
+                "media/SmartPhonics/5/Unit10/sounds/extra_numb_jessica.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_numb_eric.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_numb_callum.mp3"
+              ]
             },
             {
-              "word": "limb"
+              "word": "limb",
+              "audio": [
+                "media/SmartPhonics/5/Unit10/sounds/extra_limb_laura.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_limb_brian.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_limb_bill.mp3"
+              ]
             },
             {
-              "word": "bomb"
+              "word": "bomb",
+              "audio": [
+                "media/SmartPhonics/5/Unit10/sounds/extra_bomb_sarah.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_bomb_will.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_bomb_roger.mp3"
+              ]
             },
             {
-              "word": "knot"
+              "word": "knot",
+              "audio": [
+                "media/SmartPhonics/5/Unit10/sounds/extra_knot_bella.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_knot_chris.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_knot_matilda.mp3"
+              ]
             },
             {
-              "word": "know"
+              "word": "know",
+              "audio": [
+                "media/SmartPhonics/5/Unit10/sounds/extra_know_arabella.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_know_liam.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_know_river.mp3"
+              ]
             },
             {
-              "word": "knob"
+              "word": "knob",
+              "audio": [
+                "media/SmartPhonics/5/Unit10/sounds/extra_knob_jessica.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_knob_eric.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_knob_callum.mp3"
+              ]
             },
             {
-              "word": "wreck"
+              "word": "wreck",
+              "audio": [
+                "media/SmartPhonics/5/Unit10/sounds/extra_wreck_laura.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_wreck_brian.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_wreck_bill.mp3"
+              ]
             },
             {
-              "word": "wrench"
+              "word": "wrench",
+              "audio": [
+                "media/SmartPhonics/5/Unit10/sounds/extra_wrench_sarah.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_wrench_will.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_wrench_roger.mp3"
+              ]
             },
             {
-              "word": "wreath"
+              "word": "wreath",
+              "audio": [
+                "media/SmartPhonics/5/Unit10/sounds/extra_wreath_bella.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_wreath_chris.mp3",
+                "media/SmartPhonics/5/Unit10/sounds/extra_wreath_matilda.mp3"
+              ]
             }
           ]
         }

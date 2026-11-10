@@ -2886,7 +2886,11 @@
 
             const extraWords = (unit.extraWords || []).map(ew => {
               if (typeof ew === 'string') return { word: ew };
-              if (typeof ew === 'object' && ew && ew.word) return { word: ew.word };
+              if (typeof ew === 'object' && ew && ew.word) {
+                const res = { word: ew.word };
+                if (ew.audio) res.audio = ew.audio;
+                return res;
+              }
               return null;
             }).filter(Boolean);
 

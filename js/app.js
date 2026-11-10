@@ -660,20 +660,48 @@
   }
 
   // ── Data Loading ───────────────────────────────────────────
+  function enrichExtraWordsAudio(curriculum, localData) {
+    if (!curriculum || !curriculum.levels || !localData || !localData.levels) return curriculum;
+    const localUnitMap = new Map();
+    for (const lvl of localData.levels) {
+      for (const u of (lvl.units || [])) {
+        if (u.id) localUnitMap.set(u.id, u);
+      }
+    }
+
+    for (const lvl of curriculum.levels) {
+      for (const u of (lvl.units || [])) {
+        const localUnit = localUnitMap.get(u.id);
+        if (localUnit && Array.isArray(localUnit.extraWords) && localUnit.extraWords.length > 0) {
+          u.extraWords = localUnit.extraWords;
+        }
+      }
+    }
+    return curriculum;
+  }
+
   async function loadData() {
+    let localData = null;
+    try {
+      const response = await fetch('data/words.json');
+      if (response.ok) localData = await response.json();
+    } catch (e) {
+      console.warn('[PhonicsFlash] Local words.json fetch error:', e);
+    }
+
     if (typeof EditorStore !== 'undefined') {
       await EditorStore.init();
       const activeCurriculum = EditorStore.getActiveCurriculum();
       // If a user has an active custom curriculum, use it
       if (activeCurriculum && activeCurriculum.isCustom && Array.isArray(activeCurriculum.levels) && activeCurriculum.levels.length > 0) {
-        return activeCurriculum;
+        return enrichExtraWordsAudio(activeCurriculum, localData);
       }
     }
 
     // Try central CurriculumLoader (Upstash live -> CDN -> words.json)
     if (typeof SharedClassSync !== 'undefined' && SharedClassSync.CurriculumLoader) {
       try {
-        const loaded = await SharedClassSync.CurriculumLoader.load();
+        const loaded = await SharedClassSync.CurriculumLoader.load({ fallbackData: localData });
         if (loaded) {
           if (typeof EditorStore !== 'undefined') {
             const allCurricula = typeof SharedClassSync.CurriculumAdapter.toPhonicsFlashAll === 'function'
@@ -704,7 +732,7 @@
           const activeCurId = typeof EditorStore !== 'undefined' ? EditorStore.getActiveCurriculumId() : null;
           const adapted = SharedClassSync.CurriculumAdapter.toPhonicsFlash(loaded, null, activeCurId);
           if (adapted && adapted.levels && adapted.levels.length > 0) {
-            return adapted;
+            return enrichExtraWordsAudio(adapted, localData);
           }
         }
       } catch (err) {
@@ -712,6 +740,7 @@
       }
     }
 
+    if (localData) return localData;
     const response = await fetch('data/words.json');
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
@@ -2088,7 +2117,7 @@
 
     // Store all metadata as data attributes for the chrome overlay
     section.dataset.word = wordData.word;
-    section.dataset.audioPath = wordData.audio || '';
+    section.dataset.audioPath = Array.isArray(wordData.audio) ? JSON.stringify(wordData.audio) : (wordData.audio || '');
     const isDictation = !!(opts && opts.dictationMode);
     const isSoundQuiz = !!(opts && opts.soundQuizMode);
     const isPictureQuiz = !!(opts && opts.pictureQuizMode);

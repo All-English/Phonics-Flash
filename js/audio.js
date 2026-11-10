@@ -38,11 +38,24 @@ const AudioPlayer = (() => {
   }
 
   /**
-   * Preload a local MP3 or MediaDB audio file.
-   * @param {string} audioPath - Path or media URI
+   * Preload a local MP3 or MediaDB audio file. Supports arrays of paths.
+   * @param {string|string[]} audioPath - Path, media URI, or array of paths
    */
   async function preload(audioPath) {
     if (!audioPath) return;
+    if (Array.isArray(audioPath)) {
+      audioPath.forEach(p => preload(p));
+      return;
+    }
+    if (typeof audioPath === 'string' && audioPath.startsWith('[') && audioPath.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(audioPath);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(p => preload(p));
+          return;
+        }
+      } catch (e) {}
+    }
     const pathKey = audioPath.trim();
     if (audioCache.has(pathKey)) return;
 
@@ -83,11 +96,23 @@ const AudioPlayer = (() => {
     try {
       setButtonState(btn, 'loading');
 
-      // 1. Try local MP3 file or MediaDB audio recording
-      let effectiveAudio = audioPath;
-      if (typeof MediaDB !== 'undefined' && MediaDB.isMediaId(audioPath)) {
+      // 1. Try local MP3 file or MediaDB audio recording (supports random choice from multiple audio paths)
+      let selectedPath = audioPath;
+      if (Array.isArray(audioPath)) {
+        selectedPath = audioPath.length > 0 ? audioPath[Math.floor(Math.random() * audioPath.length)] : null;
+      } else if (typeof audioPath === 'string' && audioPath.startsWith('[') && audioPath.endsWith(']')) {
         try {
-          effectiveAudio = await MediaDB.resolveMediaUrl(audioPath);
+          const parsed = JSON.parse(audioPath);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            selectedPath = parsed[Math.floor(Math.random() * parsed.length)];
+          }
+        } catch (e) {}
+      }
+
+      let effectiveAudio = selectedPath;
+      if (typeof MediaDB !== 'undefined' && MediaDB.isMediaId(selectedPath)) {
+        try {
+          effectiveAudio = await MediaDB.resolveMediaUrl(selectedPath);
         } catch (e) {
           console.warn('[AudioPlayer] Could not resolve media audio:', e);
         }
