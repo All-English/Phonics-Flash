@@ -2886,11 +2886,7 @@
 
             const extraWords = (unit.extraWords || []).map(ew => {
               if (typeof ew === 'string') return { word: ew };
-              if (typeof ew === 'object' && ew && ew.word) {
-                const res = { word: ew.word };
-                if (ew.audio) res.audio = ew.audio;
-                return res;
-              }
+              if (typeof ew === 'object' && ew && ew.word) return { word: ew.word };
               return null;
             }).filter(Boolean);
 
@@ -3109,6 +3105,21 @@
     return Boolean(res && res.ok);
   }
 
+  function toPlayerSlug(name) {
+    return String(name || '').trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '_');
+  }
+
+  function getPlayerTurnAudioUrls(playerName) {
+    const slug = toPlayerSlug(playerName);
+    if (!slug) return [];
+    const base = getMediaBase().replace(/\/$/, '');
+    return [
+      `${base}/audio/players/${slug}_v1.mp3`,
+      `${base}/audio/players/${slug}_v2.mp3`,
+      `${base}/audio/players/${slug}_v3.mp3`
+    ];
+  }
+
   const CurriculumLoader = {
     cachedCurriculum: null,
     cachedMasterCurriculum: null,
@@ -3265,6 +3276,8 @@
     resolveClassRoster,
     inferTargetSound: (unit) => CurriculumAdapter.inferTargetSound(unit),
     CurriculumAdapter,
-    CurriculumLoader
+    CurriculumLoader,
+    toPlayerSlug,
+    getPlayerTurnAudioUrls
   };
 });
