@@ -3493,6 +3493,12 @@ body {
   transform: scale(0.96);
 }
 
+@media (max-width: 768px), (max-height: 500px) and (orientation: landscape) {
+  #open-editor-btn {
+    display: none !important;
+  }
+}
+
 .sync-btn-icon {
   padding: 0.45rem 0.6rem;
 }
