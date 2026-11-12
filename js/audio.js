@@ -11,6 +11,7 @@
 const AudioPlayer = (() => {
   const cache = new Map(); // ElevenLabs blob cache
   const audioCache = new Map(); // local Audio elements cache
+  const wordVoicePools = new Map(); // Exhaustion pools per word: wordKey -> { candidatesKey, pool, lastPlayed }
   let currentAudio = null;
   let isPlaying = false; // Declared module-scoped variable (High #1)
   const STORAGE_KEY = 'phonics-flash-elevenlabs-key';
@@ -35,6 +36,67 @@ const AudioPlayer = (() => {
       return val;
     }
     return 0.85; // Default to 0.85x
+  }
+
+  function getWordPoolKey(word) {
+    return String(word || '').trim().toLowerCase();
+  }
+
+  function shuffle(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  /**
+   * Resets all word voice exhaustion pools so subsequent plays start a fresh cycle.
+   */
+  function resetWordVoicePools() {
+    wordVoicePools.clear();
+  }
+
+  /**
+   * Selects the next audio URL for a word using an exhaustion pool (deal without replacement).
+   * Ensures every voice variant is heard before any voice repeats, and avoids back-to-back
+   * repeats across cycle boundaries.
+   * @param {string} word - The word being spoken
+   * @param {string[]} candidates - Available candidate URLs
+   * @returns {string} The chosen audio URL
+   */
+  function getNextExhaustiveVoice(word, candidates) {
+    if (!candidates || candidates.length === 0) return null;
+    if (candidates.length === 1) return candidates[0];
+
+    const key = getWordPoolKey(word);
+    let entry = wordVoicePools.get(key);
+
+    // Validate that existing entry matches the current candidates set
+    const candidatesKey = candidates.map(c => String(c).trim()).sort().join('|');
+    if (!entry || entry.candidatesKey !== candidatesKey) {
+      entry = {
+        candidatesKey,
+        pool: shuffle(candidates),
+        lastPlayed: null
+      };
+      wordVoicePools.set(key, entry);
+    }
+
+    // If pool has been exhausted, refill with all candidates shuffled
+    if (entry.pool.length === 0) {
+      entry.pool = shuffle(candidates);
+      // Avoid back-to-back duplicate across cycle boundaries if > 1 option
+      if (entry.pool.length > 1 && entry.pool[0] === entry.lastPlayed) {
+        const swapIdx = Math.floor(Math.random() * (entry.pool.length - 1)) + 1;
+        [entry.pool[0], entry.pool[swapIdx]] = [entry.pool[swapIdx], entry.pool[0]];
+      }
+    }
+
+    const chosen = entry.pool.shift();
+    entry.lastPlayed = chosen;
+    return chosen;
   }
 
   /**
@@ -157,24 +219,15 @@ const AudioPlayer = (() => {
         const mode = (localStorage.getItem('word_voice_mode') || 'mixed').toLowerCase();
         const candidateUrls = window.SharedClassSync.getWordAudioUrls(word, { officialUrl: selectedPath, mode });
         if (candidateUrls && candidateUrls.length > 0) {
-          // If candidates are ready (readyState >= 2), pick randomly among ready candidates for zero lag
-          const readyCandidates = candidateUrls.filter(url => {
-            const cached = audioCache.get(url.trim());
-            return cached && cached.readyState >= 2;
-          });
-          if (readyCandidates.length > 0) {
-            selectedPath = readyCandidates[Math.floor(Math.random() * readyCandidates.length)];
-          } else {
-            selectedPath = candidateUrls[Math.floor(Math.random() * candidateUrls.length)];
-          }
+          selectedPath = getNextExhaustiveVoice(word, candidateUrls);
         }
       } else if (Array.isArray(audioPath)) {
-        selectedPath = audioPath.length > 0 ? audioPath[Math.floor(Math.random() * audioPath.length)] : null;
+        selectedPath = audioPath.length > 0 ? getNextExhaustiveVoice(word || 'array_audio', audioPath) : null;
       } else if (typeof audioPath === 'string' && audioPath.startsWith('[') && audioPath.endsWith(']')) {
         try {
           const parsed = JSON.parse(audioPath);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            selectedPath = parsed[Math.floor(Math.random() * parsed.length)];
+            selectedPath = getNextExhaustiveVoice(word || 'parsed_audio', parsed);
           }
         } catch (e) {}
       }
@@ -522,6 +575,7 @@ const AudioPlayer = (() => {
     cache.clear();
     if (clearAudioElements) {
       audioCache.clear();
+      resetWordVoicePools();
     }
   }
 
@@ -538,6 +592,8 @@ const AudioPlayer = (() => {
     stop,
     preload,
     clearCache,
+    resetWordVoicePools,
+    getNextExhaustiveVoice,
     getApiKey,
     getSelectedVoiceId,
     getPlaybackSpeed,

@@ -339,6 +339,9 @@
       wordModeSelect.value = localStorage.getItem('word_voice_mode') || 'mixed';
       wordModeSelect.addEventListener('change', (e) => {
         localStorage.setItem('word_voice_mode', e.target.value);
+        if (typeof AudioPlayer !== 'undefined' && AudioPlayer.resetWordVoicePools) {
+          AudioPlayer.resetWordVoicePools();
+        }
       });
     }
 
