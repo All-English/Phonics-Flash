@@ -482,10 +482,21 @@ const AudioPlayer = (() => {
    */
   function stop() {
     if (currentAudio) {
-      currentAudio.pause();
-      currentAudio.currentTime = 0;
+      try {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+      } catch (e) {}
       currentAudio = null;
     }
+    // Also pause and reset ALL cached audio elements so multiple sounds can never overlap
+    audioCache.forEach(audio => {
+      if (audio && !audio.paused) {
+        try {
+          audio.pause();
+          audio.currentTime = 0;
+        } catch (e) {}
+      }
+    });
     speechSynthesis.cancel();
     isPlaying = false;
 

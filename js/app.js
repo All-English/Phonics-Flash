@@ -2557,7 +2557,7 @@
         50: () => { handleQuizOptionKey(1); },           // 2 (Option 2)
         97: () => { handleQuizOptionKey(0); },           // Numpad 1
         98: () => { handleQuizOptionKey(1); },           // Numpad 2
-        16: () => { playCurrentSlideAudio(); },          // Shift (Play audio)
+        16: null,                                        // Shift handled exclusively by slideshowKeydownHandler
         39: () => { handleRightArrowKey(); }             // Right Arrow (Preserves card index from intro)
       },
 
@@ -2662,6 +2662,9 @@
       if (document.getElementById('slideshow-screen')?.classList.contains('hidden')) return;
       if (e.key === 'Shift') {
         e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        if (e.repeat) return;
         playCurrentSlideAudio();
         return;
       }
@@ -3033,7 +3036,13 @@
     playCurrentSlideAudio();
   }
 
+  let lastAudioPlayTime = 0;
   function playCurrentSlideAudio() {
+    const now = Date.now();
+    // Guard against rapid overlapping triggers
+    if (now - lastAudioPlayTime < 250) return;
+    lastAudioPlayTime = now;
+
     const currentSlide = getCurrentSlide();
     if (!currentSlide) return;
 
