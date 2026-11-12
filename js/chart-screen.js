@@ -633,7 +633,7 @@
     // Preload audio files
     if (typeof AudioPlayer !== 'undefined' && AudioPlayer.preload) {
       displayItems.forEach(item => {
-        if (item.audio) AudioPlayer.preload(item.audio);
+        if (item.audio || item.word) AudioPlayer.preload(item.audio, item.word);
       });
     }
 

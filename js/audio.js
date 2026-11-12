@@ -38,26 +38,22 @@ const AudioPlayer = (() => {
   }
 
   /**
-   * Preload a local MP3 or MediaDB audio file. Supports arrays of paths.
-   * @param {string|string[]} audioPath - Path, media URI, or array of paths
+   * Preload a single audio URL or path into audioCache.
+   * Sets preload = 'auto' and triggers buffering.
+   * @param {string} url - Audio path or URL
+   * @param {string} [aliasKey] - Optional secondary lookup key (e.g. original un-resolved path)
    */
-  async function preload(audioPath) {
-    if (!audioPath) return;
-    if (Array.isArray(audioPath)) {
-      audioPath.forEach(p => preload(p));
+  async function preloadSingle(url, aliasKey = null) {
+    if (!url || typeof url !== 'string') return;
+    const pathKey = url.trim();
+    if (!pathKey) return;
+
+    if (audioCache.has(pathKey)) {
+      if (aliasKey && typeof aliasKey === 'string' && !audioCache.has(aliasKey.trim())) {
+        audioCache.set(aliasKey.trim(), audioCache.get(pathKey));
+      }
       return;
     }
-    if (typeof audioPath === 'string' && audioPath.startsWith('[') && audioPath.endsWith(']')) {
-      try {
-        const parsed = JSON.parse(audioPath);
-        if (Array.isArray(parsed)) {
-          parsed.forEach(p => preload(p));
-          return;
-        }
-      } catch (e) {}
-    }
-    const pathKey = audioPath.trim();
-    if (audioCache.has(pathKey)) return;
 
     let effectiveUrl = pathKey;
     if (typeof MediaDB !== 'undefined' && MediaDB.isMediaId(pathKey)) {
@@ -69,16 +65,72 @@ const AudioPlayer = (() => {
       }
     }
 
-    const audio = new Audio(effectiveUrl);
-    audio.addEventListener('ended', () => {
-      if (currentAudio === audio) {
-        setButtonState(document.getElementById('chrome-audio'), 'idle');
-        currentAudio = null;
-        isPlaying = false;
+    try {
+      const audio = new Audio(effectiveUrl);
+      audio.preload = 'auto';
+      audio.addEventListener('ended', () => {
+        if (currentAudio === audio) {
+          setButtonState(document.getElementById('chrome-audio'), 'idle');
+          currentAudio = null;
+          isPlaying = false;
+        }
+      });
+      audio.load();
+      audioCache.set(pathKey, audio);
+      if (effectiveUrl !== pathKey) {
+        audioCache.set(effectiveUrl, audio);
       }
-    });
-    audio.load();
-    audioCache.set(pathKey, audio);
+      if (aliasKey && typeof aliasKey === 'string') {
+        audioCache.set(aliasKey.trim(), audio);
+      }
+    } catch (e) {
+      console.warn('[AudioPlayer] Preload error for:', effectiveUrl, e);
+    }
+  }
+
+  /**
+   * Preload audio files for instant playback. Supports path, array of paths, and word.
+   * When word is provided, resolves and preloads all voice variants (official + 3 AI voices).
+   * @param {string|string[]} [audioPath] - Path, media URI, or array of paths
+   * @param {string} [word] - Optional word string to resolve multi-voice candidates
+   */
+  async function preload(audioPath, word) {
+    if (!audioPath && !word) return;
+
+    if (Array.isArray(audioPath)) {
+      audioPath.forEach(p => preload(p, word));
+      return;
+    }
+    if (typeof audioPath === 'string' && audioPath.startsWith('[') && audioPath.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(audioPath);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(p => preload(p, word));
+          return;
+        }
+      } catch (e) {}
+    }
+
+    const isCustomMedia = typeof MediaDB !== 'undefined' && MediaDB.isMediaId(audioPath);
+    const isSingleLetter = String(word || '').trim().length <= 1;
+
+    // If word is provided and not single letter, resolve all voice candidates
+    if (!isCustomMedia && !isSingleLetter && word && typeof window !== 'undefined' && window.SharedClassSync?.getWordAudioUrls) {
+      try {
+        const mode = (localStorage.getItem('word_voice_mode') || 'mixed').toLowerCase();
+        const candidateUrls = window.SharedClassSync.getWordAudioUrls(word, { officialUrl: audioPath, mode });
+        if (candidateUrls && candidateUrls.length > 0) {
+          candidateUrls.forEach(url => preloadSingle(url, audioPath));
+          return;
+        }
+      } catch (e) {
+        console.warn('[AudioPlayer] Error resolving voice candidate URLs:', e);
+      }
+    }
+
+    if (audioPath) {
+      preloadSingle(audioPath);
+    }
   }
 
   /**
@@ -105,7 +157,16 @@ const AudioPlayer = (() => {
         const mode = (localStorage.getItem('word_voice_mode') || 'mixed').toLowerCase();
         const candidateUrls = window.SharedClassSync.getWordAudioUrls(word, { officialUrl: selectedPath, mode });
         if (candidateUrls && candidateUrls.length > 0) {
-          selectedPath = candidateUrls[Math.floor(Math.random() * candidateUrls.length)];
+          // If candidates are ready (readyState >= 2), pick randomly among ready candidates for zero lag
+          const readyCandidates = candidateUrls.filter(url => {
+            const cached = audioCache.get(url.trim());
+            return cached && cached.readyState >= 2;
+          });
+          if (readyCandidates.length > 0) {
+            selectedPath = readyCandidates[Math.floor(Math.random() * readyCandidates.length)];
+          } else {
+            selectedPath = candidateUrls[Math.floor(Math.random() * candidateUrls.length)];
+          }
         }
       } else if (Array.isArray(audioPath)) {
         selectedPath = audioPath.length > 0 ? audioPath[Math.floor(Math.random() * audioPath.length)] : null;
@@ -164,6 +225,7 @@ const AudioPlayer = (() => {
       let audio = audioCache.get(pathKey);
       if (!audio) {
         audio = new Audio(pathKey);
+        audio.preload = 'auto';
         audio.addEventListener('ended', () => {
           if (currentAudio === audio) {
             setButtonState(document.getElementById('chrome-audio'), 'idle');
@@ -175,7 +237,11 @@ const AudioPlayer = (() => {
       }
       currentAudio = audio;
 
-      if (audio.readyState >= 3) {
+      try {
+        audio.playbackRate = getPlaybackSpeed();
+      } catch (e) {}
+
+      if (audio.readyState >= 2) {
         audio.currentTime = 0;
         audio.play()
           .then(() => {
@@ -206,17 +272,19 @@ const AudioPlayer = (() => {
         };
 
         const cleanup = () => {
+          audio.removeEventListener('canplay', onCanPlay);
           audio.removeEventListener('canplaythrough', onCanPlay);
           audio.removeEventListener('error', onError);
         };
 
+        audio.addEventListener('canplay', onCanPlay);
         audio.addEventListener('canplaythrough', onCanPlay);
         audio.addEventListener('error', onError);
         audio.load();
 
         // Timeout if file takes too long
         setTimeout(() => {
-          if (audio.readyState < 3) {
+          if (audio.readyState < 2) {
             cleanup();
             currentAudio = null;
             resolve(false);
@@ -436,11 +504,14 @@ const AudioPlayer = (() => {
   }
 
   /**
-   * Clear the audio cache (e.g., when returning to menu).
+   * Clear the audio cache (e.g., when resetting TTS settings or changing books).
+   * @param {boolean} [clearAudioElements=false] - Whether to also purge preloaded MP3 HTMLAudioElement cache.
    */
-  function clearCache() {
+  function clearCache(clearAudioElements = false) {
     cache.clear();
-    audioCache.clear();
+    if (clearAudioElements) {
+      audioCache.clear();
+    }
   }
 
   // Pre-load Web Speech API voices

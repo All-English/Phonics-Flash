@@ -1551,6 +1551,30 @@
     saveCurrentOptionsToActiveClass({ isUnitChange: true });
   }
 
+  let menuPreloadTimer = null;
+  function scheduleMenuAudioPreload(unitIds, opts) {
+    if (menuPreloadTimer) clearTimeout(menuPreloadTimer);
+    if (!unitIds || unitIds.length === 0 || typeof AudioPlayer === 'undefined') return;
+
+    menuPreloadTimer = setTimeout(() => {
+      if (!phonicsData || !phonicsData.levels) return;
+      unitIds.forEach(id => {
+        for (const level of phonicsData.levels) {
+          const unit = (level.units || []).find(u => u.id === id);
+          if (unit) {
+            const words = prepareUnitWords(unit, false, opts);
+            words.forEach(w => {
+              if (w.word || w.audio) {
+                AudioPlayer.preload(w.audio, w.word);
+              }
+            });
+            break;
+          }
+        }
+      });
+    }, 350);
+  }
+
   function updateStartButton() {
     const btn = document.getElementById('start-btn');
     if (!btn) return;
@@ -1575,6 +1599,8 @@
       if (countSpan) countSpan.textContent = `${selectedIds.length} unit${selectedIds.length > 1 ? 's' : ''} · ${count} ${wordType}`;
       btn.title = `${actionText} (Enter)`;
     }
+
+    scheduleMenuAudioPreload(selectedIds, options);
   }
 
   /**
@@ -1724,12 +1750,16 @@
       buildNormalModeSlides(slidesContainer, selectedUnits, opts);
     }
 
-    // Preload audio files for instant playback
+    // Preload audio files for instant playback across all modes (including multi-voice and distractors)
     const slides = slidesContainer.querySelectorAll('.word-slide');
     slides.forEach(slide => {
       const audioPath = slide.dataset.audioPath;
-      if (audioPath) {
-        AudioPlayer.preload(audioPath);
+      const word = slide.dataset.word;
+      if (audioPath || word) {
+        AudioPlayer.preload(audioPath, word);
+      }
+      if (slide.dataset.distractorAudio || slide.dataset.distractorWord) {
+        AudioPlayer.preload(slide.dataset.distractorAudio, slide.dataset.distractorWord);
       }
     });
 
@@ -2217,6 +2247,10 @@
       section.dataset.correctSound = targetSound;
 
       const distractorData = getDistractorPictureCandidate(wordData, unit, opts);
+      if (distractorData) {
+        section.dataset.distractorWord = distractorData.word || '';
+        section.dataset.distractorAudio = Array.isArray(distractorData.audio) ? JSON.stringify(distractorData.audio) : (distractorData.audio || '');
+      }
 
       const choices = [
         {
