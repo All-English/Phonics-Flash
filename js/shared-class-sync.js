@@ -3145,12 +3145,10 @@
     return wordAudioManifestPromise;
   }
 
-  // Pre-load manifests in browser environment so extra variations are available immediately
+  // Pre-load manifests immediately in browser environment so extra variations are available right away
   if (typeof window !== 'undefined') {
-    setTimeout(() => {
-      loadPlayerAudioManifest().catch(() => {});
-      loadWordAudioManifest().catch(() => {});
-    }, 50);
+    loadPlayerAudioManifest().catch(() => {});
+    loadWordAudioManifest().catch(() => {});
   }
 
   function toPlayerSlug(name) {
@@ -3169,6 +3167,7 @@
       if (studentData && Array.isArray(studentData.variations) && studentData.variations.length > 0) {
         return studentData.variations.map(v => `${base}/audio/players/${v.file}`);
       }
+      return [];
     }
 
     return [
@@ -3193,6 +3192,7 @@
       if (entry && Array.isArray(entry.variations) && entry.variations.length > 0) {
         return entry.variations.map(v => `${base}/audio/words/${v.file}`);
       }
+      return [];
     }
 
     return [
@@ -3245,8 +3245,12 @@
     const slug = toWordSlug(word);
     if (!slug) return [];
 
-    let resolvedOfficial = officialUrl ? CurriculumAdapter.resolveUrl(officialUrl, getMediaBase()) : getOfficialWordAudioUrl(word);
-    const aiUrls = getGeneratedWordAudioUrls(word);
+    const trimmedOfficial = officialUrl ? String(officialUrl).trim() : '';
+    const isLocalLetsSmile = /^(\.\/)?data\/LetsSmile\//i.test(trimmedOfficial);
+    let resolvedOfficial = isLocalLetsSmile
+      ? trimmedOfficial
+      : (trimmedOfficial ? CurriculumAdapter.resolveUrl(trimmedOfficial, getMediaBase()) : getOfficialWordAudioUrl(word));
+    const aiUrls = isLocalLetsSmile ? [] : getGeneratedWordAudioUrls(word);
 
     const normalizedMode = String(mode || 'mixed').toLowerCase().trim();
     if (normalizedMode === 'official') {

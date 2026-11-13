@@ -179,6 +179,7 @@ const AudioPlayer = (() => {
     // If word is provided and not single letter, resolve all voice candidates
     if (!isCustomMedia && !isSingleLetter && word && typeof window !== 'undefined' && window.SharedClassSync?.getWordAudioUrls) {
       try {
+        await window.SharedClassSync.loadWordAudioManifest?.();
         const mode = (localStorage.getItem('word_voice_mode') || 'mixed').toLowerCase();
         const candidateUrls = window.SharedClassSync.getWordAudioUrls(word, { officialUrl: audioPath, mode });
         if (candidateUrls && candidateUrls.length > 0) {
