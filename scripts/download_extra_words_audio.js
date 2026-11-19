@@ -115,7 +115,7 @@ async function generateTTS(text, voice, destPath, retries = 3) {
     pronunciation_dictionary_locators: [
       {
         pronunciation_dictionary_id: 'sKcMTMc7IZdOIqGSuKGL',
-        version_id: 'lBWAKvEKQsfx4Ajakhf7'
+        version_id: '3mTzTQzzgwh88Eo3YcRd'
       }
     ]
   };
