@@ -45,7 +45,7 @@
     soundQuizMode: false,
     pictureQuizMode: false,
     wordChart: false,
-    syncSlides: true
+    syncSlides: false
   };
 
   // ── Phonics Engine Delegates ────────────────────────────────
@@ -431,6 +431,7 @@
     localStorage.setItem('phonics-flash-sound-quiz', 'false');
     localStorage.setItem('phonics-flash-picture-quiz', 'false');
     localStorage.setItem('phonics-flash-word-chart', 'false');
+    localStorage.setItem('phonics-flash-sync', 'false');
 
     // Reset options in memory
     options.includeExtras = false;
@@ -445,7 +446,7 @@
     options.soundQuizMode = false;
     options.pictureQuizMode = false;
     options.wordChart = false;
-    options.syncSlides = true;
+    options.syncSlides = false;
 
     // Uncheck all checkboxes in UI if already rendered
     const checkboxes = document.querySelectorAll('#levels-container .unit-checkbox input[type="checkbox"]');
@@ -2125,6 +2126,12 @@
     return unit.levelName || name || '';
   }
 
+  function renderSoundCueImg(cue, className, altText) {
+    if (!cue || !cue.image) return '';
+    const isCueMedia = cue.image.startsWith('media:');
+    return `<img ${isCueMedia ? `data-media-uri="${cue.image}" style="display:none;"` : `src="${cue.image}"`} alt="${altText || cue.word || ''}" class="${className}" onerror="if(this.src) this.style.display='none'">`;
+  }
+
   // ── Create a Single Word Slide ─────────────────────────────
   // Only contains the word text and optional image.
   // Chrome (unit badge, audio button, progress) lives in the
@@ -2208,11 +2215,28 @@
       const soundInfo = getTargetSoundInfo(wordData.word, unit, opts);
       const correctSound = soundInfo ? soundInfo.correctSound : '';
       const distractor = soundInfo ? soundInfo.distractor : '';
-      section.dataset.correctSound = correctSound;
+      const correctSoundKey = (soundInfo && soundInfo.correctSoundKey) ? soundInfo.correctSoundKey : correctSound;
+      section.dataset.correctSound = correctSoundKey;
 
-      const choices = [correctSound, distractor];
-      // Keep possible answer choices in alphabetical order for consistency
-      choices.sort((a, b) => (a || '').localeCompare(b || '', undefined, { sensitivity: 'base' }) || (a || '').localeCompare(b || ''));
+      const choiceObjects = [
+        {
+          key: correctSoundKey,
+          label: correctSound,
+          cue: (soundInfo && soundInfo.correctCue) ? soundInfo.correctCue : null
+        },
+        {
+          key: (soundInfo && soundInfo.distractorKey) ? soundInfo.distractorKey : distractor,
+          label: distractor,
+          cue: (soundInfo && soundInfo.distractorCue) ? soundInfo.distractorCue : null
+        }
+      ];
+      // Keep possible answer choices in alphabetical order for consistency (e.g. "book" before "moon")
+      choiceObjects.sort((a, b) => {
+        const aVal = (a.cue && a.cue.word) ? a.cue.word : (a.label || '');
+        const bVal = (b.cue && b.cue.word) ? b.cue.word : (b.label || '');
+        return aVal.localeCompare(bVal, undefined, { sensitivity: 'base' }) || aVal.localeCompare(bVal);
+      });
+      const hasSoundCue = choiceObjects.some(c => !!(c.cue && c.cue.image));
 
       const targetSound = unit.targetSound || unit.sound || '';
       const blankedWordDisplay = getBlankedWord(wordData.word, targetSound, unit.levelId);
@@ -2220,8 +2244,14 @@
         ? highlightTargetSound(wordData.word, targetSound, unit.levelId)
         : wordData.word;
 
+      const soundButtonsHTML = choiceObjects.map(c => {
+        const cueImg = renderSoundCueImg(c.cue, 'sound-option-cue-img', c.cue ? c.cue.word : '');
+        const inner = cueImg ? `<span class="sound-option-text">${c.label}</span>${cueImg}` : c.label;
+        return `<button class="quiz-option-btn sound-option-btn${cueImg ? ' has-sound-cue' : ''}" data-len="${wordData.word.length}" data-sound="${c.key}" type="button">${inner}</button>`;
+      }).join('');
+
       section.innerHTML = `
-        <div class="slide-center sound-quiz-layout ${!hasSoundQuizImage ? 'no-image' : ''}" data-len="${wordData.word.length}">
+        <div class="slide-center sound-quiz-layout ${!hasSoundQuizImage ? 'no-image' : ''}${hasSoundCue ? ' has-sound-cue' : ''}" data-len="${wordData.word.length}">
           ${isSightWord ? '<div class="sight-word-badge">Sight Word</div>' : ''}
           ${hasSoundQuizImage
             ? `<img ${isMediaUri ? `data-media-uri="${wordData.image}" style="display:none;"` : `src="${wordData.image}"`} alt="Sound Quiz Image" class="word-image quiz-image"
@@ -2232,8 +2262,7 @@
               <div class="sound-quiz-blanked-word" data-full-word="${encodeURIComponent(fullWordDisplay)}" data-len="${wordData.word.length}" title="Click to hear sound">${blankedWordDisplay}</div>
             </div>
             <div class="quiz-options-container">
-              <button class="quiz-option-btn sound-option-btn" data-len="${wordData.word.length}" data-sound="${choices[0]}">${choices[0]}</button>
-              <button class="quiz-option-btn sound-option-btn" data-len="${wordData.word.length}" data-sound="${choices[1]}">${choices[1]}</button>
+              ${soundButtonsHTML}
             </div>
           </div>
         </div>
@@ -2244,7 +2273,7 @@
 
       const soundInfo = getTargetSoundInfo(wordData.word, unit, opts);
       const targetSound = soundInfo ? soundInfo.correctSound : (unit.targetSound || unit.sound || '');
-      section.dataset.correctSound = targetSound;
+      section.dataset.correctSound = (soundInfo && soundInfo.correctSoundKey) ? soundInfo.correctSoundKey : targetSound;
 
       const distractorData = getDistractorPictureCandidate(wordData, unit, opts);
       if (distractorData) {
@@ -2268,6 +2297,11 @@
       ];
       shuffleArray(choices);
 
+      const soundCue = (soundInfo && soundInfo.isDualOo && typeof PhonicsEngine !== 'undefined' && PhonicsEngine.getDualOoCueCandidate)
+        ? PhonicsEngine.getDualOoCueCandidate(soundInfo.correctSoundKey, [choices[0].word, choices[1].word], unit, phonicsData)
+        : null;
+      const soundCueHtml = renderSoundCueImg(soundCue, 'target-sound-cue-img', soundCue ? `like ${soundCue.word}` : '');
+
       const maxCardWordLen = Math.max((choices[0].word || '').length, (choices[1].word || '').length);
 
       const cardsHTML = choices.map((c) => {
@@ -2289,7 +2323,7 @@
 
       section.innerHTML = `
         <div class="slide-center picture-quiz-layout">
-          <div class="target-sound-bubble">${targetSound}</div>
+          <div class="target-sound-bubble${soundCueHtml ? ' has-sound-cue' : ''}">${soundCueHtml ? `<span class="target-sound-text">${targetSound}</span>${soundCueHtml}` : targetSound}</div>
           <div class="picture-options-container">
             ${cardsHTML}
           </div>
@@ -2355,10 +2389,10 @@
       <div class="slide-meta-top">
         <span class="unit-badge" id="chrome-unit"></span>
         <span class="progress-badge" id="chrome-progress"></span>
-        <button class="option-btn hidden" id="toggle-sync" title="Sync slide levels across decks">
+        <button class="option-btn hidden" id="toggle-sync" title="Sync disabled: Decks navigate independently (Click to turn on)" aria-pressed="false">
           <span class="sync-icon">${ICONS.sync}</span>
           <span class="sync-label">Sync</span>
-          <span class="sync-badge">ON</span>
+          <span class="sync-badge">OFF</span>
         </button>
       </div>
 

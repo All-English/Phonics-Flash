@@ -129,6 +129,85 @@
     return word;
   }
 
+  // ── Dual-Sound "oo" Support (Level 5 Unit 8: book vs moon) ─
+  const SHORT_OO_WORDS = new Set([
+    'book', 'cook', 'foot', 'hook', 'look', 'wood',
+    'good', 'hood', 'soot', 'wool',
+    'took', 'stood', 'shook', 'brook', 'crook', 'nook', 'rook'
+  ]);
+
+  function isDualOoUnit(unit, word = '') {
+    if (!unit || !word || !word.toLowerCase().includes('oo')) return false;
+    const unitId = String(unit.id || '');
+    const rawTarget = String(unit.targetSound || unit.sound || '').trim().toLowerCase();
+    return unitId === 'L5U8' || /(?:^|_)L5_?U8$/i.test(unitId) || rawTarget === 'oo';
+  }
+
+  function getDualOoVariant(word) {
+    return SHORT_OO_WORDS.has(String(word || '').trim().toLowerCase()) ? 'oo-book' : 'oo-moon';
+  }
+
+  function findDualOoWordImage(targetWord, unit = null, data = null) {
+    const lowerTarget = String(targetWord || '').trim().toLowerCase();
+    const currentPhonics = data || getPhonicsData();
+
+    const fromUnit = (unit?.words || []).find(w => w.word && w.word.toLowerCase() === lowerTarget && w.image);
+    if (fromUnit) return fromUnit.image;
+
+    for (const lvl of (currentPhonics?.levels || [])) {
+      for (const u of (lvl.units || [])) {
+        if (u.id === 'L5U8' || String(u.targetSound || u.sound || '').trim().toLowerCase() === 'oo') {
+          const match = (u.words || []).find(w => w.word && w.word.toLowerCase() === lowerTarget && w.image);
+          if (match) return match.image;
+        }
+      }
+    }
+
+    if (lowerTarget === 'book' || lowerTarget === 'moon') {
+      return `media/SmartPhonics/5/Unit8/pics/${lowerTarget}.jpg`;
+    }
+    return '';
+  }
+
+  function getDualOoCueCandidate(variant, excludeWords = [], unit = null, data = null) {
+    const currentPhonics = data || getPhonicsData();
+    const excluded = new Set((excludeWords || []).map(w => String(w || '').trim().toLowerCase()).filter(Boolean));
+    const defaultWord = variant === 'oo-book' ? 'book' : 'moon';
+
+    if (!excluded.has(defaultWord)) {
+      const defaultImg = findDualOoWordImage(defaultWord, unit, currentPhonics);
+      if (defaultImg) return { word: defaultWord, image: defaultImg };
+    }
+
+    const collectCandidates = (words) => (words || []).filter(w => {
+      if (!w || !w.word || !w.image) return false;
+      const lower = w.word.toLowerCase();
+      if (!lower.includes('oo') || excluded.has(lower)) return false;
+      return getDualOoVariant(lower) === variant;
+    });
+
+    let candidates = collectCandidates(unit?.words);
+    if (candidates.length === 0) {
+      for (const lvl of (currentPhonics?.levels || [])) {
+        for (const u of (lvl.units || [])) {
+          if (u.id === 'L5U8' || String(u.targetSound || u.sound || '').trim().toLowerCase() === 'oo') {
+            candidates = collectCandidates(u.words);
+            if (candidates.length > 0) break;
+          }
+        }
+        if (candidates.length > 0) break;
+      }
+    }
+
+    if (candidates.length > 0) {
+      const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+      return { word: chosen.word, image: chosen.image };
+    }
+
+    const fallbackImg = findDualOoWordImage(defaultWord, unit, currentPhonics);
+    return fallbackImg ? { word: defaultWord, image: fallbackImg } : null;
+  }
+
   // ── Target Sound Choices & Distractor Generator ───────────
   function getTargetSoundInfo(word, unit, opts = {}, data = null) {
     if (!word || !unit) return null;
@@ -137,6 +216,21 @@
     const rawTargetStr = unit.targetSound || unit.sound || '';
     const rawTargets = rawTargetStr.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
     const lowerWord = word.toLowerCase();
+
+    if (isDualOoUnit(unit, word)) {
+      const correctSoundKey = getDualOoVariant(lowerWord);
+      const distractorKey = correctSoundKey === 'oo-book' ? 'oo-moon' : 'oo-book';
+      const displaySound = (opts.letterCase || 'both') === 'upper' ? 'OO' : 'oo';
+      return {
+        correctSound: displaySound,
+        distractor: displaySound,
+        correctSoundKey,
+        distractorKey,
+        isDualOo: true,
+        correctCue: getDualOoCueCandidate(correctSoundKey, [], unit, currentPhonics),
+        distractorCue: getDualOoCueCandidate(distractorKey, [], unit, currentPhonics)
+      };
+    }
 
     let correctSound = '';
     let distractor = '';
@@ -314,11 +408,11 @@
   function getDistractorPictureCandidate(wordData, unit, opts = {}, data = null) {
     const currentPhonics = data || getPhonicsData();
     const soundInfo = getTargetSoundInfo(wordData.word, unit, opts, currentPhonics);
-    const activeSound = soundInfo ? soundInfo.correctSound.toLowerCase() : '';
+    const activeSound = soundInfo ? (soundInfo.correctSoundKey || soundInfo.correctSound).toLowerCase() : '';
 
     function getCandidateSound(candWord, candUnit) {
       const info = getTargetSoundInfo(candWord, candUnit, opts, currentPhonics);
-      return info ? info.correctSound.toLowerCase() : '';
+      return info ? (info.correctSoundKey || info.correctSound).toLowerCase() : '';
     }
 
     // Priority 1: Pick from same unit if it has a different sound and has an image
@@ -446,6 +540,7 @@
     highlightTargetSound,
     getBlankedWord,
     getTargetSoundInfo,
+    getDualOoCueCandidate,
     prepareUnitWords,
     prepareUnitSightWords,
     getDistractorWord,
