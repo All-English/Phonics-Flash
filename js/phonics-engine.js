@@ -227,8 +227,8 @@
         correctSoundKey,
         distractorKey,
         isDualOo: true,
-        correctCue: getDualOoCueCandidate(correctSoundKey, [], unit, currentPhonics),
-        distractorCue: getDualOoCueCandidate(distractorKey, [], unit, currentPhonics)
+        correctCue: getDualOoCueCandidate(correctSoundKey, [lowerWord], unit, currentPhonics),
+        distractorCue: getDualOoCueCandidate(distractorKey, [lowerWord], unit, currentPhonics)
       };
     }
 

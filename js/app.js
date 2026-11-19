@@ -2230,10 +2230,10 @@
           cue: (soundInfo && soundInfo.distractorCue) ? soundInfo.distractorCue : null
         }
       ];
-      // Keep possible answer choices in alphabetical order for consistency (e.g. "book" before "moon")
+      // Keep possible answer choices in consistent order ("oo-book" before "oo-moon")
       choiceObjects.sort((a, b) => {
-        const aVal = (a.cue && a.cue.word) ? a.cue.word : (a.label || '');
-        const bVal = (b.cue && b.cue.word) ? b.cue.word : (b.label || '');
+        const aVal = a.key || a.label || '';
+        const bVal = b.key || b.label || '';
         return aVal.localeCompare(bVal, undefined, { sensitivity: 'base' }) || aVal.localeCompare(bVal);
       });
       const hasSoundCue = choiceObjects.some(c => !!(c.cue && c.cue.image));
