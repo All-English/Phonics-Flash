@@ -117,20 +117,37 @@ window.ClassesManager = (() => {
             if (savedUnits.length > 0 && (profTime > localTime || !Array.isArray(existing.selectedUnits) || existing.selectedUnits.length === 0)) {
               existing.selectedUnits = [...savedUnits];
               if (profTime > localTime) existing.updatedAt = profTime;
-            } else if (Array.isArray(existing.selectedUnits) && existing.selectedUnits.length > 0 && (localTime > profTime || savedUnits.length === 0)) {
-              // Local Phonics Flash class has units that shared_class_profiles lacks or is newer: propagate to shared_class_profiles
-              const canonicals = existing.selectedUnits
-                .map(u => SharedClassSync.toCanonicalUnit(u)?.id)
+            } else if (Array.isArray(existing.selectedUnits) && existing.selectedUnits.length > 0) {
+              existing.selectedUnits = existing.selectedUnits
+                .map(u => SharedClassSync.toPhonicsFlash(u) || u)
                 .filter(Boolean);
-              if (canonicals.length > 0) {
-                profiles[setName] = {
-                  ...prof,
-                  schedule: existing.schedule || sched,
-                  curriculumId: existing.curriculumId || 'smart-phonics',
-                  units: canonicals,
-                  updatedAt: Math.max(localTime, profTime)
-                };
-                profilesDirty = true;
+              if (localTime > profTime || savedUnits.length === 0) {
+                // Local Phonics Flash class has units that shared_class_profiles lacks or is newer: propagate to shared_class_profiles
+                const curSlug = existing.curriculumId
+                  ? (/^custom_/i.test(existing.curriculumId) ? existing.curriculumId : SharedClassSync.toSeriesSlug(existing.curriculumId))
+                  : 'smart-phonics';
+                const canonicals = existing.selectedUnits
+                  .map(u => {
+                    const c = SharedClassSync.toCanonicalUnit(u);
+                    if (c) {
+                      if (typeof u === 'string' && !u.includes(':') && !u.includes('|') && !u.includes('_L') && curSlug !== 'smart-phonics') {
+                        return `${curSlug}:L${c.level}U${c.unit}`;
+                      }
+                      return c.id;
+                    }
+                    return u;
+                  })
+                  .filter(Boolean);
+                if (canonicals.length > 0) {
+                  profiles[setName] = {
+                    ...prof,
+                    schedule: existing.schedule || sched,
+                    curriculumId: existing.curriculumId || 'smart-phonics',
+                    units: canonicals,
+                    updatedAt: Math.max(localTime, profTime)
+                  };
+                  profilesDirty = true;
+                }
               }
             }
 
@@ -364,10 +381,14 @@ window.ClassesManager = (() => {
 
   // Debounced auto-push to prevent spamming REST API on rapid checkbox changes
   let pushTimeout = null;
-  function debouncedPushToUpstash(data) {
+  function debouncedPushToUpstash() {
+    if (typeof window !== 'undefined' && window.SharedClassSync?.schedulePushToConvex) {
+      window.SharedClassSync.schedulePushToConvex({ replaceAllClasses: false });
+      return;
+    }
     if (pushTimeout) clearTimeout(pushTimeout);
     pushTimeout = setTimeout(() => {
-      pushToUpstash(data);
+      pushToUpstash(loadLocalData());
     }, 1500);
   }
 
@@ -481,6 +502,7 @@ window.ClassesManager = (() => {
       const idx = store.classes.findIndex(c => c.id === classId);
       if (idx === -1) return null;
 
+      const oldName = store.classes[idx].name;
       store.classes[idx] = {
         ...store.classes[idx],
         ...updates,
@@ -489,14 +511,26 @@ window.ClassesManager = (() => {
 
       const updated = store.classes[idx];
       saveLocalData(store);
-      debouncedPushToUpstash(store);
 
       if (typeof SharedClassSync !== 'undefined') {
         try {
+          const isRenamed = Boolean(oldName && updated.name && updated.name !== oldName);
           const profiles = JSON.parse(localStorage.getItem(SharedClassSync.SHARED_CLASS_PROFILES_KEY) || '{}');
-          const existingProf = profiles[updated.name];
+          const existingProf = profiles[updated.name] || (isRenamed ? profiles[oldName] : null);
+          const curSlug = updated.curriculumId
+            ? (/^custom_/i.test(updated.curriculumId) ? updated.curriculumId : SharedClassSync.toSeriesSlug(updated.curriculumId))
+            : 'smart-phonics';
           const updatedCanonicals = Array.isArray(updated.selectedUnits) && updated.selectedUnits.length > 0
-            ? updated.selectedUnits.map(u => SharedClassSync.toCanonicalUnit(u)?.id || u).filter(Boolean)
+            ? updated.selectedUnits.map(u => {
+                const c = SharedClassSync.toCanonicalUnit(u);
+                if (c) {
+                  if (typeof u === 'string' && !u.includes(':') && !u.includes('|') && !u.includes('_L') && curSlug !== 'smart-phonics') {
+                    return `${curSlug}:L${c.level}U${c.unit}`;
+                  }
+                  return c.id;
+                }
+                return u;
+              }).filter(Boolean)
             : (existingProf?.units || []);
           profiles[updated.name] = {
             ...(existingProf || {}),
@@ -505,9 +539,37 @@ window.ClassesManager = (() => {
             units: updatedCanonicals,
             updatedAt: updated.updatedAt
           };
+          if (isRenamed && profiles[oldName]) {
+            delete profiles[oldName];
+          }
           localStorage.setItem(SharedClassSync.SHARED_CLASS_PROFILES_KEY, JSON.stringify(profiles));
-          SharedClassSync.syncUpstash(SharedClassSync.SHARED_CLASS_PROFILES_KEY, profiles);
+
+          if (isRenamed) {
+            try {
+              const sets = JSON.parse(localStorage.getItem(SharedClassSync.SHARED_SETS_KEY) || '{}');
+              if (sets[oldName] && !sets[updated.name]) {
+                sets[updated.name] = sets[oldName];
+              }
+              if (sets[oldName]) {
+                delete sets[oldName];
+                localStorage.setItem(SharedClassSync.SHARED_SETS_KEY, JSON.stringify(sets));
+              }
+              if (localStorage.getItem(SharedClassSync.SHARED_ACTIVE_CLASS_KEY) === oldName) {
+                localStorage.setItem(SharedClassSync.SHARED_ACTIVE_CLASS_KEY, updated.name);
+                SharedClassSync.writeSharedSyncCookie?.({ actClass: updated.name });
+              }
+            } catch {}
+            if (SharedClassSync.schedulePushToConvex) {
+              SharedClassSync.schedulePushToConvex({ replaceAllClasses: false, deleteClassName: oldName });
+            } else {
+              SharedClassSync.syncUpstash(SharedClassSync.SHARED_CLASS_PROFILES_KEY, profiles);
+            }
+          } else {
+            SharedClassSync.syncUpstash(SharedClassSync.SHARED_CLASS_PROFILES_KEY, profiles);
+          }
         } catch {}
+      } else {
+        debouncedPushToUpstash(store);
       }
 
       return updated;
@@ -538,7 +600,7 @@ window.ClassesManager = (() => {
       const hasNonEmptyUnits = Array.isArray(selectedUnits) && selectedUnits.length > 0;
 
       if (!store.activeClassId) {
-        if (hasNonEmptyUnits && typeof SharedClassSync !== 'undefined' && SharedClassSync.saveActiveUnits) {
+        if (isUnitChange && hasNonEmptyUnits && typeof SharedClassSync !== 'undefined' && SharedClassSync.saveActiveUnits) {
           SharedClassSync.saveActiveUnits(selectedUnits, activeCurId || 'smart-phonics', null);
         }
         return null;
@@ -546,17 +608,18 @@ window.ClassesManager = (() => {
 
       const cls = store.classes.find(c => c.id === store.activeClassId);
       if (!cls) {
-        if (hasNonEmptyUnits && typeof SharedClassSync !== 'undefined' && SharedClassSync.saveActiveUnits) {
+        if (isUnitChange && hasNonEmptyUnits && typeof SharedClassSync !== 'undefined' && SharedClassSync.saveActiveUnits) {
           SharedClassSync.saveActiveUnits(selectedUnits, activeCurId || 'smart-phonics', null);
         }
         return null;
       }
 
-      if (isUnitChange || hasNonEmptyUnits) {
-        cls.selectedUnits = [...selectedUnits];
-      }
-      if (activeCurId) {
-        cls.curriculumId = activeCurId;
+      if (isUnitChange) {
+        cls.selectedUnits = Array.isArray(selectedUnits) ? [...selectedUnits] : [];
+        if (activeCurId) {
+          cls.curriculumId = activeCurId;
+        }
+        cls.updatedAt = Date.now();
       }
       cls.options = {
         includeExtras: !!currentOptions.includeExtras,
@@ -572,13 +635,13 @@ window.ClassesManager = (() => {
         wordChart: !!currentOptions.wordChart,
         highlightSounds: !!currentOptions.highlightSounds
       };
-      cls.updatedAt = Date.now();
 
-      saveLocalData(store);
-      debouncedPushToUpstash(store);
-
-      if (typeof SharedClassSync !== 'undefined' && (isUnitChange || hasNonEmptyUnits)) {
-        SharedClassSync.saveClassUnits(cls.name, cls.selectedUnits, cls.curriculumId);
+      saveLocalData(store, { touchUpdatedAt: isUnitChange });
+      if (isUnitChange) {
+        debouncedPushToUpstash(store);
+        if (hasNonEmptyUnits && typeof SharedClassSync !== 'undefined') {
+          SharedClassSync.saveClassUnits(cls.name, cls.selectedUnits, cls.curriculumId);
+        }
       }
       return cls;
     },
@@ -589,13 +652,17 @@ window.ClassesManager = (() => {
     },
 
     async syncCloud() {
-      const remote = await fetchFromUpstash();
       const local = loadLocalData();
+      const remote = await fetchFromUpstash();
 
       if (!remote || !Array.isArray(remote.classes)) {
         const pushed = await pushToUpstash(local);
         return { success: pushed, source: 'local_pushed', data: local };
       }
+
+      const toPfUnitList = (units) => (Array.isArray(units) ? units : [])
+        .map(u => (typeof SharedClassSync !== 'undefined' ? (SharedClassSync.toPhonicsFlash(u) || u) : u))
+        .filter(Boolean);
 
       let remoteHadNewer = false;
       let localHadNewer = false;
@@ -611,30 +678,36 @@ window.ClassesManager = (() => {
         if (!rCls || !rCls.name) continue;
         const lCls = mergedClassesMap.get(rCls.name);
         if (!lCls) {
-          mergedClassesMap.set(rCls.name, { ...rCls });
+          mergedClassesMap.set(rCls.name, {
+            ...rCls,
+            selectedUnits: toPfUnitList(rCls.selectedUnits)
+          });
           remoteHadNewer = true;
         } else {
           const rTime = rCls.updatedAt || 0;
           const lTime = lCls.updatedAt || 0;
-          const rHasUnits = Array.isArray(rCls.selectedUnits) && rCls.selectedUnits.length > 0;
-          const lHasUnits = Array.isArray(lCls.selectedUnits) && lCls.selectedUnits.length > 0;
+          const rUnits = toPfUnitList(rCls.selectedUnits);
+          const lUnits = toPfUnitList(lCls.selectedUnits);
+          const rHasUnits = rUnits.length > 0;
+          const lHasUnits = lUnits.length > 0;
 
           if (rTime > lTime) {
             mergedClassesMap.set(rCls.name, {
               ...lCls,
               ...rCls,
               id: lCls.id || rCls.id,
-              selectedUnits: rHasUnits ? rCls.selectedUnits : (lHasUnits ? lCls.selectedUnits : [])
+              options: lCls.options || rCls.options,
+              selectedUnits: rHasUnits ? rUnits : (lHasUnits ? lUnits : [])
             });
             remoteHadNewer = true;
           } else if (lTime > rTime) {
             if (!lHasUnits && rHasUnits) {
-              lCls.selectedUnits = rCls.selectedUnits;
+              lCls.selectedUnits = rUnits;
               remoteHadNewer = true;
             }
             localHadNewer = true;
           } else if (!lHasUnits && rHasUnits) {
-            lCls.selectedUnits = rCls.selectedUnits;
+            lCls.selectedUnits = rUnits;
             remoteHadNewer = true;
           }
         }

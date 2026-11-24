@@ -194,10 +194,10 @@
     // 4. Synchronize classes from cloud/shared storage and apply unit selection priority
     if (typeof ClassesManager !== 'undefined') {
       try {
-        await Promise.all([
-          typeof SharedClassSync !== 'undefined' ? SharedClassSync.loadAllClasses() : Promise.resolve(),
-          ClassesManager.syncCloud()
-        ]);
+        if (typeof SharedClassSync !== 'undefined') {
+          await SharedClassSync.loadAllClasses();
+        }
+        await ClassesManager.syncCloud();
       } catch (e) {
         console.warn('[ClassesManager] Error syncing classes on startup:', e);
       }
@@ -232,6 +232,10 @@
             );
             if (latestActiveUnits.curriculumId) {
               scheduledClass.curriculumId = latestActiveUnits.curriculumId;
+            }
+            scheduledClass.updatedAt = latestActiveUnits.updatedAt || Date.now();
+            if (typeof SharedClassSync !== 'undefined' && SharedClassSync.saveClassUnits) {
+              SharedClassSync.saveClassUnits(scheduledClass.name, scheduledClass.selectedUnits, scheduledClass.curriculumId, scheduledClass.updatedAt);
             }
           }
 
@@ -285,9 +289,38 @@
         if (!isMenuVisible || typeof SharedClassSync === 'undefined') return;
         try {
           await SharedClassSync.loadAllClasses();
+          await ClassesManager.syncCloud();
+          const activeClass = ClassesManager.getActiveClass();
           const freshActive = SharedClassSync.getActiveUnits();
           const currentLocalTime = Number(localStorage.getItem('phonics-flash-units-updated-at') || 0);
-          if (
+
+          if (activeClass) {
+            const classUpdatedAt = activeClass.updatedAt || 0;
+            const freshMatchesActiveClass =
+              freshActive &&
+              Array.isArray(freshActive.units) &&
+              freshActive.units.length > 0 &&
+              (freshActive.updatedAt || 0) > Math.max(currentLocalTime, classUpdatedAt) &&
+              (
+                freshActive.className === activeClass.name ||
+                (
+                  !freshActive.className &&
+                  typeof SharedClassSync.isTimestampInCurrentClassSession === 'function' &&
+                  SharedClassSync.isTimestampInCurrentClassSession(freshActive.updatedAt, activeClass.name, activeClass)
+                )
+              );
+
+            if (freshMatchesActiveClass) {
+              activeClass.selectedUnits = freshActive.units.map(u => SharedClassSync.toPhonicsFlash(u) || u);
+              if (freshActive.curriculumId) {
+                activeClass.curriculumId = freshActive.curriculumId;
+              }
+              activeClass.updatedAt = freshActive.updatedAt;
+              applyClassProfile(activeClass);
+            } else if (classUpdatedAt > currentLocalTime && Array.isArray(activeClass.selectedUnits) && activeClass.selectedUnits.length > 0) {
+              applyClassProfile(activeClass);
+            }
+          } else if (
             freshActive &&
             Array.isArray(freshActive.units) &&
             freshActive.units.length > 0 &&
@@ -639,9 +672,7 @@
 
     const resolvedUnits = resolveUnitIdsForBook(rawUnits, phonicsData);
     localStorage.setItem('phonics-flash-selected-units', JSON.stringify(resolvedUnits));
-    if (resolvedUnits.length > 0 && cls.updatedAt) {
-      localStorage.setItem('phonics-flash-units-updated-at', String(cls.updatedAt));
-    }
+    localStorage.setItem('phonics-flash-units-updated-at', String(cls.updatedAt || 0));
 
     const select = document.getElementById('class-select');
     if (select) {
